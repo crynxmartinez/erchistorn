@@ -4,7 +4,7 @@ import { api, extractError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGameData } from "@/data/gameData";
 import { toast } from "sonner";
-import { LogOut, Trophy, Map, Package, Hammer, BookOpen, Home as HomeIcon } from "lucide-react";
+import { LogOut, Trophy, Map, Package, Hammer, BookOpen, Home as HomeIcon, Building2, Shield } from "lucide-react";
 
 import CharacterSheet from "@/components/CharacterSheet";
 import BiomeView from "@/components/BiomeView";
@@ -36,13 +36,21 @@ export default function Game() {
     const [narrativeResult, setNarrativeResult] = useState(null);
     const [combat, setCombat] = useState(null);
     const [showTutorial, setShowTutorial] = useState(false);
+    const [timeOfDay, setTimeOfDay] = useState("solar");
+    const [towns, setTowns] = useState([]);
 
     const loadCharacter = useCallback(async () => {
         try {
-            const { data } = await api.get("/game/character");
-            setCharacter(data.character);
-            if (data.login_reward) setLoginReward(data.login_reward);
-            if (!data.character.tutorial_complete) setShowTutorial(true);
+            const [ch, wt, tw] = await Promise.all([
+                api.get("/game/character"),
+                api.get("/game/world/time"),
+                api.get("/game/data/towns"),
+            ]);
+            setCharacter(ch.data.character);
+            setTimeOfDay(wt.data.time_of_day);
+            setTowns(tw.data.towns);
+            if (ch.data.login_reward) setLoginReward(ch.data.login_reward);
+            if (!ch.data.character.tutorial_complete) setShowTutorial(true);
         } catch (e) {
             toast.error(extractError(e));
         }
@@ -134,6 +142,24 @@ export default function Game() {
                             </button>
                         );
                     })}
+                    {towns.filter((t) => (character.visited_towns || []).includes(t.id)).map((t) => (
+                        <Link
+                            key={t.id}
+                            to={`/town/${t.id}`}
+                            data-testid={`goto-town-${t.id}`}
+                            className="press-btn font-pixel text-sm uppercase px-3 py-1.5 border-2 border-border text-muted-foreground hover:border-primary hover:text-primary flex items-center gap-1.5"
+                            title={`Visit ${t.name}`}
+                        >
+                            <Building2 size={14} strokeWidth={1.5} /> {t.name}
+                        </Link>
+                    ))}
+                    <Link
+                        to="/guild-house"
+                        data-testid="goto-guild-house"
+                        className="press-btn font-pixel text-sm uppercase px-3 py-1.5 border-2 border-border text-muted-foreground hover:border-primary hover:text-primary flex items-center gap-1.5"
+                    >
+                        <Shield size={14} strokeWidth={1.5} /> Guild House
+                    </Link>
                     <Link
                         to="/leaderboard"
                         data-testid="tab-leaderboard"
@@ -161,6 +187,7 @@ export default function Game() {
                         role={role}
                         mastery={mastery}
                         itemsById={gd.itemsById}
+                        timeOfDay={timeOfDay}
                     />
                 </aside>
 

@@ -72,8 +72,13 @@ class CharacterStats(BaseModel):
     cognition: int
     essence: int
     drive: int
-    resilience: int = 0
+    might: int = 0
     grace: int = 0
+    insight: int = 0
+    resilience: int = 0
+    armor_bonus: int = 0
+    evasion_mod: int = 0
+    attack_success_mod: int = 0
 
 
 class StatusEffect(BaseModel):
@@ -120,6 +125,8 @@ class Character(BaseDocument):
     skills: list[LearnedSkill] = Field(default_factory=list)
     statuses: list[StatusEffect] = Field(default_factory=list)
     reputation: dict[str, int] = Field(default_factory=dict)
+    # Also add origin field to Character
+    origin: Optional[str] = None
     tutorial_step: int = 0
     tutorial_complete: bool = False
     current_continent: str = "aetheria"
@@ -128,9 +135,29 @@ class Character(BaseDocument):
     last_login_date: Optional[str] = None
     last_daily_refresh: Optional[str] = None
     daily_missions: list[dict] = Field(default_factory=list)
-    inner_blood: int = 0  # Wildblood race
-    exhaust: int = 0  # Orc/Wildblood race
+    # ---------- Racial resources (per new spec) ----------
+    exhaustion: int = 0             # 0-100 — universal, feeds racial abilities
+    resolve: int = 100              # 0-100 — used by risky/mental activities
+    heritage_rank: int = 1          # 1..5 — unlocks Rank I on creation
+    oath_progress: int = 0          # Human 0..100
+    celestial_charge: int = 0       # Elf 0..5
+    stoneguard: int = 0             # Dwarf 0..5
+    harmony: int = 0                # Half-Elf 0..5
+    defiance: int = 0               # Orc 0..100
+    inner_blood: int = 0            # Wildblood 0..100 (kept)
+    tide: int = 0                   # Hyliondrian 0..5
+    verdant_essence: int = 0        # Sylvan 0..5
+    beast_aspect: Optional[str] = None      # Wildblood only
+    marine_adaptation: Optional[str] = None # Hyliondrian only
     zone_active: bool = False
+    # ---------- Towns / Guild / Quests ----------
+    home_town: str = "ironhold"
+    current_town: Optional[str] = None
+    visited_towns: list[str] = Field(default_factory=list)
+    guild_id: Optional[str] = None
+    guild_rank: Optional[str] = None        # grandmaster / officer / member
+    active_quests: list[dict] = Field(default_factory=list)
+    completed_quests: list[str] = Field(default_factory=list)
     kills: int = 0
     crafts: int = 0
     created_at: str = Field(default_factory=utc_now_iso)
@@ -161,9 +188,12 @@ class CreateCharacterPayload(BaseModel):
     race: str
     role: str
     mastery: str
+    origin: str
     portrait_id: str
     oath: Optional[str] = None
     heritage: Optional[str] = None
+    beast_aspect: Optional[str] = None  # Wildblood only
+    marine_adaptation: Optional[str] = None  # Hyliondrian only
 
 
 class ActionPayload(BaseModel):

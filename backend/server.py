@@ -50,6 +50,37 @@ from game_data import (  # noqa: E402
     get_role,
 )
 from game_engine import combat_turn, resolve_action, resolve_craft, start_combat  # noqa: E402
+from game_data_p2 import (  # noqa: E402
+    BEAST_ASPECTS,
+    EVENTS,
+    EVENTS_BY_ID,
+    HERITAGE_RANK_1,
+    MARINE_ADAPTATIONS,
+    QUESTS,
+    QUESTS_BY_ID,
+    REGIONS,
+    STATIC_ANNOUNCEMENTS,
+    TOWNS,
+    TOWNS_BY_ID,
+    default_home_town_for_race,
+    get_active_events,
+    get_quest,
+    get_town,
+)
+from racial import (  # noqa: E402
+    current_time_of_day,
+    ensure_racial_defaults,
+    tick_racial_resources_on_action,
+)
+from origins import (  # noqa: E402
+    ORIGINS,
+    ROLE_AVAILABLE_MASTERIES,
+    ROLE_MAIN_STATS,
+    MASTERY_MAIN_STATS,
+    compute_final_stats,
+    get_origin,
+    origins_for_mastery,
+)
 from models import (  # noqa: E402
     ActionPayload,
     CombatStartPayload,
@@ -91,7 +122,9 @@ async def _get_character_or_404(user_id: str) -> dict:
     ch = await db.characters.find_one({"user_id": user_id})
     if not ch:
         raise HTTPException(status_code=404, detail="Character not found — create one first")
-    return _serialize_doc(ch)
+    ch = _serialize_doc(ch)
+    ensure_racial_defaults(ch)
+    return ch
 
 
 def _today_str() -> str:
@@ -296,12 +329,38 @@ async def get_races(user: dict = Depends(_get_current_user)):
 
 @api.get("/game/data/roles")
 async def get_roles_route(user: dict = Depends(_get_current_user)):
-    return {"roles": ROLES}
+    result = []
+    for r in ROLES:
+        rr = dict(r)
+        rr["main_stats"] = ROLE_MAIN_STATS.get(r["id"], {})
+        rr["available_masteries"] = ROLE_AVAILABLE_MASTERIES.get(r["id"], [])
+        result.append(rr)
+    return {"roles": result}
 
 
 @api.get("/game/data/masteries")
 async def get_masteries_route(user: dict = Depends(_get_current_user)):
-    return {"masteries": MASTERIES}
+    # Attach main_stats and available_to for each mastery
+    result = []
+    for m in MASTERIES:
+        mm = dict(m)
+        mm["main_stats"] = MASTERY_MAIN_STATS.get(m["id"], {})
+        mm["available_to"] = [r for r, masteries in ROLE_AVAILABLE_MASTERIES.items() if m["id"] in masteries]
+        result.append(mm)
+    return {"masteries": result}
+
+
+@api.get("/game/data/origins")
+async def get_origins(user: dict = Depends(_get_current_user)):
+    return {"origins": ORIGINS}
+
+
+@api.get("/game/data/origins/{mastery_id}")
+async def get_origins_by_mastery(mastery_id: str, user: dict = Depends(_get_current_user)):
+    return {"origins": origins_for_mastery(mastery_id)}
+
+
+
 
 
 @api.get("/game/data/portraits")
@@ -355,16 +414,33 @@ async def create_character(payload: CreateCharacterPayload, user: dict = Depends
     mastery = get_mastery(payload.mastery)
     if not race or not role or not mastery:
         raise HTTPException(status_code=400, detail="Invalid race/role/mastery")
+    if payload.mastery not in ROLE_AVAILABLE_MASTERIES.get(payload.role, []):
+        raise HTTPException(status_code=400, detail=f"Mastery '{payload.mastery}' not available to Role '{payload.role}'")
+    origin = get_origin(payload.origin)
+    if not origin:
+        raise HTTPException(status_code=400, detail="Invalid origin")
+    if origin["mastery"] != payload.mastery:
+        raise HTTPException(status_code=400, detail=f"Origin '{payload.origin}' does not belong to Mastery '{payload.mastery}'")
     if payload.race == "human" and not payload.oath:
         raise HTTPException(status_code=400, detail="Humans must swear a Sacred Oath")
     if payload.race == "half_elf" and not payload.heritage:
         raise HTTPException(status_code=400, detail="Half-Elves must choose a heritage")
 
-    stats = dict(race["starting_stats"])
-    stats.setdefault("resilience", 0)
-    stats.setdefault("grace", 0)
-    for k, v in role.get("bonus", {}).items():
-        stats[k] = stats.get(k, 0) + v
+    # Layered stat computation: Race + Role + Mastery + Origin
+    layered = compute_final_stats(race["starting_stats"], payload.role, payload.mastery, payload.origin)
+    stats = layered["stats"]
+
+    # Race-specific creation validation
+    beast_aspect = None
+    marine_adaptation = None
+    if payload.race == "wildblood":
+        beast_aspect = payload.beast_aspect or "predator"
+        if beast_aspect not in [b["id"] for b in BEAST_ASPECTS]:
+            raise HTTPException(status_code=400, detail="Invalid beast aspect")
+    if payload.race == "hyliondrian" and payload.marine_adaptation:
+        if payload.marine_adaptation not in [m["id"] for m in MARINE_ADAPTATIONS]:
+            raise HTTPException(status_code=400, detail="Invalid marine adaptation")
+        marine_adaptation = payload.marine_adaptation
 
     max_hp = compute_starting_hp(stats)
     starting_skills = list(mastery.get("starting_skills", []))
@@ -377,6 +453,7 @@ async def create_character(payload: CreateCharacterPayload, user: dict = Depends
         "race": payload.race,
         "role": payload.role,
         "mastery": payload.mastery,
+        "origin": payload.origin,
         "portrait_id": payload.portrait_id,
         "oath": payload.oath,
         "heritage": payload.heritage,
@@ -405,9 +482,29 @@ async def create_character(payload: CreateCharacterPayload, user: dict = Depends
         "last_daily_refresh": None,
         "daily_missions": [],
         "_biomes_today": [],
+        # racial resources
+        "exhaustion": 0,
+        "resolve": 100,
+        "heritage_rank": 1,
+        "oath_progress": 0,
+        "celestial_charge": 0,
+        "stoneguard": 0,
+        "harmony": 0,
+        "defiance": 0,
         "inner_blood": 0,
-        "exhaust": 0,
+        "tide": 0,
+        "verdant_essence": 0,
+        "beast_aspect": beast_aspect,
+        "marine_adaptation": marine_adaptation,
         "zone_active": False,
+        # towns / guild / quests
+        "home_town": default_home_town_for_race(payload.race),
+        "current_town": None,
+        "visited_towns": [default_home_town_for_race(payload.race)],
+        "guild_id": None,
+        "guild_rank": None,
+        "active_quests": [],
+        "completed_quests": [],
         "kills": 0,
         "crafts": 0,
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -508,6 +605,19 @@ async def do_action(payload: ActionPayload, user: dict = Depends(_get_current_us
             _update_daily_mission_progress(ch, {"kind": "gather", "id": iid, "count": q})
     _update_daily_mission_progress(ch, {"kind": "action", "id": payload.action_id, "count": 1})
 
+    # Update accepted quest progress
+    _update_quest_progress(ch, {"kind": "action", "id": payload.action_id, "count": 1})
+    if result.get("monster_slain"):
+        _update_quest_progress(ch, {"kind": "kill", "id": result["monster_slain"], "count": 1})
+    if payload.action_id in ("gather", "fish"):
+        for it in result["rewards"].get("items", []):
+            iid, q = it if isinstance(it, (list, tuple)) else (it, 1)
+            _update_quest_progress(ch, {"kind": "gather", "id": iid, "count": q})
+            _update_quest_progress(ch, {"kind": "gather_any", "count": q})
+
+    # Racial resource ticking
+    racial_msgs = tick_racial_resources_on_action(ch, result["outcome"], payload.action_id)
+
     if ch["hp"] <= 0:
         ch["hp"] = 1
 
@@ -517,13 +627,24 @@ async def do_action(payload: ActionPayload, user: dict = Depends(_get_current_us
         "statuses": ch["statuses"], "kills": ch["kills"],
         "daily_missions": ch.get("daily_missions", []),
         "_biomes_today": ch.get("_biomes_today", []),
+        "active_quests": ch.get("active_quests", []),
+        "exhaustion": ch.get("exhaustion", 0),
+        "resolve": ch.get("resolve", 100),
+        "oath_progress": ch.get("oath_progress", 0),
+        "celestial_charge": ch.get("celestial_charge", 0),
+        "stoneguard": ch.get("stoneguard", 0),
+        "harmony": ch.get("harmony", 0),
+        "defiance": ch.get("defiance", 0),
+        "inner_blood": ch.get("inner_blood", 0),
+        "tide": ch.get("tide", 0),
+        "verdant_essence": ch.get("verdant_essence", 0),
     }})
 
     if result["outcome"] == 6:
         target_disp = result.get("target_name") or "the unknown"
         await _push_world_event(ch["name"], f"{ch['name']} achieved a critical {payload.action_id} against {target_disp}.", "loot")
 
-    return {"result": result, "character": ch}
+    return {"result": result, "character": ch, "racial_msgs": racial_msgs}
 
 
 # ---------------- COMBAT ----------------
@@ -559,10 +680,14 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
         _apply_rewards_to_character(ch, result["rewards"])
         ch["kills"] = ch.get("kills", 0) + 1
         _update_daily_mission_progress(ch, {"kind": "kill", "id": combat["state"]["monster_id"], "count": 1})
+        _update_quest_progress(ch, {"kind": "kill", "id": combat["state"]["monster_id"], "count": 1})
         updates.update({
             "gold": ch["gold"], "xp": ch["xp"], "level": ch["level"], "stats": ch["stats"],
             "max_hp": ch["max_hp"], "kills": ch["kills"],
             "daily_missions": ch.get("daily_missions", []),
+            "active_quests": ch.get("active_quests", []),
+            "inner_blood": ch.get("inner_blood", 0),
+            "exhaustion": ch.get("exhaustion", 0),
         })
         monster = next((m for m in MONSTERS if m["id"] == combat["state"]["monster_id"]), None)
         m_name = monster["name"] if monster else "a beast"
@@ -593,6 +718,7 @@ async def craft(payload: CraftPayload, user: dict = Depends(_get_current_user)):
         _add_item_to_inventory(ch, result["output_item"], 1)
         ch["crafts"] = ch.get("crafts", 0) + 1
         _update_daily_mission_progress(ch, {"kind": "craft", "count": 1})
+        _update_quest_progress(ch, {"kind": "craft", "count": 1})
 
     _apply_rewards_to_character(ch, {"gold": 0, "xp": 10, "items": []})
 
@@ -723,6 +849,478 @@ async def world_events(user: dict = Depends(_get_current_user)):
         doc.pop("_id", None)
         rows.append(doc)
     return {"events": rows}
+
+
+# ---------------- QUEST HELPERS ----------------
+def _update_quest_progress(character: dict, event: dict) -> None:
+    """Advance progress on any active quest matching the event."""
+    for aq in character.get("active_quests", []):
+        if aq.get("complete"):
+            continue
+        q = QUESTS_BY_ID.get(aq["quest_id"]) or EVENTS_BY_ID.get(aq["quest_id"])
+        if not q:
+            continue
+        objs = q.get("objectives", [])
+        progress_list = aq.setdefault("progress", [0] * len(objs))
+        while len(progress_list) < len(objs):
+            progress_list.append(0)
+        for idx, obj in enumerate(objs):
+            match = False
+            if obj.get("kind") == event.get("kind"):
+                if "id" in obj and obj.get("id") == event.get("id"):
+                    match = True
+                elif "id" not in obj:
+                    match = True
+            if match:
+                progress_list[idx] += int(event.get("count", 1))
+        # check overall completion
+        if all(progress_list[i] >= obj.get("count", 1) for i, obj in enumerate(objs)):
+            aq["complete"] = True
+
+
+# ---------------- PHASE 2 STATIC DATA ROUTES ----------------
+@api.get("/game/data/regions")
+async def get_regions(user: dict = Depends(_get_current_user)):
+    return {"regions": REGIONS}
+
+
+@api.get("/game/data/towns")
+async def get_towns(user: dict = Depends(_get_current_user)):
+    return {"towns": TOWNS}
+
+
+@api.get("/game/data/beast_aspects")
+async def get_beast_aspects(user: dict = Depends(_get_current_user)):
+    return {"beast_aspects": BEAST_ASPECTS}
+
+
+@api.get("/game/data/marine_adaptations")
+async def get_marine_adaptations(user: dict = Depends(_get_current_user)):
+    return {"marine_adaptations": MARINE_ADAPTATIONS}
+
+
+@api.get("/game/data/heritage")
+async def get_heritage(user: dict = Depends(_get_current_user)):
+    return {"heritage_rank_1": HERITAGE_RANK_1}
+
+
+@api.get("/game/data/quests")
+async def get_all_quests(user: dict = Depends(_get_current_user)):
+    return {"quests": QUESTS}
+
+
+@api.get("/game/world/time")
+async def world_time(user: dict = Depends(_get_current_user)):
+    return {"time_of_day": current_time_of_day(),
+            "hour": datetime.now(timezone.utc).hour,
+            "weekday": datetime.now(timezone.utc).weekday()}
+
+
+# ---------------- ANNOUNCEMENTS ----------------
+@api.get("/game/announcements")
+async def announcements(user: dict = Depends(_get_current_user)):
+    cursor = db.announcements.find({}).sort("created_at", -1).limit(20)
+    dyn = []
+    async for doc in cursor:
+        doc["id"] = str(doc["_id"])
+        doc.pop("_id", None)
+        dyn.append(doc)
+    return {"announcements": STATIC_ANNOUNCEMENTS + dyn}
+
+
+# ---------------- QUESTS ----------------
+@api.get("/game/quests/available")
+async def available_quests(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    active_ids = {q["quest_id"] for q in ch.get("active_quests", [])}
+    completed = set(ch.get("completed_quests", []))
+    rows = []
+    for q in QUESTS:
+        if q["id"] in active_ids or q["id"] in completed:
+            continue
+        if ch["level"] < q.get("level_req", 1):
+            continue
+        if q.get("unlocked_by") and q["unlocked_by"] not in completed:
+            continue
+        rows.append(q)
+    return {"available": rows, "active": ch.get("active_quests", []), "completed": list(completed)}
+
+
+@api.post("/game/quests/{quest_id}/accept")
+async def accept_quest(quest_id: str, user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    q = get_quest(quest_id) or EVENTS_BY_ID.get(quest_id)
+    if not q:
+        raise HTTPException(status_code=404, detail="Unknown quest")
+    if any(a["quest_id"] == quest_id for a in ch.get("active_quests", [])):
+        raise HTTPException(status_code=409, detail="Quest already active")
+    if quest_id in ch.get("completed_quests", []) and q.get("category") != "event":
+        raise HTTPException(status_code=409, detail="Quest already completed")
+    if ch["level"] < q.get("level_req", 1):
+        raise HTTPException(status_code=403, detail=f"Requires level {q['level_req']}")
+    ch.setdefault("active_quests", []).append({
+        "quest_id": quest_id,
+        "progress": [0] * len(q.get("objectives", [])),
+        "complete": False,
+        "accepted_at": datetime.now(timezone.utc).isoformat(),
+    })
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {"active_quests": ch["active_quests"]}})
+    return {"character": ch}
+
+
+@api.post("/game/quests/{quest_id}/abandon")
+async def abandon_quest(quest_id: str, user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    before = len(ch.get("active_quests", []))
+    ch["active_quests"] = [a for a in ch.get("active_quests", []) if a["quest_id"] != quest_id]
+    if len(ch["active_quests"]) == before:
+        raise HTTPException(status_code=404, detail="Not an active quest")
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {"active_quests": ch["active_quests"]}})
+    return {"character": ch}
+
+
+@api.post("/game/quests/{quest_id}/claim")
+async def claim_quest(quest_id: str, user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    aq = next((a for a in ch.get("active_quests", []) if a["quest_id"] == quest_id), None)
+    if not aq:
+        raise HTTPException(status_code=404, detail="Not an active quest")
+    if not aq.get("complete"):
+        raise HTTPException(status_code=400, detail="Quest objectives not complete")
+    q = get_quest(quest_id) or EVENTS_BY_ID.get(quest_id)
+    if not q:
+        raise HTTPException(status_code=404, detail="Unknown quest")
+    reward = q.get("reward", {})
+    # Convert item chances to concrete drops
+    items_out = []
+    for it in reward.get("items", []) or []:
+        if isinstance(it, (list, tuple)) and len(it) == 2:
+            item_id, val = it
+            if isinstance(val, float) and val <= 1.0:
+                if random.random() <= val:
+                    items_out.append((item_id, 1))
+            else:
+                items_out.append((item_id, int(val)))
+    _apply_rewards_to_character(ch, {
+        "gold": reward.get("gold", 0),
+        "xp": reward.get("xp", 0),
+        "items": items_out,
+    })
+    ch["active_quests"] = [a for a in ch["active_quests"] if a["quest_id"] != quest_id]
+    ch.setdefault("completed_quests", []).append(quest_id)
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "active_quests": ch["active_quests"],
+        "completed_quests": ch["completed_quests"],
+        "gold": ch["gold"], "xp": ch["xp"], "level": ch["level"],
+        "stats": ch["stats"], "max_hp": ch["max_hp"], "inventory": ch["inventory"],
+    }})
+    await _push_world_event(ch["name"], f"{ch['name']} completed \"{q['title'] if 'title' in q else q['name']}\".", "quest")
+    return {"character": ch, "claimed": {"gold": reward.get("gold", 0), "xp": reward.get("xp", 0), "items": items_out}}
+
+
+# ---------------- EVENTS ----------------
+@api.get("/game/events/active")
+async def active_events(user: dict = Depends(_get_current_user)):
+    wd = datetime.now(timezone.utc).weekday()
+    return {"weekday": wd, "events": get_active_events(wd)}
+
+
+@api.post("/game/events/{event_id}/join")
+async def join_event(event_id: str, user: dict = Depends(_get_current_user)):
+    ev = EVENTS_BY_ID.get(event_id)
+    if not ev:
+        raise HTTPException(status_code=404, detail="Unknown event")
+    wd = datetime.now(timezone.utc).weekday()
+    if -1 not in ev["schedule_days"] and wd not in ev["schedule_days"]:
+        raise HTTPException(status_code=403, detail="Event not currently active")
+    ch = await _get_character_or_404(user["_id"])
+    if ch["level"] < ev.get("level_req", 1):
+        raise HTTPException(status_code=403, detail=f"Requires level {ev['level_req']}")
+    if any(a["quest_id"] == event_id for a in ch.get("active_quests", [])):
+        raise HTTPException(status_code=409, detail="Already joined")
+    ch.setdefault("active_quests", []).append({
+        "quest_id": event_id,
+        "progress": [0] * len(ev.get("objectives", [])),
+        "complete": False,
+        "accepted_at": datetime.now(timezone.utc).isoformat(),
+        "is_event": True,
+    })
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {"active_quests": ch["active_quests"]}})
+    return {"character": ch}
+
+
+# ---------------- TOWNS ----------------
+@api.post("/game/town/visit")
+async def visit_town(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    town_id = body.get("town_id")
+    town = get_town(town_id)
+    if not town:
+        raise HTTPException(status_code=404, detail="Unknown town")
+    ch = await _get_character_or_404(user["_id"])
+    ch["current_town"] = town_id
+    if town_id not in ch.get("visited_towns", []):
+        ch.setdefault("visited_towns", []).append(town_id)
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "current_town": ch["current_town"],
+        "visited_towns": ch["visited_towns"],
+    }})
+    return {"character": ch, "town": town}
+
+
+@api.post("/game/town/leave")
+async def leave_town(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    ch["current_town"] = None
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {"current_town": None}})
+    return {"character": ch}
+
+
+@api.post("/game/town/inn")
+async def rest_at_inn(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    town = get_town(ch.get("current_town"))
+    if not town:
+        raise HTTPException(status_code=400, detail="You must be in a town to rest")
+    cost = town.get("inn_cost", 10)
+    if ch["gold"] < cost:
+        raise HTTPException(status_code=400, detail="Not enough gold")
+    ch["gold"] -= cost
+    ch["hp"] = ch["max_hp"]
+    # clear all debuff statuses
+    ch["statuses"] = [s for s in ch.get("statuses", []) if s.get("kind") != "debuff"]
+    ch["exhaustion"] = max(0, ch.get("exhaustion", 0) - 20)
+    ch["resolve"] = min(100, ch.get("resolve", 100) + 10)
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "gold": ch["gold"], "hp": ch["hp"], "statuses": ch["statuses"],
+        "exhaustion": ch["exhaustion"], "resolve": ch["resolve"],
+    }})
+    return {"character": ch, "cost": cost}
+
+
+@api.post("/game/town/fast_travel")
+async def fast_travel(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    dest_id = body.get("town_id")
+    dest = get_town(dest_id)
+    if not dest:
+        raise HTTPException(status_code=404, detail="Unknown town")
+    ch = await _get_character_or_404(user["_id"])
+    if dest_id not in ch.get("visited_towns", []):
+        raise HTTPException(status_code=403, detail="You have not yet visited this town")
+    cost = dest.get("fast_travel_cost", 25)
+    if ch["gold"] < cost:
+        raise HTTPException(status_code=400, detail="Not enough gold")
+    ch["gold"] -= cost
+    ch["current_town"] = dest_id
+    ch["current_continent"] = dest["continent"]
+    # place them at a biome in the region if possible
+    region = next((r for r in REGIONS if r["id"] == dest["region"]), None)
+    if region and region.get("biomes"):
+        ch["current_biome"] = region["biomes"][0]
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "gold": ch["gold"], "current_town": ch["current_town"],
+        "current_continent": ch["current_continent"],
+        "current_biome": ch["current_biome"],
+    }})
+    return {"character": ch, "cost": cost}
+
+
+@api.post("/game/town/market/buy")
+async def market_buy(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    item_id = body.get("item_id")
+    qty = int(body.get("quantity", 1))
+    ch = await _get_character_or_404(user["_id"])
+    town = get_town(ch.get("current_town"))
+    if not town or item_id not in town.get("market_items", []):
+        raise HTTPException(status_code=404, detail="Item not sold here")
+    item = ITEMS_BY_ID.get(item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Unknown item")
+    price = _price_of(item) * qty
+    if ch["gold"] < price:
+        raise HTTPException(status_code=400, detail="Not enough gold")
+    ch["gold"] -= price
+    _add_item_to_inventory(ch, item_id, qty)
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "gold": ch["gold"], "inventory": ch["inventory"],
+    }})
+    return {"character": ch, "paid": price}
+
+
+@api.post("/game/town/market/sell")
+async def market_sell(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    item_id = body.get("item_id")
+    qty = int(body.get("quantity", 1))
+    ch = await _get_character_or_404(user["_id"])
+    town = get_town(ch.get("current_town"))
+    if not town:
+        raise HTTPException(status_code=400, detail="Must be in a town")
+    item = ITEMS_BY_ID.get(item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Unknown item")
+    if not _remove_item_from_inventory(ch, item_id, qty):
+        raise HTTPException(status_code=400, detail="Not enough in inventory")
+    payout = int(_price_of(item) * 0.5) * qty
+    ch["gold"] += payout
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "gold": ch["gold"], "inventory": ch["inventory"],
+    }})
+    return {"character": ch, "received": payout}
+
+
+def _price_of(item: dict) -> int:
+    rarity_price = {
+        "common": 10, "uncommon": 40, "rare": 120,
+        "epic": 350, "legendary": 900, "mythic": 2500,
+    }
+    return rarity_price.get(item.get("rarity", "common"), 10)
+
+
+# ---------------- GUILDS ----------------
+@api.get("/game/guilds")
+async def list_guilds(user: dict = Depends(_get_current_user)):
+    cursor = db.guilds.find({}).sort("member_count", -1).limit(50)
+    rows = []
+    async for doc in cursor:
+        doc["id"] = str(doc["_id"])
+        doc.pop("_id", None)
+        rows.append(doc)
+    return {"guilds": rows}
+
+
+@api.get("/game/guilds/{guild_id}")
+async def get_guild(guild_id: str, user: dict = Depends(_get_current_user)):
+    doc = await db.guilds.find_one({"_id": ObjectId(guild_id)})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Guild not found")
+    doc["id"] = str(doc["_id"])
+    doc.pop("_id", None)
+    # populate members' basic info
+    members = []
+    for m in doc.get("members", []):
+        mch = await db.characters.find_one({"_id": ObjectId(m["character_id"])}, {"name": 1, "race": 1, "mastery": 1, "level": 1})
+        if mch:
+            members.append({
+                "id": str(mch["_id"]),
+                "name": mch.get("name"),
+                "race": mch.get("race"),
+                "mastery": mch.get("mastery"),
+                "level": mch.get("level"),
+                "rank": m.get("rank"),
+                "joined_at": m.get("joined_at"),
+            })
+    doc["members_populated"] = members
+    return {"guild": doc}
+
+
+@api.post("/game/guilds")
+async def create_guild(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    name = (body.get("name") or "").strip()
+    emblem = body.get("emblem") or "⚜"
+    tagline = (body.get("tagline") or "").strip()
+    if not name or len(name) < 3 or len(name) > 30:
+        raise HTTPException(status_code=400, detail="Name must be 3-30 characters")
+    ch = await _get_character_or_404(user["_id"])
+    if ch.get("guild_id"):
+        raise HTTPException(status_code=409, detail="Already in a guild")
+    if ch["gold"] < 5000:
+        raise HTTPException(status_code=400, detail="Guild creation costs 5,000 gold")
+    existing = await db.guilds.find_one({"name": name})
+    if existing:
+        raise HTTPException(status_code=409, detail="Guild name taken")
+    now = datetime.now(timezone.utc).isoformat()
+    guild_doc = {
+        "name": name,
+        "emblem": emblem,
+        "tagline": tagline,
+        "leader_id": ch["id"],
+        "treasury": 0,
+        "member_count": 1,
+        "members": [{"character_id": ch["id"], "rank": "grandmaster", "joined_at": now}],
+        "created_at": now,
+        "hall_unlocked": False,  # unlocks at 3+ members
+    }
+    r = await db.guilds.insert_one(guild_doc)
+    guild_id = str(r.inserted_id)
+    ch["gold"] -= 5000
+    ch["guild_id"] = guild_id
+    ch["guild_rank"] = "grandmaster"
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "gold": ch["gold"], "guild_id": ch["guild_id"], "guild_rank": ch["guild_rank"],
+    }})
+    await _push_world_event(ch["name"], f"{ch['name']} founded the guild \"{name}\".", "guild")
+    return {"character": ch, "guild_id": guild_id}
+
+
+@api.post("/game/guilds/{guild_id}/join")
+async def join_guild(guild_id: str, user: dict = Depends(_get_current_user)):
+    doc = await db.guilds.find_one({"_id": ObjectId(guild_id)})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Guild not found")
+    ch = await _get_character_or_404(user["_id"])
+    if ch.get("guild_id"):
+        raise HTTPException(status_code=409, detail="Already in a guild")
+    if doc.get("member_count", 0) >= 30:
+        raise HTTPException(status_code=403, detail="Guild is full")
+    now = datetime.now(timezone.utc).isoformat()
+    doc["members"].append({"character_id": ch["id"], "rank": "member", "joined_at": now})
+    doc["member_count"] = len(doc["members"])
+    doc["hall_unlocked"] = doc["member_count"] >= 3
+    await db.guilds.update_one({"_id": ObjectId(guild_id)}, {"$set": {
+        "members": doc["members"], "member_count": doc["member_count"], "hall_unlocked": doc["hall_unlocked"],
+    }})
+    ch["guild_id"] = guild_id
+    ch["guild_rank"] = "member"
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "guild_id": ch["guild_id"], "guild_rank": ch["guild_rank"],
+    }})
+    return {"character": ch, "guild_id": guild_id}
+
+
+@api.post("/game/guilds/leave")
+async def leave_guild(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    if not ch.get("guild_id"):
+        raise HTTPException(status_code=400, detail="Not in a guild")
+    doc = await db.guilds.find_one({"_id": ObjectId(ch["guild_id"])})
+    if doc:
+        doc["members"] = [m for m in doc.get("members", []) if m.get("character_id") != ch["id"]]
+        doc["member_count"] = len(doc["members"])
+        doc["hall_unlocked"] = doc["member_count"] >= 3
+        if doc["member_count"] == 0:
+            await db.guilds.delete_one({"_id": ObjectId(ch["guild_id"])})
+        else:
+            # promote first remaining to grandmaster if leader left
+            if doc.get("leader_id") == ch["id"]:
+                if doc["members"]:
+                    doc["leader_id"] = doc["members"][0]["character_id"]
+                    doc["members"][0]["rank"] = "grandmaster"
+            await db.guilds.update_one({"_id": ObjectId(ch["guild_id"])}, {"$set": doc})
+    ch["guild_id"] = None
+    ch["guild_rank"] = None
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {"guild_id": None, "guild_rank": None}})
+    return {"character": ch}
+
+
+@api.post("/game/guilds/{guild_id}/donate")
+async def donate_guild(guild_id: str, request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    amt = int(body.get("amount", 0))
+    if amt <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be positive")
+    ch = await _get_character_or_404(user["_id"])
+    if ch.get("guild_id") != guild_id:
+        raise HTTPException(status_code=403, detail="You are not in this guild")
+    if ch["gold"] < amt:
+        raise HTTPException(status_code=400, detail="Not enough gold")
+    ch["gold"] -= amt
+    await db.guilds.update_one({"_id": ObjectId(guild_id)}, {"$inc": {"treasury": amt}})
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {"gold": ch["gold"]}})
+    return {"character": ch, "donated": amt}
 
 
 # ---------------- ROOT ----------------

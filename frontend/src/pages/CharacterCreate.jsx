@@ -4,15 +4,16 @@ import { api, extractError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Check, ChevronRight, ChevronLeft } from "lucide-react";
+import { Check, ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
 
-const STEPS = ["Race", "Role", "Mastery", "Portrait", "Name & Oath"];
+const STEPS = ["Race", "Role", "Mastery", "Origin", "Portrait", "Name", "Summary"];
 
 export default function CharacterCreate() {
     const [step, setStep] = useState(0);
     const [races, setRaces] = useState([]);
     const [roles, setRoles] = useState([]);
     const [masteries, setMasteries] = useState([]);
+    const [origins, setOrigins] = useState([]);
     const [portraits, setPortraits] = useState([]);
     const [busy, setBusy] = useState(false);
     const navigate = useNavigate();
@@ -22,6 +23,7 @@ export default function CharacterCreate() {
     const [race, setRace] = useState(null);
     const [role, setRole] = useState(null);
     const [mastery, setMastery] = useState(null);
+    const [origin, setOrigin] = useState(null);
     const [portraitId, setPortraitId] = useState(null);
     const [name, setName] = useState("");
     const [oath, setOath] = useState("");
@@ -30,16 +32,18 @@ export default function CharacterCreate() {
     useEffect(() => {
         (async () => {
             try {
-                const [r, ro, m, p] = await Promise.all([
+                const [r, ro, m, p, o] = await Promise.all([
                     api.get("/game/data/races"),
                     api.get("/game/data/roles"),
                     api.get("/game/data/masteries"),
                     api.get("/game/data/portraits"),
+                    api.get("/game/data/origins"),
                 ]);
                 setRaces(r.data.races);
                 setRoles(ro.data.roles);
                 setMasteries(m.data.masteries);
                 setPortraits(p.data.portraits);
+                setOrigins(o.data.origins);
             } catch (e) {
                 toast.error(extractError(e));
             }
@@ -50,26 +54,63 @@ export default function CharacterCreate() {
         () => (race ? roles.filter((r) => race.roles.includes(r.id)) : roles),
         [race, roles],
     );
-    const filteredMasteries = useMemo(
-        () => (race ? masteries.filter((m) => race.masteries.includes(m.id)) : masteries),
-        [race, masteries],
+    const filteredMasteries = useMemo(() => {
+        if (!role) return [];
+        return masteries.filter((m) => role.available_masteries?.includes(m.id));
+    }, [role, masteries]);
+    const filteredOrigins = useMemo(
+        () => (mastery ? origins.filter((o) => o.mastery === mastery.id) : []),
+        [mastery, origins],
     );
     const filteredPortraits = useMemo(
         () => (race ? portraits.filter((p) => p.race === race.id) : portraits),
         [race, portraits],
     );
 
+    // Live stat computation
+    const finalStats = useMemo(() => {
+        if (!race) return null;
+        const base = {
+            vitality: race.starting_stats.vitality,
+            cognition: race.starting_stats.cognition,
+            essence: race.starting_stats.essence,
+            drive: race.starting_stats.drive,
+            might: 0, grace: 0, insight: 0,
+            armor_bonus: 0, evasion_mod: 0, attack_success_mod: 0,
+        };
+        if (role?.main_stats) {
+            base.might += role.main_stats.might || 0;
+            base.grace += role.main_stats.grace || 0;
+            base.insight += role.main_stats.insight || 0;
+        }
+        if (mastery?.main_stats) {
+            base.might += mastery.main_stats.might || 0;
+            base.grace += mastery.main_stats.grace || 0;
+            base.insight += mastery.main_stats.insight || 0;
+        }
+        if (origin) {
+            for (const [k, v] of Object.entries(origin.bonus || {})) base[k] = (base[k] || 0) + v;
+            for (const [k, v] of Object.entries(origin.drawback || {})) base[k] = (base[k] || 0) + v;
+        }
+        for (const k of ["vitality","cognition","essence","drive","might","grace","insight"]) {
+            if (base[k] < 1) base[k] = 1;
+        }
+        return base;
+    }, [race, role, mastery, origin]);
+
     const canNext = () => {
         if (step === 0) return !!race;
         if (step === 1) return !!role;
         if (step === 2) return !!mastery;
-        if (step === 3) return !!portraitId;
-        if (step === 4) {
+        if (step === 3) return !!origin;
+        if (step === 4) return !!portraitId;
+        if (step === 5) {
             if (!name.trim()) return false;
             if (race?.id === "human" && !oath.trim()) return false;
             if (race?.id === "half_elf" && !heritage) return false;
             return true;
         }
+        if (step === 6) return true;
         return false;
     };
 
@@ -81,6 +122,7 @@ export default function CharacterCreate() {
                 race: race.id,
                 role: role.id,
                 mastery: mastery.id,
+                origin: origin.id,
                 portrait_id: portraitId,
                 oath: race.id === "human" ? oath.trim() : null,
                 heritage: race.id === "half_elf" ? heritage : null,
@@ -95,17 +137,21 @@ export default function CharacterCreate() {
         }
     };
 
+    // Reset dependent selections when parents change
+    useEffect(() => { setRole(null); setMastery(null); setOrigin(null); setPortraitId(null); }, [race]);
+    useEffect(() => { setMastery(null); setOrigin(null); }, [role]);
+    useEffect(() => { setOrigin(null); }, [mastery]);
+
     return (
         <div className="min-h-screen p-4 md:p-8" data-testid="character-create-root">
-            {/* stepper */}
-            <div className="max-w-6xl mx-auto mb-8">
+            <div className="max-w-6xl mx-auto mb-6">
                 <div className="stat-label text-primary/70 mb-3">CHARACTER FORGE · STEP {step + 1} OF {STEPS.length}</div>
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1 flex-wrap">
                     {STEPS.map((s, i) => (
-                        <div key={s} className="flex items-center gap-2">
+                        <div key={s} className="flex items-center gap-1">
                             <div
                                 data-testid={`step-indicator-${i}`}
-                                className={`font-pixel text-lg uppercase px-3 py-1 border-2 ${
+                                className={`font-pixel text-sm uppercase px-2 py-1 border-2 ${
                                     i === step
                                         ? "bg-primary text-primary-foreground border-primary"
                                         : i < step
@@ -113,36 +159,31 @@ export default function CharacterCreate() {
                                           : "border-border text-muted-foreground"
                                 }`}
                             >
-                                {i < step ? <Check size={16} /> : i + 1}. {s}
+                                {i < step ? <Check size={12} /> : i + 1}. {s}
                             </div>
-                            {i < STEPS.length - 1 && (
-                                <ChevronRight className="text-border" size={16} />
-                            )}
+                            {i < STEPS.length - 1 && <ChevronRight className="text-border" size={12} />}
                         </div>
                     ))}
                 </div>
             </div>
 
             <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-6">
-                {/* LEFT: Selection lore preview */}
-                <div className="lg:col-span-2 panel p-6 min-h-[420px]">
-                    {step === 0 && race ? (
-                        <RaceDetail race={race} />
-                    ) : step === 1 && role ? (
-                        <SimpleDetail title={role.name} tag="ROLE" desc={role.desc} />
-                    ) : step === 2 && mastery ? (
-                        <SimpleDetail title={mastery.name} tag="MASTERY" desc={mastery.desc} />
-                    ) : step === 3 && portraitId ? (
-                        <PortraitPreview portrait={filteredPortraits.find(p => p.id === portraitId)} race={race} />
-                    ) : step === 4 ? (
-                        <IdentityPreview race={race} role={role} mastery={mastery} name={name} portraits={portraits} portraitId={portraitId} />
-                    ) : (
-                        <div className="stat-label text-muted-foreground">Make a selection to see details…</div>
-                    )}
+                {/* LEFT preview / detail */}
+                <div className="lg:col-span-2 panel p-6 min-h-[520px]">
+                    {step === 0 && race ? <RaceDetail race={race} /> :
+                     step === 1 && role ? <RoleDetail role={role} /> :
+                     step === 2 && mastery ? <MasteryDetail mastery={mastery} /> :
+                     step === 3 && origin ? <OriginDetail origin={origin} /> :
+                     step === 4 && portraitId ? <PortraitPreview portrait={filteredPortraits.find(p => p.id === portraitId)} race={race} /> :
+                     step === 5 ? <IdentityPreview race={race} role={role} mastery={mastery} origin={origin} name={name} portraits={portraits} portraitId={portraitId} /> :
+                     step === 6 ? <StatBreakdown race={race} role={role} mastery={mastery} origin={origin} stats={finalStats} /> :
+                     <div className="stat-label text-muted-foreground">Make a selection to see details…</div>
+                    }
                 </div>
 
-                {/* RIGHT: Selection grid */}
+                {/* RIGHT selection */}
                 <div className="lg:col-span-3 panel p-6">
+                    {/* STEP 0 — RACE */}
                     {step === 0 && (
                         <div>
                             <h2 className="font-pixel text-3xl uppercase text-primary mb-4">Choose your Race</h2>
@@ -166,10 +207,11 @@ export default function CharacterCreate() {
                         </div>
                     )}
 
+                    {/* STEP 1 — ROLE */}
                     {step === 1 && (
                         <div>
                             <h2 className="font-pixel text-3xl uppercase text-primary mb-2">Choose your Role</h2>
-                            <div className="stat-label mb-4 text-muted-foreground">Only roles suited to {race?.name}s.</div>
+                            <div className="stat-label mb-4 text-muted-foreground">Roles recommended for {race?.name}s. Sets Main Stats.</div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {filteredRoles.map((r) => (
                                     <button
@@ -182,16 +224,23 @@ export default function CharacterCreate() {
                                     >
                                         <div className="font-pixel text-xl uppercase text-primary">{r.name}</div>
                                         <div className="text-xs text-muted-foreground mt-1">{r.desc}</div>
+                                        <div className="stat-label mt-2 text-primary/80">
+                                            MGT {r.main_stats?.might} · GRC {r.main_stats?.grace} · INS {r.main_stats?.insight}
+                                        </div>
                                     </button>
                                 ))}
                             </div>
                         </div>
                     )}
 
+                    {/* STEP 2 — MASTERY */}
                     {step === 2 && (
                         <div>
                             <h2 className="font-pixel text-3xl uppercase text-primary mb-2">Choose your Mastery</h2>
-                            <div className="stat-label mb-4 text-muted-foreground">Only masteries recommended for {race?.name}s.</div>
+                            <div className="stat-label mb-4 text-muted-foreground">Masteries available to {role?.name}s.</div>
+                            {filteredMasteries.length === 0 && (
+                                <div className="stat-label text-muted-foreground">No masteries. Try a different Role.</div>
+                            )}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {filteredMasteries.map((m) => (
                                     <button
@@ -204,8 +253,8 @@ export default function CharacterCreate() {
                                     >
                                         <div className="font-pixel text-xl uppercase text-primary">{m.name}</div>
                                         <div className="text-xs text-muted-foreground mt-1">{m.desc}</div>
-                                        <div className="stat-label mt-2">
-                                            Skills: {m.starting_skills.map(s => s.replace(/_/g, ' ')).join(", ")}
+                                        <div className="stat-label mt-2 text-primary/80">
+                                            +{m.main_stats?.might || 0} MGT · +{m.main_stats?.grace || 0} GRC · +{m.main_stats?.insight || 0} INS
                                         </div>
                                     </button>
                                 ))}
@@ -213,7 +262,52 @@ export default function CharacterCreate() {
                         </div>
                     )}
 
+                    {/* STEP 3 — ORIGIN */}
                     {step === 3 && (
+                        <div>
+                            <h2 className="font-pixel text-3xl uppercase text-primary mb-2">Choose your Origin</h2>
+                            <div className="stat-label mb-4 text-muted-foreground">The constellation under which you were born. Bonus + Drawback.</div>
+                            <div className="grid grid-cols-1 gap-3">
+                                {filteredOrigins.map((o) => (
+                                    <button
+                                        key={o.id}
+                                        data-testid={`origin-select-${o.id}`}
+                                        onClick={() => setOrigin(o)}
+                                        className={`press-btn p-4 text-left border-2 transition-colors ${
+                                            origin?.id === o.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/60"
+                                        }`}
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <div className="font-pixel text-xl uppercase text-primary">{o.name}</div>
+                                            <Sparkles size={16} className="text-primary" />
+                                        </div>
+                                        <div className="narr text-xs text-muted-foreground mt-1">{o.story}</div>
+                                        <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
+                                            <div>
+                                                <div className="stat-label text-primary/70">BONUS</div>
+                                                {Object.entries(o.bonus || {}).map(([k, v]) => (
+                                                    <div key={k} className="font-mono text-primary">
+                                                        +{v} {k.replace(/_/g, " ")}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div>
+                                                <div className="stat-label text-destructive/70">DRAWBACK</div>
+                                                {Object.entries(o.drawback || {}).map(([k, v]) => (
+                                                    <div key={k} className="font-mono text-destructive">
+                                                        {v} {k.replace(/_/g, " ")}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* STEP 4 — PORTRAIT */}
+                    {step === 4 && (
                         <div>
                             <h2 className="font-pixel text-3xl uppercase text-primary mb-4">Choose your Portrait</h2>
                             <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
@@ -234,7 +328,8 @@ export default function CharacterCreate() {
                         </div>
                     )}
 
-                    {step === 4 && (
+                    {/* STEP 5 — NAME / OATH / HERITAGE */}
+                    {step === 5 && (
                         <div className="space-y-6">
                             <h2 className="font-pixel text-3xl uppercase text-primary">Your Name in Erchis</h2>
                             <div>
@@ -252,7 +347,7 @@ export default function CharacterCreate() {
                                 <div>
                                     <label className="stat-label block mb-1">Sacred Oath</label>
                                     <div className="narr text-sm text-muted-foreground mb-2">
-                                        A promise you carry through the world. Fulfilling it restores Drive.
+                                        A promise you carry through the world. Fulfilling it grants Oath Progress.
                                     </div>
                                     <Input
                                         data-testid="char-oath-input"
@@ -289,6 +384,25 @@ export default function CharacterCreate() {
                         </div>
                     )}
 
+                    {/* STEP 6 — SUMMARY */}
+                    {step === 6 && (
+                        <div>
+                            <h2 className="font-pixel text-3xl uppercase text-primary mb-4">Final Summary</h2>
+                            <div className="space-y-4">
+                                <SummaryRow label="RACE"     value={race?.name} />
+                                <SummaryRow label="ROLE"     value={role?.name} />
+                                <SummaryRow label="MASTERY"  value={mastery?.name} />
+                                <SummaryRow label="ORIGIN"   value={origin?.name} />
+                                <SummaryRow label="NAME"     value={name} />
+                                {race?.id === "human" && oath && <SummaryRow label="OATH" value={`"${oath}"`} />}
+                                {race?.id === "half_elf" && heritage && <SummaryRow label="HERITAGE" value={heritage} />}
+                            </div>
+                            <div className="border-t border-border mt-6 pt-4 stat-label text-muted-foreground">
+                                Review the stat breakdown to the left. Confirm to enter Erchis.
+                            </div>
+                        </div>
+                    )}
+
                     {/* nav */}
                     <div className="flex justify-between mt-8 pt-4 border-t border-border">
                         <button
@@ -316,12 +430,21 @@ export default function CharacterCreate() {
                                 className="press-btn font-pixel text-lg uppercase px-6 py-2 bg-primary text-primary-foreground border-2 border-primary hover:bg-transparent hover:text-primary transition-colors disabled:opacity-40"
                                 style={{ boxShadow: "3px 3px 0 0 hsl(var(--destructive))" }}
                             >
-                                {busy ? "…" : "Enter Erchis"}
+                                {busy ? "…" : "Confirm Character"}
                             </button>
                         )}
                     </div>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function SummaryRow({ label, value }) {
+    return (
+        <div className="flex justify-between border-b border-border/40 pb-2">
+            <span className="stat-label">{label}</span>
+            <span className="font-pixel text-lg uppercase text-primary">{value || "—"}</span>
         </div>
     );
 }
@@ -338,7 +461,7 @@ function RaceDetail({ race }) {
                 <div className="text-sm text-foreground/80">{race.perk.desc}</div>
             </div>
             <div className="border-t border-border pt-3 mt-4">
-                <div className="stat-label mb-2">STARTING STATS</div>
+                <div className="stat-label mb-2">LIFE STATS</div>
                 <div className="grid grid-cols-2 gap-2 font-mono text-sm">
                     {Object.entries(race.starting_stats).map(([k, v]) => (
                         <div key={k} className="flex justify-between border-b border-border/50 pb-1">
@@ -352,12 +475,70 @@ function RaceDetail({ race }) {
     );
 }
 
-function SimpleDetail({ title, tag, desc }) {
+function RoleDetail({ role }) {
     return (
         <div>
-            <div className="stat-label text-primary/70 mb-2">{tag}</div>
-            <h3 className="font-pixel text-3xl uppercase text-primary mb-2">{title}</h3>
-            <div className="narr text-sm text-foreground/85">{desc}</div>
+            <div className="stat-label text-primary/70 mb-2">ROLE</div>
+            <h3 className="font-pixel text-3xl uppercase text-primary mb-2">{role.name}</h3>
+            <div className="narr text-sm text-foreground/85 mb-4">{role.desc}</div>
+            <div className="border-t border-border pt-3">
+                <div className="stat-label mb-2">MAIN STATS (starting)</div>
+                <div className="grid grid-cols-3 gap-2 font-mono text-sm">
+                    <div className="text-center"><div className="stat-label">MIGHT</div><div className="text-primary text-xl">{role.main_stats?.might}</div></div>
+                    <div className="text-center"><div className="stat-label">GRACE</div><div className="text-primary text-xl">{role.main_stats?.grace}</div></div>
+                    <div className="text-center"><div className="stat-label">INSIGHT</div><div className="text-primary text-xl">{role.main_stats?.insight}</div></div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function MasteryDetail({ mastery }) {
+    return (
+        <div>
+            <div className="stat-label text-primary/70 mb-2">MASTERY</div>
+            <h3 className="font-pixel text-3xl uppercase text-primary mb-2">{mastery.name}</h3>
+            <div className="narr text-sm text-foreground/85 mb-4">{mastery.desc}</div>
+            <div className="border-t border-border pt-3">
+                <div className="stat-label mb-2">MAIN STATS BONUS</div>
+                <div className="grid grid-cols-3 gap-2 font-mono text-sm">
+                    <div className="text-center"><div className="stat-label">MIGHT</div><div className="text-primary text-xl">+{mastery.main_stats?.might || 0}</div></div>
+                    <div className="text-center"><div className="stat-label">GRACE</div><div className="text-primary text-xl">+{mastery.main_stats?.grace || 0}</div></div>
+                    <div className="text-center"><div className="stat-label">INSIGHT</div><div className="text-primary text-xl">+{mastery.main_stats?.insight || 0}</div></div>
+                </div>
+            </div>
+            <div className="stat-label mt-3">
+                Starting skills: {mastery.starting_skills?.map(s => s.replace(/_/g, ' ')).join(", ")}
+            </div>
+        </div>
+    );
+}
+
+function OriginDetail({ origin }) {
+    return (
+        <div>
+            <div className="stat-label text-primary/70 mb-2">ORIGIN · {origin.mythicode}</div>
+            <h3 className="font-pixel text-3xl uppercase text-primary mb-2">{origin.name}</h3>
+            <div className="narr text-sm text-foreground/85 mb-4">{origin.story}</div>
+            <div className="stat-label text-primary/80 mb-3">BEST FOR: {origin.best_for}</div>
+            <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
+                <div>
+                    <div className="stat-label text-primary/70 mb-2">BONUS</div>
+                    {Object.entries(origin.bonus || {}).map(([k, v]) => (
+                        <div key={k} className="font-mono text-primary text-sm">
+                            +{v} {k.replace(/_/g, " ")}
+                        </div>
+                    ))}
+                </div>
+                <div>
+                    <div className="stat-label text-destructive/70 mb-2">DRAWBACK</div>
+                    {Object.entries(origin.drawback || {}).map(([k, v]) => (
+                        <div key={k} className="font-mono text-destructive text-sm">
+                            {v} {k.replace(/_/g, " ")}
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 }
@@ -374,7 +555,7 @@ function PortraitPreview({ portrait, race }) {
     );
 }
 
-function IdentityPreview({ race, role, mastery, name, portraits, portraitId }) {
+function IdentityPreview({ race, role, mastery, origin, name, portraits, portraitId }) {
     const p = portraits.find(x => x.id === portraitId);
     return (
         <div>
@@ -385,6 +566,58 @@ function IdentityPreview({ race, role, mastery, name, portraits, portraitId }) {
             </h3>
             <div className="text-center stat-label mt-2">
                 {race?.name} · {role?.name} · {mastery?.name}
+            </div>
+            <div className="text-center stat-label text-primary/70 mt-1">{origin?.name}</div>
+        </div>
+    );
+}
+
+function StatBreakdown({ race, role, mastery, origin, stats }) {
+    if (!stats) return null;
+    const R = race?.starting_stats || {};
+    const RO = role?.main_stats || {};
+    const MA = mastery?.main_stats || {};
+    const OB = origin?.bonus || {};
+    const OD = origin?.drawback || {};
+
+    const line = (key) => {
+        const parts = [];
+        if (R[key]) parts.push(`Race ${R[key]}`);
+        if (RO[key]) parts.push(`Role ${RO[key]}`);
+        if (MA[key]) parts.push(`Mastery +${MA[key]}`);
+        if (OB[key]) parts.push(`Origin +${OB[key]}`);
+        if (OD[key]) parts.push(`Origin ${OD[key]}`);
+        return parts.join(" · ");
+    };
+
+    return (
+        <div>
+            <div className="stat-label text-primary/70 mb-2">FINAL STATS</div>
+            <h3 className="font-pixel text-2xl uppercase text-primary mb-4">Stat Breakdown</h3>
+            <div className="space-y-2 text-xs">
+                {["vitality","cognition","essence","drive","might","grace","insight"].map((k) => (
+                    <div key={k} className="border-b border-border/40 pb-1.5">
+                        <div className="flex justify-between font-mono">
+                            <span className="uppercase text-muted-foreground">{k}</span>
+                            <span className="text-primary font-pixel text-lg" data-testid={`final-stat-${k}`}>{stats[k]}</span>
+                        </div>
+                        <div className="stat-label text-muted-foreground/80">{line(k) || "—"}</div>
+                    </div>
+                ))}
+                <div className="border-b border-border/40 pb-1.5 pt-2">
+                    <div className="flex justify-between font-mono">
+                        <span className="uppercase text-muted-foreground">Armor bonus</span>
+                        <span className="text-primary font-pixel" data-testid="final-armor">+{stats.armor_bonus}</span>
+                    </div>
+                </div>
+                <div className="border-b border-border/40 pb-1.5">
+                    <div className="flex justify-between font-mono">
+                        <span className="uppercase text-muted-foreground">Evasion mod</span>
+                        <span className={`font-pixel ${stats.evasion_mod < 0 ? "text-destructive" : "text-primary"}`} data-testid="final-evasion">
+                            {stats.evasion_mod >= 0 ? "+" : ""}{stats.evasion_mod}
+                        </span>
+                    </div>
+                </div>
             </div>
         </div>
     );

@@ -15,6 +15,7 @@ from game_data import (
     get_race,
 )
 from narratives import pick_narrative
+from racial import racial_combat_mods, tick_racial_on_combat_win
 
 
 # ============================================================
@@ -331,6 +332,11 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
 
     log: list[dict] = []
 
+    # racial combat mods for this turn
+    r_mods = racial_combat_mods(character)
+    for m in r_mods.get("log_msgs", []):
+        log.append({"kind": "racial", "text": m})
+
     # -------- player turn --------
     skill_id = manual_skill_id or _pick_best_skill(character, state, hp_ratio, enemy_hp_ratio, turn)
     item_id = manual_item_id or _pick_best_item(character, state, hp_ratio)
@@ -341,7 +347,7 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
         eff = item.get("effect", {})
         used_msg = ""
         if "heal" in eff:
-            heal = int(eff["heal"])
+            heal = int(int(eff["heal"]) * r_mods["heal_mult"])
             character["hp"] = min(character["max_hp"], character["hp"] + heal)
             used_msg = f"{character['name']} uses {item['name']} and heals {heal} HP."
         elif "damage" in eff:
@@ -361,7 +367,7 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
         state["item_cooldowns"][item_id] = 1
 
     # Skill / basic strike
-    player_pow = compute_player_power(character)
+    player_pow = compute_player_power(character) + r_mods["strike_bonus"]
     dice = roll_dice(player_pow, state["monster_power"],
                      luck=character.get("stats", {}).get("cognition", 0))
     outcome = dice["outcome"]
@@ -379,7 +385,7 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
             skill_dmg = sk.get("power", 0)
             skill_used_msg = f"{character['name']} unleashes {sk['name']}!"
         elif sk.get("power_type") == "heal":
-            heal = sk.get("power", 0)
+            heal = int(sk.get("power", 0) * r_mods["heal_mult"])
             character["hp"] = min(character["max_hp"], character["hp"] + heal)
             skill_used_msg = f"{character['name']} casts {sk['name']} — restores {heal} HP."
         elif sk.get("power_type") == "defend":
@@ -404,6 +410,10 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
     if skill_status and outcome >= 4:
         _append_status_dedup(state, make_status(skill_status), key="monster_statuses")
 
+    # Wildblood venomous aspect passive
+    if "apply_poison" in r_mods.get("extra_effects", []) and outcome >= 3:
+        _append_status_dedup(state, make_status("poisoned"), key="monster_statuses")
+
     log.append({
         "kind": "player_strike",
         "text": strike_narrative,
@@ -422,6 +432,10 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
                 drops.append((drop_id, 1))
         xp = 20 + monster["power"] * 4
         gold = 8 + monster["power"] * 2
+        # racial post-victory
+        victory_msgs = tick_racial_on_combat_win(character)
+        for msg in victory_msgs:
+            log.append({"kind": "racial", "text": msg})
         log.append({"kind": "victory",
                     "text": f"The {monster['name']} falls at {character['name']}'s hand.",
                     "drops": drops, "xp": xp, "gold": gold})
@@ -439,7 +453,7 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
     warded = any(s.get("id") == "warded" for s in character.get("statuses", []))
     if warded:
         c_mult *= 0.5
-    c_dmg = int(c_base * c_mult)
+    c_dmg = int(c_base * c_mult * r_mods["damage_taken_mult"])
     character["hp"] = max(0, character["hp"] - c_dmg)
     log.append({
         "kind": "enemy_strike",

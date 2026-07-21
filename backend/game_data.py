@@ -460,7 +460,8 @@ def compute_starting_hp(stats: dict) -> int:
 
 
 def compute_player_power(character: dict) -> int:
-    """Rough combat power score used for dice-delta weighting."""
+    """Rough combat power score used for dice-delta weighting.
+    New system: Might drives physical, Insight drives magical, Grace tips accuracy."""
     stats = character.get("stats", {})
     level = character.get("level", 1)
     weapon_pow = 0
@@ -474,4 +475,7 @@ def compute_player_power(character: dict) -> int:
         item = ITEMS_BY_ID.get(equipped["armor"])
         if item:
             armor_pow = item.get("power", 0)
-    return level * 2 + stats.get("vitality", 0) + stats.get("cognition", 0) + weapon_pow + armor_pow // 2
+    # Combat power: level scales, Might/Insight are primary damage stats, Grace tips accuracy.
+    main = stats.get("might", 0) + stats.get("insight", 0) + stats.get("grace", 0) // 2
+    life = stats.get("vitality", 0)  # small survivability contribution
+    return level * 2 + main + life // 2 + weapon_pow + armor_pow // 2 + stats.get("attack_success_mod", 0)

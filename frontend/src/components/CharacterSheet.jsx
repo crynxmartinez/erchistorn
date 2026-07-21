@@ -1,6 +1,7 @@
 import { Heart, Zap, Coins, Star } from "lucide-react";
+import RacialPanel from "@/components/RacialPanel";
 
-export default function CharacterSheet({ character, portraits, race, role, mastery, itemsById }) {
+export default function CharacterSheet({ character, portraits, race, role, mastery, itemsById, timeOfDay }) {
     if (!character) return null;
     const portrait = portraits?.find((p) => p.id === character.portrait_id);
     const hpPct = Math.round((character.hp / Math.max(1, character.max_hp)) * 100);
@@ -68,15 +69,42 @@ export default function CharacterSheet({ character, portraits, race, role, maste
 
             {/* Stats */}
             <div className="border-t border-border pt-3">
-                <div className="stat-label mb-2">STATS</div>
-                <div className="grid grid-cols-2 gap-1 font-mono text-xs">
-                    {Object.entries(character.stats || {}).map(([k, v]) => (
-                        <div key={k} className="flex justify-between border-b border-border/40 pb-0.5">
-                            <span className="text-muted-foreground uppercase">{k.slice(0, 3)}</span>
-                            <span className="text-primary">{v}</span>
+                <div className="stat-label mb-2">MAIN STATS</div>
+                <div className="grid grid-cols-3 gap-1 font-mono text-xs">
+                    {["might", "grace", "insight"].map((k) => (
+                        <div key={k} className="text-center border-b border-border/40 pb-1">
+                            <div className="stat-label">{k.slice(0, 3).toUpperCase()}</div>
+                            <div className="text-primary text-lg">{character.stats?.[k] ?? 0}</div>
                         </div>
                     ))}
                 </div>
+                <div className="stat-label mt-3 mb-2">LIFE STATS</div>
+                <div className="grid grid-cols-2 gap-1 font-mono text-xs">
+                    {["vitality", "cognition", "essence", "drive"].map((k) => (
+                        <div key={k} className="flex justify-between border-b border-border/40 pb-0.5">
+                            <span className="text-muted-foreground uppercase">{k.slice(0, 3)}</span>
+                            <span className="text-primary">{character.stats?.[k] ?? 0}</span>
+                        </div>
+                    ))}
+                </div>
+                {(character.stats?.armor_bonus || character.stats?.evasion_mod) ? (
+                    <div className="grid grid-cols-2 gap-1 font-mono text-xs mt-2">
+                        {character.stats?.armor_bonus ? (
+                            <div className="flex justify-between border-b border-border/40 pb-0.5">
+                                <span className="text-muted-foreground">ARMOR+</span>
+                                <span className="text-primary">+{character.stats.armor_bonus}</span>
+                            </div>
+                        ) : null}
+                        {character.stats?.evasion_mod ? (
+                            <div className="flex justify-between border-b border-border/40 pb-0.5">
+                                <span className="text-muted-foreground">EVA</span>
+                                <span className={character.stats.evasion_mod < 0 ? "text-destructive" : "text-primary"}>
+                                    {character.stats.evasion_mod >= 0 ? "+" : ""}{character.stats.evasion_mod}
+                                </span>
+                            </div>
+                        ) : null}
+                    </div>
+                ) : null}
             </div>
 
             {/* Equipped */}
@@ -122,6 +150,8 @@ export default function CharacterSheet({ character, portraits, race, role, maste
                     <div className="narr text-xs text-foreground/85">&ldquo;{character.oath}&rdquo;</div>
                 </div>
             )}
+
+            <RacialPanel character={character} timeOfDay={timeOfDay} />
         </div>
     );
 }
