@@ -153,6 +153,21 @@ export default function Game() {
                             <Building2 size={14} strokeWidth={1.5} /> {t.name}
                         </Link>
                     ))}
+                    {/* Unvisited towns in the current continent — one-click discover & enter */}
+                    {towns
+                        .filter((t) => t.continent === character.current_continent && !(character.visited_towns || []).includes(t.id))
+                        .map((t) => (
+                            <Link
+                                key={t.id}
+                                to={`/town/${t.id}`}
+                                data-testid={`discover-town-${t.id}`}
+                                className="press-btn font-pixel text-sm uppercase px-3 py-1.5 border-2 border-primary/50 text-primary/70 hover:border-primary hover:text-primary flex items-center gap-1.5"
+                                title={`Discover ${t.name}`}
+                                style={{ borderStyle: "dashed" }}
+                            >
+                                <Building2 size={14} strokeWidth={1.5} /> {t.name}?
+                            </Link>
+                        ))}
                     <Link
                         to="/guild-house"
                         data-testid="goto-guild-house"

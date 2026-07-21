@@ -1,0 +1,37 @@
+{
+  "summary": "Phase 2 testing complete for Erchis: Beast Aspect UI (Wildblood, 5 aspects), Marine Adaptation UI (Hyliondrian, 6 adaptations), non-affected races (Human = 7 steps unchanged), 14 towns / 7 continents (4 biomes each), town-visit gating (level + same-continent), and discover-town-<id> HUD buttons. Backend: 10/10 phase 2 pytest cases pass; existing suite from iteration 1 still valid. Frontend: All 3 wizard flows verified end-to-end (Wildblood→game, Hyliondrian→game, Human regression = 7 steps), and discover-town-willowmere click navigated to /town/willowmere with visited_towns persisted.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Game HUD (after login)", "issues": ["Two modals stack on entry — SKIP TUTORIAL overlay AND the DAILY LOGIN REWARD modal appear back-to-back. If tutorial is not dismissed first the daily-reward Accept button is behind the tutorial overlay. Test scripts and users must click through both to reach HUD; minor UX friction."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_phase2_towns_aspects.py",
+    "/app/test_reports/pytest/pytest_phase2.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "CharacterCreate.jsx buildSteps() cleanly extends the wizard by race — behavior is idempotent and the Reset useEffect on race clears beastAspect/marineAdaptation & resets step index, so switching mid-flow works.",
+    "server.py /api/game/town/visit correctly enforces (a) level >= continent.level_req and (b) current_continent == town.continent. Order of checks is: level first, continent second — this means a Lv1 character on Aetheria trying to visit Emberhold gets a 'Requires level 8' error (not the 'must travel to Vulkaros' one), which matches the main-agent-provided curl proof. Both messages are user-friendly.",
+    "For non-wildblood/non-hyliondrian races, the frontend sends beast_aspect=null and marine_adaptation=null in the POST body — the backend accepts them without complaint, but there is no server-side validation to reject stray values from a hostile client (e.g., a Human sending beast_aspect='predator'). Low risk since these fields aren't enforced anywhere sensitive; consider strict validation for defence-in-depth.",
+    "Game.jsx builds discover-town-<id> buttons only for the character's current_continent — good scoping. When the character enters via /town/<id>, the town is added to visited_towns and the dashed 'discover' button flips to a solid 'goto-town-<id>' button on next HUD render.",
+    "Static-data endpoints /game/data/beast_aspects and /game/data/marine_adaptations correctly require auth (401 when unauthenticated) — consistent with the rest of /game/data."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phase2_towns_aspects.py (created)"
+  ],
+  "success_rate": {"backend": "100% (10/10 phase-2 tests)", "frontend": "100% (all wizard variants + discover-town nav verified)"},
+  "test_credentials": "test@erchis.io / password123 (Erethon L1 Human/Fighter/Knight, current_continent=aetheria, visited_towns=['ironhold','willowmere' post-test])",
+  "seed_data_creation": "3 fresh users created during this iteration: wildblood_<uuid> (Wildblood Fighter Knight w/ beast_aspect=venomous), hyli_<uuid> (Hyliondrian Scholar Mage w/ marine_adaptation=jelly_kin), TEST_p2_* pytest users. Kept in DB for regression.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 2 (aspects, adaptations, 12 new towns, 4 biomes per continent, town-visit gating, discover-town buttons) is fully wired end-to-end. Landing page routes: '/' → LandingPage with 'BEGIN YOUR SAGA' (register) & 'SIGN IN' buttons. Character wizard is at /create (not /character-create). Wildblood adds 'Aspect' step-5, Hyliondrian adds 'Adaptation' step-5, non-both races stay at 7 steps. TutorialOverlay + LoginRewardModal both fire on fresh login and must be dismissed sequentially for HUD to be interactable. All /api/game/data/* endpoints require JWT cookie.",
+  "rca of the issue": "No new bugs. Iteration 1's noted 'tutorial re-appears every login' behaviour is still present (tutorial_complete flag on character does not suppress overlay on fresh login) — confirmed but not in scope for this iteration."
+}

@@ -1058,6 +1058,13 @@ async def visit_town(request: Request, user: dict = Depends(_get_current_user)):
     if not town:
         raise HTTPException(status_code=404, detail="Unknown town")
     ch = await _get_character_or_404(user["_id"])
+    # Level check — you can only enter towns on continents you can travel to
+    cont = next((c for c in CONTINENTS if c["id"] == town["continent"]), None)
+    if cont and ch["level"] < cont.get("level_req", 1):
+        raise HTTPException(status_code=403, detail=f"{town['name']} lies in {cont['name']}. Requires level {cont['level_req']}.")
+    # Must be on same continent to enter on foot (fast-travel is a separate route)
+    if ch.get("current_continent") != town["continent"]:
+        raise HTTPException(status_code=403, detail=f"You must travel to {cont['name'] if cont else town['continent']} before entering {town['name']}.")
     ch["current_town"] = town_id
     if town_id not in ch.get("visited_towns", []):
         ch.setdefault("visited_towns", []).append(town_id)

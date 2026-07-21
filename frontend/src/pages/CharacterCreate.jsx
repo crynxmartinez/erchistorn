@@ -6,7 +6,13 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Check, ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
 
-const STEPS = ["Race", "Role", "Mastery", "Origin", "Portrait", "Name", "Summary"];
+const BASE_STEPS = ["Race", "Role", "Mastery", "Origin", "Portrait", "Name", "Summary"];
+
+const buildSteps = (raceId) => {
+    if (raceId === "wildblood") return ["Race", "Role", "Mastery", "Origin", "Aspect", "Portrait", "Name", "Summary"];
+    if (raceId === "hyliondrian") return ["Race", "Role", "Mastery", "Origin", "Adaptation", "Portrait", "Name", "Summary"];
+    return BASE_STEPS;
+};
 
 export default function CharacterCreate() {
     const [step, setStep] = useState(0);
@@ -15,6 +21,8 @@ export default function CharacterCreate() {
     const [masteries, setMasteries] = useState([]);
     const [origins, setOrigins] = useState([]);
     const [portraits, setPortraits] = useState([]);
+    const [beastAspects, setBeastAspects] = useState([]);
+    const [marineAdaptations, setMarineAdaptations] = useState([]);
     const [busy, setBusy] = useState(false);
     const navigate = useNavigate();
     const { refresh } = useAuth();
@@ -28,22 +36,31 @@ export default function CharacterCreate() {
     const [name, setName] = useState("");
     const [oath, setOath] = useState("");
     const [heritage, setHeritage] = useState("");
+    const [beastAspect, setBeastAspect] = useState(null);
+    const [marineAdaptation, setMarineAdaptation] = useState(null);
+
+    const STEPS = useMemo(() => buildSteps(race?.id), [race?.id]);
+    const stepName = STEPS[step];
 
     useEffect(() => {
         (async () => {
             try {
-                const [r, ro, m, p, o] = await Promise.all([
+                const [r, ro, m, p, o, ba, ma] = await Promise.all([
                     api.get("/game/data/races"),
                     api.get("/game/data/roles"),
                     api.get("/game/data/masteries"),
                     api.get("/game/data/portraits"),
                     api.get("/game/data/origins"),
+                    api.get("/game/data/beast_aspects"),
+                    api.get("/game/data/marine_adaptations"),
                 ]);
                 setRaces(r.data.races);
                 setRoles(ro.data.roles);
                 setMasteries(m.data.masteries);
                 setPortraits(p.data.portraits);
                 setOrigins(o.data.origins);
+                setBeastAspects(ba.data.beast_aspects);
+                setMarineAdaptations(ma.data.marine_adaptations);
             } catch (e) {
                 toast.error(extractError(e));
             }
@@ -99,19 +116,22 @@ export default function CharacterCreate() {
     }, [race, role, mastery, origin]);
 
     const canNext = () => {
-        if (step === 0) return !!race;
-        if (step === 1) return !!role;
-        if (step === 2) return !!mastery;
-        if (step === 3) return !!origin;
-        if (step === 4) return !!portraitId;
-        if (step === 5) {
-            if (!name.trim()) return false;
-            if (race?.id === "human" && !oath.trim()) return false;
-            if (race?.id === "half_elf" && !heritage) return false;
-            return true;
+        switch (stepName) {
+            case "Race":     return !!race;
+            case "Role":     return !!role;
+            case "Mastery":  return !!mastery;
+            case "Origin":   return !!origin;
+            case "Aspect":   return !!beastAspect;
+            case "Adaptation": return !!marineAdaptation;
+            case "Portrait": return !!portraitId;
+            case "Name":
+                if (!name.trim()) return false;
+                if (race?.id === "human" && !oath.trim()) return false;
+                if (race?.id === "half_elf" && !heritage) return false;
+                return true;
+            case "Summary":  return true;
+            default:         return false;
         }
-        if (step === 6) return true;
-        return false;
     };
 
     const submit = async () => {
@@ -126,6 +146,8 @@ export default function CharacterCreate() {
                 portrait_id: portraitId,
                 oath: race.id === "human" ? oath.trim() : null,
                 heritage: race.id === "half_elf" ? heritage : null,
+                beast_aspect: race.id === "wildblood" ? beastAspect : null,
+                marine_adaptation: race.id === "hyliondrian" ? marineAdaptation : null,
             });
             await refresh();
             toast.success("Your saga begins in Erchis!");
@@ -138,7 +160,11 @@ export default function CharacterCreate() {
     };
 
     // Reset dependent selections when parents change
-    useEffect(() => { setRole(null); setMastery(null); setOrigin(null); setPortraitId(null); }, [race]);
+    useEffect(() => {
+        setRole(null); setMastery(null); setOrigin(null); setPortraitId(null);
+        setBeastAspect(null); setMarineAdaptation(null);
+        setStep(0);
+    }, [race]);
     useEffect(() => { setMastery(null); setOrigin(null); }, [role]);
     useEffect(() => { setOrigin(null); }, [mastery]);
 
@@ -170,21 +196,23 @@ export default function CharacterCreate() {
             <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-6">
                 {/* LEFT preview / detail */}
                 <div className="lg:col-span-2 panel p-6 min-h-[520px]">
-                    {step === 0 && race ? <RaceDetail race={race} /> :
-                     step === 1 && role ? <RoleDetail role={role} /> :
-                     step === 2 && mastery ? <MasteryDetail mastery={mastery} /> :
-                     step === 3 && origin ? <OriginDetail origin={origin} /> :
-                     step === 4 && portraitId ? <PortraitPreview portrait={filteredPortraits.find(p => p.id === portraitId)} race={race} /> :
-                     step === 5 ? <IdentityPreview race={race} role={role} mastery={mastery} origin={origin} name={name} portraits={portraits} portraitId={portraitId} /> :
-                     step === 6 ? <StatBreakdown race={race} role={role} mastery={mastery} origin={origin} stats={finalStats} /> :
+                    {stepName === "Race" && race ? <RaceDetail race={race} /> :
+                     stepName === "Role" && role ? <RoleDetail role={role} /> :
+                     stepName === "Mastery" && mastery ? <MasteryDetail mastery={mastery} /> :
+                     stepName === "Origin" && origin ? <OriginDetail origin={origin} /> :
+                     stepName === "Aspect" && beastAspect ? <AspectDetail aspect={beastAspects.find(a => a.id === beastAspect)} kind="beast" /> :
+                     stepName === "Adaptation" && marineAdaptation ? <AspectDetail aspect={marineAdaptations.find(a => a.id === marineAdaptation)} kind="marine" /> :
+                     stepName === "Portrait" && portraitId ? <PortraitPreview portrait={filteredPortraits.find(p => p.id === portraitId)} race={race} /> :
+                     stepName === "Name" ? <IdentityPreview race={race} role={role} mastery={mastery} origin={origin} name={name} portraits={portraits} portraitId={portraitId} /> :
+                     stepName === "Summary" ? <StatBreakdown race={race} role={role} mastery={mastery} origin={origin} stats={finalStats} /> :
                      <div className="stat-label text-muted-foreground">Make a selection to see details…</div>
                     }
                 </div>
 
                 {/* RIGHT selection */}
                 <div className="lg:col-span-3 panel p-6">
-                    {/* STEP 0 — RACE */}
-                    {step === 0 && (
+                    {/* STEP — RACE */}
+                    {stepName === "Race" && (
                         <div>
                             <h2 className="font-pixel text-3xl uppercase text-primary mb-4">Choose your Race</h2>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -207,8 +235,8 @@ export default function CharacterCreate() {
                         </div>
                     )}
 
-                    {/* STEP 1 — ROLE */}
-                    {step === 1 && (
+                    {/* STEP — ROLE */}
+                    {stepName === "Role" && (
                         <div>
                             <h2 className="font-pixel text-3xl uppercase text-primary mb-2">Choose your Role</h2>
                             <div className="stat-label mb-4 text-muted-foreground">Roles recommended for {race?.name}s. Sets Main Stats.</div>
@@ -233,8 +261,8 @@ export default function CharacterCreate() {
                         </div>
                     )}
 
-                    {/* STEP 2 — MASTERY */}
-                    {step === 2 && (
+                    {/* STEP — MASTERY */}
+                    {stepName === "Mastery" && (
                         <div>
                             <h2 className="font-pixel text-3xl uppercase text-primary mb-2">Choose your Mastery</h2>
                             <div className="stat-label mb-4 text-muted-foreground">Masteries available to {role?.name}s.</div>
@@ -262,8 +290,8 @@ export default function CharacterCreate() {
                         </div>
                     )}
 
-                    {/* STEP 3 — ORIGIN */}
-                    {step === 3 && (
+                    {/* STEP — ORIGIN */}
+                    {stepName === "Origin" && (
                         <div>
                             <h2 className="font-pixel text-3xl uppercase text-primary mb-2">Choose your Origin</h2>
                             <div className="stat-label mb-4 text-muted-foreground">The constellation under which you were born. Bonus + Drawback.</div>
@@ -306,8 +334,59 @@ export default function CharacterCreate() {
                         </div>
                     )}
 
-                    {/* STEP 4 — PORTRAIT */}
-                    {step === 4 && (
+                    {/* STEP — ASPECT (Wildblood only) */}
+                    {stepName === "Aspect" && (
+                        <div>
+                            <h2 className="font-pixel text-3xl uppercase text-primary mb-2">Choose your Beast Aspect</h2>
+                            <div className="stat-label mb-4 text-muted-foreground">
+                                The animal spirit that walks in your blood. Shapes your instincts and combat gifts.
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {beastAspects.map((a) => (
+                                    <button
+                                        key={a.id}
+                                        data-testid={`beast-aspect-select-${a.id}`}
+                                        onClick={() => setBeastAspect(a.id)}
+                                        className={`press-btn p-4 text-left border-2 transition-colors ${
+                                            beastAspect === a.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/60"
+                                        }`}
+                                    >
+                                        <div className="font-pixel text-xl uppercase text-primary">{a.name}</div>
+                                        <div className="text-xs text-muted-foreground mt-1 italic">{a.examples}</div>
+                                        <div className="stat-label mt-2 text-primary/80">{a.bonus_desc}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* STEP — ADAPTATION (Hyliondrian only) */}
+                    {stepName === "Adaptation" && (
+                        <div>
+                            <h2 className="font-pixel text-3xl uppercase text-primary mb-2">Choose your Marine Adaptation</h2>
+                            <div className="stat-label mb-4 text-muted-foreground">
+                                The lineage of the deep that shaped your gills, scales, and instincts.
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {marineAdaptations.map((a) => (
+                                    <button
+                                        key={a.id}
+                                        data-testid={`marine-adaptation-select-${a.id}`}
+                                        onClick={() => setMarineAdaptation(a.id)}
+                                        className={`press-btn p-4 text-left border-2 transition-colors ${
+                                            marineAdaptation === a.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/60"
+                                        }`}
+                                    >
+                                        <div className="font-pixel text-xl uppercase text-primary">{a.name}</div>
+                                        <div className="stat-label mt-2 text-primary/80">{a.bonus_desc}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* STEP — PORTRAIT */}
+                    {stepName === "Portrait" && (
                         <div>
                             <h2 className="font-pixel text-3xl uppercase text-primary mb-4">Choose your Portrait</h2>
                             <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
@@ -328,8 +407,8 @@ export default function CharacterCreate() {
                         </div>
                     )}
 
-                    {/* STEP 5 — NAME / OATH / HERITAGE */}
-                    {step === 5 && (
+                    {/* STEP — NAME / OATH / HERITAGE */}
+                    {stepName === "Name" && (
                         <div className="space-y-6">
                             <h2 className="font-pixel text-3xl uppercase text-primary">Your Name in Erchis</h2>
                             <div>
@@ -384,8 +463,8 @@ export default function CharacterCreate() {
                         </div>
                     )}
 
-                    {/* STEP 6 — SUMMARY */}
-                    {step === 6 && (
+                    {/* STEP — SUMMARY */}
+                    {stepName === "Summary" && (
                         <div>
                             <h2 className="font-pixel text-3xl uppercase text-primary mb-4">Final Summary</h2>
                             <div className="space-y-4">
@@ -396,6 +475,12 @@ export default function CharacterCreate() {
                                 <SummaryRow label="NAME"     value={name} />
                                 {race?.id === "human" && oath && <SummaryRow label="OATH" value={`"${oath}"`} />}
                                 {race?.id === "half_elf" && heritage && <SummaryRow label="HERITAGE" value={heritage} />}
+                                {race?.id === "wildblood" && beastAspect && (
+                                    <SummaryRow label="BEAST ASPECT" value={beastAspects.find(a => a.id === beastAspect)?.name} />
+                                )}
+                                {race?.id === "hyliondrian" && marineAdaptation && (
+                                    <SummaryRow label="ADAPTATION" value={marineAdaptations.find(a => a.id === marineAdaptation)?.name} />
+                                )}
                             </div>
                             <div className="border-t border-border mt-6 pt-4 stat-label text-muted-foreground">
                                 Review the stat breakdown to the left. Confirm to enter Erchis.
@@ -538,6 +623,28 @@ function OriginDetail({ origin }) {
                         </div>
                     ))}
                 </div>
+            </div>
+        </div>
+    );
+}
+
+function AspectDetail({ aspect, kind }) {
+    if (!aspect) return null;
+    return (
+        <div>
+            <div className="stat-label text-primary/70 mb-2">{kind === "beast" ? "BEAST ASPECT" : "MARINE ADAPTATION"}</div>
+            <h3 className="font-pixel text-3xl uppercase text-primary mb-2">{aspect.name}</h3>
+            {aspect.examples && (
+                <div className="narr text-sm text-muted-foreground italic mb-4">Kin of {aspect.examples}</div>
+            )}
+            <div className="border-t border-border pt-3">
+                <div className="stat-label mb-2">GIFTS OF THIS ASPECT</div>
+                <div className="text-sm text-foreground/85 leading-relaxed">{aspect.bonus_desc}</div>
+            </div>
+            <div className="border-t border-border pt-3 mt-4 stat-label text-muted-foreground">
+                {kind === "beast"
+                    ? "Your Beast Aspect shapes how your Inner Blood surges when Exhaustion peaks."
+                    : "Your Adaptation defines your bloodline's tide when standing in salt water."}
             </div>
         </div>
     );
