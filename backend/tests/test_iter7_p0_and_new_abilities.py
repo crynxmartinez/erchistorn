@@ -316,7 +316,7 @@ class TestSylvanShrinkToggle:
         s, ch = _fresh("sylvan")
         cid = ch["id"]
         _set_char(cid, {"verdant_essence": 2})
-        # ON — apply status, spend essence
+        # ON — apply status, spend essence, start 10-min CD
         r = s.post(f"{API}/game/racial/ability", json={"ability_id": "sylvan_shrink"})
         assert r.status_code == 200, r.text
         ch2 = r.json()["character"]
@@ -327,18 +327,14 @@ class TestSylvanShrinkToggle:
         assert mods.get("evasion_mod") == 2
         assert mods.get("attack_success_mod") == -1
         assert ch2.get("sylvan_shrink_last_used") is not None
-        # Immediate re-attempt → 400 (10-min CD)
-        r2 = s.post(f"{API}/game/racial/ability", json={"ability_id": "sylvan_shrink"})
-        assert r2.status_code == 400, r2.text
         # toggle_state via GET /game/racial/status = 'on'
         rs = s.get(f"{API}/game/racial/status")
         ab = rs.json()["abilities"][0]
         assert ab.get("toggle_state") == "on"
-        # Clear cooldown in DB and toggle OFF (should be free — no essence consumed)
-        _set_char(cid, {"sylvan_shrink_last_used": None})
-        r3 = s.post(f"{API}/game/racial/ability", json={"ability_id": "sylvan_shrink"})
-        assert r3.status_code == 200, r3.text
-        ch3 = r3.json()["character"]
+        # Toggle OFF immediately — should be FREE (no essence cost, no CD gate on the toggle-off direction)
+        r2 = s.post(f"{API}/game/racial/ability", json={"ability_id": "sylvan_shrink"})
+        assert r2.status_code == 200, r2.text
+        ch3 = r2.json()["character"]
         # Essence unchanged (toggle-off is free)
         assert ch3["verdant_essence"] == 1, f"expected essence unchanged, got {ch3['verdant_essence']}"
         # Shrunken status removed
@@ -347,6 +343,15 @@ class TestSylvanShrinkToggle:
         rs2 = s.get(f"{API}/game/racial/status")
         ab2 = rs2.json()["abilities"][0]
         assert ab2.get("toggle_state") == "off"
+        # Immediate re-shrink attempt → 400 (still on 10-min CD from the initial toggle-on)
+        r3 = s.post(f"{API}/game/racial/ability", json={"ability_id": "sylvan_shrink"})
+        assert r3.status_code == 400, r3.text
+        # Clear cooldown in DB and re-shrink → 200 (costs another 1 essence)
+        _set_char(cid, {"sylvan_shrink_last_used": None})
+        r4 = s.post(f"{API}/game/racial/ability", json={"ability_id": "sylvan_shrink"})
+        assert r4.status_code == 200, r4.text
+        ch4 = r4.json()["character"]
+        assert ch4["verdant_essence"] == 0, f"expected essence spent on re-shrink, got {ch4['verdant_essence']}"
 
 
 # ==================================================================

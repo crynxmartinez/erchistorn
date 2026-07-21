@@ -73,6 +73,25 @@ Massive rewrite to bring the world in line with the master design spec.
 - **Frontend**: two new HUD tabs (**TRADES**, **TELEPORTER**). World map rewritten to show all 11 continents + a live Exploration Progress panel underneath. All race/continent names pretty-cased.
 - **Tests**: 23/23 pytest cases + 5/5 UI acceptance areas verified by testing agent. Fixed `rank_from_xp` off-by-one, added hometown-gating flag on teleporter destinations, cleaned teleporter arrival state.
 
+### Phase E/F/G (2026-02, current session)
+Massive lore/gameplay expansion:
+- **NPCs** — 8 canonical hometown NPCs (Captain Ansel/Oathspire, Warchief Thraka/Grunhold, Envoy Seraphine/Elaris, Grandmaster Thora/Jahrahold, Loremaster Sylanya/Solunara, Matriarch Zerith/Rindivar Grove, Tide-Priest Calvar/Atlantyrion, Elder Mireth/Veilgrove) with relationship tiers (Stranger→Devoted) and 3-quest arcs each (Q2 unlocks at Acquainted, Q3 at Trusted).
+- **Regional Biome Bosses** — 8 bosses (one per continent's tier-4 biome) with unique rare drops (Ashen Lord's Regalia set, Demonfang, Diplomat's Signet, Deepforge Hammer, Starfall Bow, Ancient Fang, Abyssal Trident, Elderroot Bough). Dedicated `boss` action exposed per biome.
+- **Cross-Continent Legendary Recipes** — 5 legendary crafts each requiring materials from ≥2 continents.
+- **Phase E Racial Active Abilities** — all 8 races now have a cooldowned active ability:
+  · Human — Adaptability Focus (24h, choose 1 of 5 daily focuses)
+  · Dwarf — Field Repair (12h, restore armor + weapon durability)
+  · Orc — Break the Chain (40 Defiance, purge control effects)
+  · Elf — Celestial Shift (1 Charge, 6h; +30% HP heal + purge debuffs)
+  · Half-Elf — Heritage Attunement (3 Harmony, 24h; +1 atk/eva for 5 actions + resolve)
+  · Wildblood — Bloodrage (40 Inner Blood, 8h; +2 atk / -1 eva for 4 actions)
+  · Hyliondrian — Tidal Grace (3 Tide, 12h; +40% HP heal + purge)
+  · Sylvan — Shrunken Form (1 Verdant Essence, 10-min CD, toggle; +2 eva / -1 atk while shrunken; toggle-off is free)
+- **Status modifiers now affect combat power** — `compute_player_power` sums all status `modifiers.attack_success_mod` so buffs/debuffs actually influence dice deltas.
+- **Fresh characters seeded in home_town** — all 8 races now spawn inside their hometown (was previously spawning wilderness with `current_town=None`), enabling regional 0.75x price bonuses immediately.
+- **Boss action bug fixed** — Phase-G boss injection now correctly runs AFTER `_apply_biome_id_migration()` so the injected `boss` action survives the dict rebuild.
+- **Tests**: 80/83 pytest cases pass (3 skipped by design), covering all 8 racial abilities, all 8 boss biomes, all 8 home_town spawns, NPC quest chains, regional pricing.
+
 ## Backlog
 
 ### P1 — Advanced Racial Ranks (deferred)

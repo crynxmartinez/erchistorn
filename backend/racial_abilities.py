@@ -338,13 +338,14 @@ def _sylvan_is_shrunken(character: dict) -> bool:
 def can_use_sylvan_shrink(character: dict) -> tuple[bool, str, int]:
     if character.get("race") != "sylvan":
         return False, "Only Sylvans can slip between the leaves.", 0
+    # Toggle-off is always free of cooldown (leaving the form doesn't cost essence, only entering does).
+    if _sylvan_is_shrunken(character):
+        return True, "", 0
     rem = _cooldown_remaining(character, "sylvan_shrink_last_used", SYLVAN_SHRINK_COOLDOWN_MINUTES / 60)
     if rem > 0:
         return False, "You are still gathering the essence to shift form.", rem
-    # If not currently shrunken, need essence to activate. Toggle-off is always free.
-    if not _sylvan_is_shrunken(character):
-        if int(character.get("verdant_essence", 0)) < SYLVAN_SHRINK_COST:
-            return False, f"You need {SYLVAN_SHRINK_COST} Verdant Essence. You have {character.get('verdant_essence', 0)}.", 0
+    if int(character.get("verdant_essence", 0)) < SYLVAN_SHRINK_COST:
+        return False, f"You need {SYLVAN_SHRINK_COST} Verdant Essence. You have {character.get('verdant_essence', 0)}.", 0
     return True, "", 0
 
 
@@ -354,11 +355,10 @@ def apply_sylvan_shrink(character: dict) -> tuple[bool, str]:
         return False, reason
     statuses = character.setdefault("statuses", [])
     if _sylvan_is_shrunken(character):
-        # Toggle OFF — remove the status, no essence cost
+        # Toggle OFF — remove the status, no essence cost, no cooldown started
         character["statuses"] = [s for s in statuses if s.get("id") != "shrunken"]
-        character["sylvan_shrink_last_used"] = datetime.now(timezone.utc).isoformat()
         return True, "You return to your true stature."
-    # Toggle ON — apply status, spend essence
+    # Toggle ON — apply status, spend essence, start 10-min cooldown before you can shrink again
     statuses.append({
         "id": "shrunken",
         "name": "Shrunken Form",
