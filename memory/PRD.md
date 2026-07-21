@@ -56,6 +56,14 @@ Regions + 2 towns (Ironhold Forge Town + Willowmere Sanctuary), Inn/Marketplace/
 - **ENHANCEMENT**: every stat, resource meter, and status badge on the Character Sheet + Racial Panel now surfaces a hover tooltip (Radix, `delayDuration=120`) explaining what it does. New `STAT_HINTS` / `STATUS_HINTS` maps in `CharacterSheet.jsx` and `hint` fields in `RacialPanel.jsx`. Status badges also show remaining duration inline as `Weary (3)`.
 - **Tests**: verified via testing agent — 100% pass, 7/7 backend + 10/10 frontend cases. Confirmed the word "Exhausted" never appears on a status badge anymore, Weary tooltip explicitly says "NOT the same as the Exhaustion meter", and a 20-action Wildblood loop saw its Weary status expire on its own.
 
+### Phase 3.4 — Journal (Codex) drawer (2026-02, current session)
+- **NEW**: an in-world Codex accessible via a JOURNAL button in the Game HUD tab bar. Uses shadcn Sheet + Tabs + ScrollArea (right-side slide-in, ~768px wide on desktop).
+- Seven tabs: **Preface**, **Stats**, **Statuses**, **Races**, **World**, **Bestiary**, **Materials**. Everything is styled like a leather-bound book — parchment header ("The Book of Erchis"), pixel headings, and body copy inline with the game aesthetic.
+- **Single source of truth**: hint strings moved from CharacterSheet/RacialPanel into `/app/frontend/src/data/hints.js` (STAT_HINTS, STATUS_HINTS, EXHAUSTION_HINT, RESOLVE_HINT, RESOURCE_META, RACE_TO_RESOURCE). Both tooltips and the Codex read from the same file.
+- **Content**: 8 races with lore + Heritage Rank I passive + resource meter + Beast Aspects / Marine Adaptations sub-lists; 7 continents grouped by their biomes; **54 monsters** in the Bestiary grouped by continent → biome with power/HP/drops; **97 items** in the Materials tab grouped by 6 rarity buckets with rarity colour classes.
+- **Lazy-loaded + cached**: 7 parallel `/api/game/data/*` calls fire only on first open; subsequent opens re-use cached state (verified via network interceptor).
+- **Tests**: 13/13 frontend acceptance criteria pass. Fixed the Radix a11y warning by wiring `SheetTitle` + `SheetDescription` into the parchment header.
+
 ## Backlog
 
 ### P1 — Advanced Racial Ranks (deferred)

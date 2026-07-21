@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { api } from "@/lib/api";
@@ -71,10 +71,14 @@ export default function JournalDrawer({ triggerClassName }) {
                     {/* Book header — parchment style */}
                     <div className="p-5 border-b-2 border-primary bg-card">
                         <div className="stat-label text-primary/70 mb-1">CODEX &middot; A TRAVELER&apos;S JOURNAL</div>
-                        <h2 className="font-pixel text-3xl uppercase text-primary tracking-wider">The Book of Erchis</h2>
-                        <div className="narr text-sm text-muted-foreground mt-1">
-                            Turn a page. The world remembers itself when you read.
-                        </div>
+                        <SheetTitle asChild>
+                            <h2 className="font-pixel text-3xl uppercase text-primary tracking-wider">The Book of Erchis</h2>
+                        </SheetTitle>
+                        <SheetDescription asChild>
+                            <div className="narr text-sm text-muted-foreground mt-1">
+                                Turn a page. The world remembers itself when you read.
+                            </div>
+                        </SheetDescription>
                     </div>
 
                     <Tabs value={tab} onValueChange={setTab} className="flex flex-col flex-1 overflow-hidden">
