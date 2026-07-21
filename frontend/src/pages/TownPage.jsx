@@ -3,7 +3,8 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { api, extractError } from "@/lib/api";
 import { useGameData, RARITY_TEXT, RARITY_CLASS } from "@/data/gameData";
 import { toast } from "sonner";
-import { BedDouble, ShoppingBag, ScrollText, Users, ArrowLeft, Coins } from "lucide-react";
+import { BedDouble, ShoppingBag, ScrollText, Users, ArrowLeft, Coins, MessageCircle } from "lucide-react";
+import NpcPanel from "@/components/NpcPanel";
 
 export default function TownPage() {
     const { townId } = useParams();
@@ -11,7 +12,7 @@ export default function TownPage() {
     const gd = useGameData();
     const [town, setTown] = useState(null);
     const [character, setCharacter] = useState(null);
-    const [tab, setTab] = useState("inn");
+    const [tab, setTab] = useState("voices");
     const [buyQty, setBuyQty] = useState({});
     const [availableQuests, setAvailableQuests] = useState([]);
 
@@ -83,6 +84,7 @@ export default function TownPage() {
     };
 
     const TABS = [
+        { id: "voices", label: "Voices", icon: MessageCircle, avail: true },
         { id: "inn", label: "Inn", icon: BedDouble, avail: town.services.includes("inn") },
         { id: "market", label: "Market", icon: ShoppingBag, avail: town.services.includes("market") },
         { id: "notice", label: "Notice Board", icon: ScrollText, avail: town.services.includes("notice_board") },
@@ -134,6 +136,12 @@ export default function TownPage() {
                 </div>
 
                 {/* Panels */}
+                {tab === "voices" && (
+                    <div className="panel p-6" data-testid="town-voices">
+                        <NpcPanel character={character} onCharacterUpdate={setCharacter} />
+                    </div>
+                )}
+
                 {tab === "inn" && (
                     <div className="panel p-6" data-testid="inn-panel">
                         <h2 className="font-pixel text-3xl uppercase text-primary mb-2">The {town.name} Inn</h2>

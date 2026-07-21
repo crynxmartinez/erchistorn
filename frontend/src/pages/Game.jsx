@@ -21,6 +21,7 @@ import LoginRewardModal from "@/components/LoginRewardModal";
 import JournalDrawer from "@/components/JournalDrawer";
 import TeleporterPanel from "@/components/TeleporterPanel";
 import ProfessionsPanel from "@/components/ProfessionsPanel";
+import RacialAbilityPanel from "@/components/RacialAbilityPanel";
 
 const TABS = [
     { id: "biome",   label: "Biome",    icon: HomeIcon },
@@ -200,7 +201,7 @@ export default function Game() {
 
             {/* Main 3-column grid */}
             <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4">
-                <aside className="lg:col-span-3">
+                <aside className="lg:col-span-3 space-y-4">
                     <CharacterSheet
                         character={character}
                         portraits={gd.portraits}
@@ -210,6 +211,9 @@ export default function Game() {
                         itemsById={gd.itemsById}
                         timeOfDay={timeOfDay}
                     />
+                    <div className="panel p-4">
+                        <RacialAbilityPanel character={character} onCharacterUpdate={setCharacter} />
+                    </div>
                 </aside>
 
                 <main className="lg:col-span-6">

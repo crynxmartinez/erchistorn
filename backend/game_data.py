@@ -468,6 +468,43 @@ extend_world_data(ITEMS, MONSTERS, BIOME_ACTIONS, ITEMS_BY_ID)
 
 
 # ============================================================
+# Phase G — merge bosses + boss parts + cross-continent recipes
+# ============================================================
+from world_content import (  # noqa: E402
+    BOSSES,
+    BOSS_PARTS,
+    CROSS_CONTINENT_RECIPES,
+)
+
+# Add bosses to MONSTERS
+_existing_monster_ids = {m["id"] for m in MONSTERS}
+for _b in BOSSES:
+    if _b["id"] not in _existing_monster_ids:
+        MONSTERS.append(_b)
+        _existing_monster_ids.add(_b["id"])
+        # Bosses join a special "boss" action list in their biome, alongside hunt.
+        biome_id = _b["biome"]
+        if biome_id in BIOME_ACTIONS:
+            hunt = next((a for a in BIOME_ACTIONS[biome_id] if a["id"] == "hunt"), None)
+            if hunt and _b["id"] not in hunt["targets"]:
+                hunt["targets"].append(_b["id"])
+            # Also expose a dedicated boss action so the UI can single it out.
+            if not any(a["id"] == "boss" for a in BIOME_ACTIONS[biome_id]):
+                BIOME_ACTIONS[biome_id].append({"id": "boss", "name": "Boss", "targets": [_b["id"]]})
+            else:
+                boss_act = next(a for a in BIOME_ACTIONS[biome_id] if a["id"] == "boss")
+                if _b["id"] not in boss_act["targets"]:
+                    boss_act["targets"].append(_b["id"])
+
+# Add boss parts to ITEMS
+_existing_item_ids = {it["id"] for it in ITEMS}
+for _p in BOSS_PARTS:
+    if _p["id"] not in _existing_item_ids:
+        ITEMS.append(_p)
+        ITEMS_BY_ID[_p["id"]] = _p
+
+
+# ============================================================
 # Canon migration — remap all monster.biome, BIOME_ACTIONS keys, and
 # ITEMS.biome_gather from the old codenames to the new canon IDs.
 # ============================================================

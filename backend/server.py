@@ -556,6 +556,15 @@ async def create_character(payload: CreateCharacterPayload, user: dict = Depends
         "professions": [],                 # Phase D — up to 3 slots
         "abandoned_professions": {},       # keeps 25% xp for relearn
         "exploration_progress": {},        # Phase C — per-biome %
+        "npc_relationships": initial_npc_relationships(),  # Phase F — story quests
+        "active_npc_quests": [],
+        "completed_npc_quests": [],
+        "npc_quest_progress": {},
+        "human_focus": None,               # Phase E — Human daily focus
+        "human_focus_last_used": None,
+        "human_focus_expires": None,
+        "dwarf_field_repair_last_used": None,
+        "orc_break_chain_last_used": None,
         "guild_id": None,
         "guild_rank": None,
         "active_quests": [],
@@ -673,6 +682,33 @@ async def do_action(payload: ActionPayload, user: dict = Depends(_get_current_us
     # Racial resource ticking
     racial_msgs = tick_racial_resources_on_action(ch, result["outcome"], payload.action_id)
 
+    # NPC quest progress — check if this action's outcome (success ≥4) satisfies
+    # any active quest's kill/gather objective.
+    quest_progress_updates: list[dict] = []
+    if result["outcome"] >= 4:
+        target_id = payload.target_id
+        prog_dict = ch.setdefault("npc_quest_progress", {})
+        for qid in list(ch.get("active_npc_quests", [])):
+            q = NPC_QUESTS_BY_ID.get(qid)
+            if not q:
+                continue
+            reqs = q.get("requirements", {}) or {}
+            qp = prog_dict.setdefault(qid, {"kills": {}, "gathers": {}})
+            bumped = False
+            if payload.action_id in ("hunt", "boss") and target_id:
+                for tgt, needed in reqs.get("kills", []) or []:
+                    if tgt == target_id and qp["kills"].get(tgt, 0) < needed:
+                        qp["kills"][tgt] = qp["kills"].get(tgt, 0) + 1
+                        bumped = True
+            if payload.action_id in ("gather", "fish") and target_id:
+                for tgt, needed in reqs.get("gathers", []) or []:
+                    if tgt == target_id and qp["gathers"].get(tgt, 0) < needed:
+                        qp["gathers"][tgt] = qp["gathers"].get(tgt, 0) + 1
+                        bumped = True
+            if bumped:
+                quest_progress_updates.append({"quest_id": qid, "progress": qp,
+                                               "complete": _quest_progress_complete(q, qp)})
+
     # Phase C — Exploration progress: every action nudges progress for the
     # current biome (bigger nudges on explore actions, smaller on gather/hunt).
     biome_key = payload.biome_id or ch.get("current_biome")
@@ -722,6 +758,7 @@ async def do_action(payload: ActionPayload, user: dict = Depends(_get_current_us
         "verdant_essence": ch.get("verdant_essence", 0),
         "exploration_progress": ch.get("exploration_progress", {}),
         "professions": ch.get("professions", []),
+        "npc_quest_progress": ch.get("npc_quest_progress", {}),
     }})
 
     if result["outcome"] == 6:
@@ -729,7 +766,8 @@ async def do_action(payload: ActionPayload, user: dict = Depends(_get_current_us
         await _push_world_event(ch["name"], f"{ch['name']} achieved a critical {payload.action_id} against {target_disp}.", "loot")
 
     return {"result": result, "character": ch, "racial_msgs": racial_msgs,
-            "explore_hits": explore_hits, "profession_ranks": profession_ranks}
+            "explore_hits": explore_hits, "profession_ranks": profession_ranks,
+            "quest_progress_updates": quest_progress_updates}
 
 
 # ---------------- COMBAT ----------------
@@ -1501,7 +1539,10 @@ async def market_buy(request: Request, user: dict = Depends(_get_current_user)):
     item = ITEMS_BY_ID.get(item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Unknown item")
-    price = _price_of(item) * qty
+    # Phase G — regional price modifier: cheaper in home continent, dearer abroad.
+    from world_content import regional_price_multiplier  # noqa: E402
+    mult = regional_price_multiplier(item_id, town.get("continent"))
+    price = int(round(_price_of(item) * mult)) * qty
     if ch["gold"] < price:
         raise HTTPException(status_code=400, detail="Not enough gold")
     ch["gold"] -= price
@@ -1509,7 +1550,304 @@ async def market_buy(request: Request, user: dict = Depends(_get_current_user)):
     await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
         "gold": ch["gold"], "inventory": ch["inventory"],
     }})
-    return {"character": ch, "paid": price}
+    return {"character": ch, "paid": price, "regional_multiplier": mult}
+
+
+# ============================================================
+# NPCs & RELATIONSHIP-GATED QUESTS (Phase F/NPC system)
+# ============================================================
+from npcs import (  # noqa: E402
+    NPCS,
+    NPCS_BY_ID,
+    NPCS_BY_TOWN,
+    NPC_QUESTS_BY_ID,
+    RELATIONSHIP_TIERS,
+    RELATIONSHIP_THRESHOLDS,
+    initial_npc_relationships,
+    add_npc_relationship,
+    tier_meets,
+)
+from racial_abilities import (  # noqa: E402
+    HUMAN_FOCUSES,
+    HUMAN_FOCUS_COOLDOWN_HOURS,
+    can_use_human_focus,
+    apply_human_focus,
+    DWARF_FIELD_REPAIR_COOLDOWN_HOURS,
+    can_use_dwarf_field_repair,
+    apply_dwarf_field_repair,
+    ORC_BREAK_CHAIN_COST,
+    ORC_BREAK_CHAIN_COOLDOWN_HOURS,
+    can_use_orc_break_chain,
+    apply_orc_break_chain,
+)
+from world_content import (  # noqa: E402
+    BOSSES,
+    BOSS_PARTS,
+    CROSS_CONTINENT_RECIPES,
+)
+
+
+def _npc_view(character: dict, npc: dict) -> dict:
+    """Serialise an NPC with relationship + quest states appended for this character."""
+    rels = character.get("npc_relationships", {})
+    entry = rels.get(npc["id"]) or {"points": 0, "level": "stranger"}
+    active_ids = set(character.get("active_npc_quests", []) or [])
+    done_ids = set(character.get("completed_npc_quests", []) or [])
+    quest_views = []
+    for q in npc["quests"]:
+        # Available if the tier is met and prior chain quests are complete
+        chain_ok = True
+        for prev in npc["quests"]:
+            if prev["order"] < q["order"] and prev["id"] not in done_ids:
+                chain_ok = False
+                break
+        tier_ok = tier_meets(entry["level"], q["tier"])
+        state = ("completed" if q["id"] in done_ids
+                 else "active" if q["id"] in active_ids
+                 else "available" if (chain_ok and tier_ok)
+                 else "locked")
+        quest_views.append({
+            "id": q["id"], "name": q["name"], "order": q["order"], "tier": q["tier"],
+            "brief": q["brief"], "requirements": q["requirements"], "rewards": q["rewards"],
+            "state": state,
+        })
+    return {
+        "id": npc["id"], "name": npc["name"], "race": npc["race"],
+        "title": npc["title"], "town": npc["town"], "continent": npc["continent"],
+        "description": npc["description"], "personality": npc["personality"],
+        "relationship": {"points": entry["points"], "level": entry["level"]},
+        "quests": quest_views,
+    }
+
+
+@api.get("/game/npcs")
+async def list_npcs(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    return {"npcs": [_npc_view(ch, n) for n in NPCS],
+            "relationship_tiers": RELATIONSHIP_TIERS,
+            "relationship_thresholds": RELATIONSHIP_THRESHOLDS}
+
+
+@api.get("/game/npc/{npc_id}")
+async def get_npc(npc_id: str, user: dict = Depends(_get_current_user)):
+    npc = NPCS_BY_ID.get(npc_id)
+    if not npc:
+        raise HTTPException(status_code=404, detail="Unknown NPC")
+    ch = await _get_character_or_404(user["_id"])
+    return {"npc": _npc_view(ch, npc)}
+
+
+@api.post("/game/npc/quest/accept")
+async def accept_npc_quest(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    quest_id = body.get("quest_id")
+    quest = NPC_QUESTS_BY_ID.get(quest_id)
+    if not quest:
+        raise HTTPException(status_code=404, detail="Unknown quest")
+    ch = await _get_character_or_404(user["_id"])
+    npc = NPCS_BY_ID.get(quest["npc_id"])
+    # Must be in the same town as the NPC
+    if ch.get("current_town") != npc["town"]:
+        raise HTTPException(status_code=403, detail=f"You must speak with {npc['name']} in {npc['town'].title()}.")
+    # Check tier + chain
+    rel = (ch.get("npc_relationships", {}) or {}).get(npc["id"]) or {"level": "stranger"}
+    if not tier_meets(rel["level"], quest["tier"]):
+        raise HTTPException(status_code=403, detail=f"{npc['name']} does not yet trust you with this task.")
+    done = set(ch.get("completed_npc_quests", []) or [])
+    for prev in npc["quests"]:
+        if prev["order"] < quest["order"] and prev["id"] not in done:
+            raise HTTPException(status_code=403, detail=f"Finish {prev['name']} first.")
+    active = ch.setdefault("active_npc_quests", [])
+    if quest_id in active:
+        raise HTTPException(status_code=400, detail="Already active.")
+    if quest_id in done:
+        raise HTTPException(status_code=400, detail="Already completed.")
+    # Character level requirement
+    req_lvl = quest.get("requirements", {}).get("character_level", 1)
+    if int(ch.get("level", 1)) < req_lvl:
+        raise HTTPException(status_code=400, detail=f"Requires character level {req_lvl}.")
+    active.append(quest_id)
+    # Initialise progress counters
+    prog = ch.setdefault("npc_quest_progress", {})
+    prog[quest_id] = {"kills": {}, "gathers": {}}
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "active_npc_quests": active, "npc_quest_progress": prog,
+    }})
+    return {"character": ch, "quest": quest, "narrative": quest["narrative"]["accept"]}
+
+
+def _quest_progress_complete(quest: dict, progress: dict) -> bool:
+    reqs = quest.get("requirements", {}) or {}
+    for target, needed in reqs.get("kills", []) or []:
+        if int(progress.get("kills", {}).get(target, 0)) < needed:
+            return False
+    for target, needed in reqs.get("gathers", []) or []:
+        if int(progress.get("gathers", {}).get(target, 0)) < needed:
+            return False
+    return True
+
+
+@api.post("/game/npc/quest/complete")
+async def complete_npc_quest(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    quest_id = body.get("quest_id")
+    quest = NPC_QUESTS_BY_ID.get(quest_id)
+    if not quest:
+        raise HTTPException(status_code=404, detail="Unknown quest")
+    ch = await _get_character_or_404(user["_id"])
+    npc = NPCS_BY_ID.get(quest["npc_id"])
+    if ch.get("current_town") != npc["town"]:
+        raise HTTPException(status_code=403, detail=f"Return to {npc['name']} in {npc['town'].title()} to hand in the quest.")
+    active = ch.setdefault("active_npc_quests", [])
+    if quest_id not in active:
+        raise HTTPException(status_code=400, detail="This quest is not active.")
+    progress = ch.setdefault("npc_quest_progress", {}).get(quest_id, {"kills": {}, "gathers": {}})
+    if not _quest_progress_complete(quest, progress):
+        raise HTTPException(status_code=400, detail="You have not yet completed the objectives.")
+    # Apply rewards
+    rewards = quest.get("rewards", {}) or {}
+    ch["gold"] = int(ch.get("gold", 0)) + int(rewards.get("gold", 0))
+    ch["xp"] = int(ch.get("xp", 0)) + int(rewards.get("xp", 0))
+    rank_change = add_npc_relationship(ch, npc["id"], int(rewards.get("relationship", 0)))
+    for item_id, qty in (rewards.get("items", []) or []):
+        _add_item_to_inventory(ch, item_id, qty)
+    if rewards.get("unique_item"):
+        uniq = rewards["unique_item"]
+        # Register the unique item into the runtime ITEMS registry so it can be equipped/used later.
+        if uniq["id"] not in ITEMS_BY_ID:
+            ITEMS.append(uniq)
+            ITEMS_BY_ID[uniq["id"]] = uniq
+        _add_item_to_inventory(ch, uniq["id"], 1)
+    # Move quest from active → completed
+    active.remove(quest_id)
+    done = ch.setdefault("completed_npc_quests", [])
+    if quest_id not in done:
+        done.append(quest_id)
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "gold": ch["gold"], "xp": ch["xp"], "inventory": ch["inventory"],
+        "npc_relationships": ch.get("npc_relationships", {}),
+        "active_npc_quests": active, "completed_npc_quests": done,
+    }})
+    return {"character": ch, "quest": quest, "narrative": quest["narrative"]["complete"],
+            "rewards": rewards, "relationship_rank_change": rank_change}
+
+
+# ============================================================
+# RACIAL COOLDOWN ABILITIES (Phase E)
+# ============================================================
+@api.get("/game/racial/status")
+async def racial_status(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    race = ch.get("race")
+    out = {"race": race, "abilities": []}
+    if race == "human":
+        allowed, reason, cd = can_use_human_focus(ch)
+        out["abilities"].append({
+            "id": "human_focus", "name": "Adaptability Focus",
+            "cooldown_hours": HUMAN_FOCUS_COOLDOWN_HOURS,
+            "available": allowed, "reason": reason,
+            "seconds_remaining": cd,
+            "current_focus": ch.get("human_focus"),
+            "focuses": HUMAN_FOCUSES,
+        })
+    elif race == "dwarf":
+        allowed, reason, cd = can_use_dwarf_field_repair(ch)
+        out["abilities"].append({
+            "id": "dwarf_field_repair", "name": "Field Repair",
+            "cooldown_hours": DWARF_FIELD_REPAIR_COOLDOWN_HOURS,
+            "available": allowed, "reason": reason, "seconds_remaining": cd,
+        })
+    elif race == "orc":
+        allowed, reason, cd = can_use_orc_break_chain(ch)
+        out["abilities"].append({
+            "id": "orc_break_chain", "name": "Break the Chain",
+            "cost": ORC_BREAK_CHAIN_COST, "cost_resource": "defiance",
+            "cooldown_hours": ORC_BREAK_CHAIN_COOLDOWN_HOURS,
+            "available": allowed, "reason": reason, "seconds_remaining": cd,
+        })
+    return out
+
+
+@api.post("/game/racial/ability")
+async def use_racial_ability(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    ability = body.get("ability_id")
+    ch = await _get_character_or_404(user["_id"])
+    ok, msg = False, "Unknown ability"
+    if ability == "human_focus":
+        ok, msg = apply_human_focus(ch, body.get("focus_id"))
+    elif ability == "dwarf_field_repair":
+        ok, msg = apply_dwarf_field_repair(ch)
+    elif ability == "orc_break_chain":
+        ok, msg = apply_orc_break_chain(ch)
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "hp": ch.get("hp"),
+        "statuses": ch.get("statuses", []),
+        "defiance": ch.get("defiance"),
+        "human_focus": ch.get("human_focus"),
+        "human_focus_last_used": ch.get("human_focus_last_used"),
+        "human_focus_expires": ch.get("human_focus_expires"),
+        "dwarf_field_repair_last_used": ch.get("dwarf_field_repair_last_used"),
+        "orc_break_chain_last_used": ch.get("orc_break_chain_last_used"),
+    }})
+    return {"character": ch, "message": msg}
+
+
+# ============================================================
+# BOSSES + CROSS-CONTINENT RECIPES (Phase G, endpoints)
+# ============================================================
+@api.get("/game/bosses")
+async def list_bosses(user: dict = Depends(_get_current_user)):
+    return {"bosses": BOSSES}
+
+
+@api.get("/game/recipes/cross_continent")
+async def cross_continent_recipes(user: dict = Depends(_get_current_user)):
+    return {"recipes": CROSS_CONTINENT_RECIPES, "boss_parts": BOSS_PARTS}
+
+
+@api.post("/game/craft/legendary")
+async def craft_legendary(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    rid = body.get("recipe_id")
+    recipe = next((r for r in CROSS_CONTINENT_RECIPES if r["id"] == rid), None)
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Unknown legendary recipe")
+    ch = await _get_character_or_404(user["_id"])
+    # Verify inventory has all required materials
+    inv = {i["item_id"]: int(i.get("quantity", 0)) for i in ch.get("inventory", [])}
+    for mat_id, needed in recipe["requires"].items():
+        if inv.get(mat_id, 0) < needed:
+            raise HTTPException(status_code=400,
+                                detail=f"Missing {needed - inv.get(mat_id, 0)} × {mat_id}.")
+    # Verify profession + rank if the recipe demands it
+    prof_req = recipe.get("profession")
+    rank_req = recipe.get("profession_min_rank")
+    if prof_req:
+        prof = next((p for p in ch.get("professions", []) if p["id"] == prof_req), None)
+        if not prof:
+            raise HTTPException(status_code=403,
+                                detail=f"Requires the {prof_req} profession.")
+        if rank_req:
+            from professions import PROFESSION_RANKS
+            if PROFESSION_RANKS.index(prof.get("rank", "novice")) < PROFESSION_RANKS.index(rank_req):
+                raise HTTPException(status_code=403,
+                                    detail=f"Requires {rank_req} rank in {prof_req}.")
+    # Consume materials
+    for mat_id, needed in recipe["requires"].items():
+        _remove_item_from_inventory(ch, mat_id, needed)
+    # Produce
+    produced = recipe["produces"]
+    if produced["id"] not in ITEMS_BY_ID:
+        ITEMS.append(produced)
+        ITEMS_BY_ID[produced["id"]] = produced
+    _add_item_to_inventory(ch, produced["id"], 1)
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "inventory": ch["inventory"],
+    }})
+    return {"character": ch, "produced": produced}
 
 
 @api.post("/game/town/market/sell")
@@ -1770,6 +2108,15 @@ async def startup():
             updates["known_waystones"] = []
         if "active_waystones" not in ch_doc:
             updates["active_waystones"] = []
+        # Phase-F seed: NPC relationships + quest state (default empty for existing chars)
+        if "npc_relationships" not in ch_doc:
+            updates["npc_relationships"] = initial_npc_relationships()
+        if "active_npc_quests" not in ch_doc:
+            updates["active_npc_quests"] = []
+        if "completed_npc_quests" not in ch_doc:
+            updates["completed_npc_quests"] = []
+        if "npc_quest_progress" not in ch_doc:
+            updates["npc_quest_progress"] = {}
         if updates:
             await db.characters.update_one({"_id": ch_doc["_id"]}, {"$set": updates})
             total_updated += 1
