@@ -1,56 +1,58 @@
-import { useEffect } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import Landing from "@/pages/Landing";
+import Auth from "@/pages/Auth";
+import CharacterCreate from "@/pages/CharacterCreate";
+import Game from "@/pages/Game";
+import LeaderboardPage from "@/pages/LeaderboardPage";
+import { Toaster } from "@/components/ui/sonner";
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
-import { HOME } from "@/constants/testIds";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
+function ProtectedRoute({ children, requireCharacter = false }) {
+    const { user } = useAuth();
+    if (user === null) {
+        return (
+            <div className="min-h-screen flex items-center justify-center text-primary font-pixel text-2xl">
+                LOADING ERCHIS…
+            </div>
+        );
     }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          data-testid={HOME.emergentLink}
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
-
-function App() {
-  return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </div>
-  );
+    if (user === false) return <Navigate to="/auth" replace />;
+    if (requireCharacter && !user.has_character) return <Navigate to="/create" replace />;
+    if (!requireCharacter && user.has_character && window.location.pathname === "/create") {
+        return <Navigate to="/game" replace />;
+    }
+    return children;
 }
 
-export default App;
+function AppRoutes() {
+    return (
+        <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/create" element={
+                <ProtectedRoute><CharacterCreate /></ProtectedRoute>
+            } />
+            <Route path="/game" element={
+                <ProtectedRoute requireCharacter><Game /></ProtectedRoute>
+            } />
+            <Route path="/leaderboard" element={
+                <ProtectedRoute requireCharacter><LeaderboardPage /></ProtectedRoute>
+            } />
+            <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+    );
+}
+
+export default function App() {
+    return (
+        <div className="App">
+            <BrowserRouter>
+                <AuthProvider>
+                    <AppRoutes />
+                    <Toaster />
+                </AuthProvider>
+            </BrowserRouter>
+        </div>
+    );
+}
