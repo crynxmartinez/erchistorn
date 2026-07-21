@@ -50,6 +50,12 @@ Regions + 2 towns (Ironhold Forge Town + Willowmere Sanctuary), Inn/Marketplace/
 - **Structure**: implemented as a merge module (`/app/backend/game_data_p3.py` → `extend_world_data`) so the base `game_data.py` stays readable.
 - **Tests**: 15/15 new pytest cases (`tests/test_phase3_biome_content.py`) pass — verifies monster count grew, items expanded, every new biome has a monster + hunt action, and monster power scales with continent level_req.
 
+### Phase 3.3 — Weary rename + stat tooltips (2026-02, current session)
+- **BUGFIX**: the "Exhausted" debuff and the numeric "Exhaust(ion)" racial meter had colliding names — the STATUS badge said EXHAUSTED while the meter read 0. Renamed the debuff to **Weary** (`id: weary`), added a one-time startup migration that rewrites legacy `exhausted` statuses on existing characters (2 records renamed on first boot).
+- **BUGFIX**: statuses never decremented — added `_tick_character_statuses(character)` after every `/api/game/action` so debuffs like Weary / Bleeding / Poisoned expire naturally instead of persisting until an Inn visit.
+- **ENHANCEMENT**: every stat, resource meter, and status badge on the Character Sheet + Racial Panel now surfaces a hover tooltip (Radix, `delayDuration=120`) explaining what it does. New `STAT_HINTS` / `STATUS_HINTS` maps in `CharacterSheet.jsx` and `hint` fields in `RacialPanel.jsx`. Status badges also show remaining duration inline as `Weary (3)`.
+- **Tests**: verified via testing agent — 100% pass, 7/7 backend + 10/10 frontend cases. Confirmed the word "Exhausted" never appears on a status badge anymore, Weary tooltip explicitly says "NOT the same as the Exhaustion meter", and a 20-action Wildblood loop saw its Weary status expire on its own.
+
 ## Backlog
 
 ### P1 — Advanced Racial Ranks (deferred)
