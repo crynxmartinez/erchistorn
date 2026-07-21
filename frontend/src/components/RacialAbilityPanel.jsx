@@ -18,7 +18,18 @@ export default function RacialAbilityPanel({ character, onCharacterUpdate }) {
             setState(r.data);
         } catch (e) { toast.error(extractError(e)); }
     };
-    useEffect(() => { reload(); }, [character?.race, character?.human_focus, character?.human_focus_last_used, character?.dwarf_field_repair_last_used, character?.orc_break_chain_last_used]);
+    useEffect(() => { reload(); }, [
+        character?.race,
+        character?.human_focus, character?.human_focus_last_used,
+        character?.dwarf_field_repair_last_used,
+        character?.orc_break_chain_last_used,
+        character?.elf_celestial_shift_last_used,
+        character?.halfelf_attunement_last_used,
+        character?.wildblood_bloodrage_last_used,
+        character?.hyliondrian_tidal_grace_last_used,
+        character?.sylvan_shrink_last_used,
+        character?.statuses?.length,
+    ]);
 
     const use = async (ability_id, extra = {}) => {
         setBusy(true);
@@ -109,6 +120,43 @@ export default function RacialAbilityPanel({ character, onCharacterUpdate }) {
                                 >
                                     Break the Chain
                                 </button>
+                            )}
+
+                            {/* Elf, Half-Elf, Wildblood, Hyliondrian — single-button spell abilities */}
+                            {["elf_celestial_shift", "halfelf_attunement", "wildblood_bloodrage", "hyliondrian_tidal_grace"].includes(a.id) && (
+                                <>
+                                    {a.description && (
+                                        <div className="text-xs text-muted-foreground mt-1 italic">{a.description}</div>
+                                    )}
+                                    <button
+                                        onClick={() => use(a.id)}
+                                        disabled={busy || !a.available}
+                                        data-testid={`btn-${a.id.replace(/_/g, "-")}`}
+                                        className="press-btn font-pixel text-sm uppercase mt-2 px-3 py-1 border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground disabled:opacity-40"
+                                    >
+                                        {a.name}
+                                    </button>
+                                </>
+                            )}
+
+                            {/* Sylvan Shrink — toggle */}
+                            {a.id === "sylvan_shrink" && (
+                                <>
+                                    {a.description && (
+                                        <div className="text-xs text-muted-foreground mt-1 italic">{a.description}</div>
+                                    )}
+                                    <div className="stat-label text-primary/80 mt-1">
+                                        State: <span className="text-primary">{a.toggle_state === "on" ? "Shrunken" : "Normal"}</span>
+                                    </div>
+                                    <button
+                                        onClick={() => use("sylvan_shrink")}
+                                        disabled={busy || !a.available}
+                                        data-testid="btn-sylvan-shrink"
+                                        className="press-btn font-pixel text-sm uppercase mt-2 px-3 py-1 border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground disabled:opacity-40"
+                                    >
+                                        {a.toggle_state === "on" ? "Return to True Form" : "Shrink"}
+                                    </button>
+                                </>
                             )}
                         </div>
                     );

@@ -548,7 +548,7 @@ async def create_character(payload: CreateCharacterPayload, user: dict = Depends
         "zone_active": False,
         # towns / guild / quests
         "home_town": default_home_town_for_race(payload.race),
-        "current_town": None,
+        "current_town": default_home_town_for_race(payload.race),
         "visited_towns": [default_home_town_for_race(payload.race)],
         "known_waystones": [],
         "active_waystones": [],
@@ -565,6 +565,11 @@ async def create_character(payload: CreateCharacterPayload, user: dict = Depends
         "human_focus_expires": None,
         "dwarf_field_repair_last_used": None,
         "orc_break_chain_last_used": None,
+        "elf_celestial_shift_last_used": None,
+        "halfelf_attunement_last_used": None,
+        "wildblood_bloodrage_last_used": None,
+        "hyliondrian_tidal_grace_last_used": None,
+        "sylvan_shrink_last_used": None,
         "guild_id": None,
         "guild_rank": None,
         "active_quests": [],
@@ -1579,6 +1584,26 @@ from racial_abilities import (  # noqa: E402
     ORC_BREAK_CHAIN_COOLDOWN_HOURS,
     can_use_orc_break_chain,
     apply_orc_break_chain,
+    ELF_CELESTIAL_SHIFT_COST,
+    ELF_CELESTIAL_SHIFT_COOLDOWN_HOURS,
+    can_use_elf_celestial_shift,
+    apply_elf_celestial_shift,
+    HALFELF_ATTUNEMENT_COST,
+    HALFELF_ATTUNEMENT_COOLDOWN_HOURS,
+    can_use_halfelf_attunement,
+    apply_halfelf_attunement,
+    WILDBLOOD_BLOODRAGE_COST,
+    WILDBLOOD_BLOODRAGE_COOLDOWN_HOURS,
+    can_use_wildblood_bloodrage,
+    apply_wildblood_bloodrage,
+    HYLIONDRIAN_TIDAL_GRACE_COST,
+    HYLIONDRIAN_TIDAL_GRACE_COOLDOWN_HOURS,
+    can_use_hyliondrian_tidal_grace,
+    apply_hyliondrian_tidal_grace,
+    SYLVAN_SHRINK_COST,
+    SYLVAN_SHRINK_COOLDOWN_MINUTES,
+    can_use_sylvan_shrink,
+    apply_sylvan_shrink,
 )
 from world_content import (  # noqa: E402
     BOSSES,
@@ -1765,6 +1790,53 @@ async def racial_status(user: dict = Depends(_get_current_user)):
             "cooldown_hours": ORC_BREAK_CHAIN_COOLDOWN_HOURS,
             "available": allowed, "reason": reason, "seconds_remaining": cd,
         })
+    elif race == "elf":
+        allowed, reason, cd = can_use_elf_celestial_shift(ch)
+        out["abilities"].append({
+            "id": "elf_celestial_shift", "name": "Celestial Shift",
+            "cost": ELF_CELESTIAL_SHIFT_COST, "cost_resource": "celestial_charge",
+            "cooldown_hours": ELF_CELESTIAL_SHIFT_COOLDOWN_HOURS,
+            "available": allowed, "reason": reason, "seconds_remaining": cd,
+            "description": "Call the starlight — heals 30% max HP and purges every debuff.",
+        })
+    elif race == "half_elf":
+        allowed, reason, cd = can_use_halfelf_attunement(ch)
+        out["abilities"].append({
+            "id": "halfelf_attunement", "name": "Heritage Attunement",
+            "cost": HALFELF_ATTUNEMENT_COST, "cost_resource": "harmony",
+            "cooldown_hours": HALFELF_ATTUNEMENT_COOLDOWN_HOURS,
+            "available": allowed, "reason": reason, "seconds_remaining": cd,
+            "description": "Blend both bloodlines: +1 attack, +1 evasion for 5 actions.",
+        })
+    elif race == "wildblood":
+        allowed, reason, cd = can_use_wildblood_bloodrage(ch)
+        out["abilities"].append({
+            "id": "wildblood_bloodrage", "name": "Bloodrage",
+            "cost": WILDBLOOD_BLOODRAGE_COST, "cost_resource": "inner_blood",
+            "cooldown_hours": WILDBLOOD_BLOODRAGE_COOLDOWN_HOURS,
+            "available": allowed, "reason": reason, "seconds_remaining": cd,
+            "description": "Enter berserk state: +2 attack, -1 evasion for 4 actions.",
+        })
+    elif race == "hyliondrian":
+        allowed, reason, cd = can_use_hyliondrian_tidal_grace(ch)
+        out["abilities"].append({
+            "id": "hyliondrian_tidal_grace", "name": "Tidal Grace",
+            "cost": HYLIONDRIAN_TIDAL_GRACE_COST, "cost_resource": "tide",
+            "cooldown_hours": HYLIONDRIAN_TIDAL_GRACE_COOLDOWN_HOURS,
+            "available": allowed, "reason": reason, "seconds_remaining": cd,
+            "description": "The ocean answers — heals 40% max HP and washes away every debuff.",
+        })
+    elif race == "sylvan":
+        allowed, reason, cd = can_use_sylvan_shrink(ch)
+        is_shrunken = any(s.get("id") == "shrunken" for s in ch.get("statuses", []) or [])
+        out["abilities"].append({
+            "id": "sylvan_shrink", "name": "Shrunken Form",
+            "cost": SYLVAN_SHRINK_COST, "cost_resource": "verdant_essence",
+            "cooldown_hours": SYLVAN_SHRINK_COOLDOWN_MINUTES / 60,
+            "available": allowed, "reason": reason, "seconds_remaining": cd,
+            "toggle_state": "on" if is_shrunken else "off",
+            "description": "Toggle stealth-shift: +2 evasion, -1 attack. Toggle-off is free.",
+        })
     return out
 
 
@@ -1780,17 +1852,38 @@ async def use_racial_ability(request: Request, user: dict = Depends(_get_current
         ok, msg = apply_dwarf_field_repair(ch)
     elif ability == "orc_break_chain":
         ok, msg = apply_orc_break_chain(ch)
+    elif ability == "elf_celestial_shift":
+        ok, msg = apply_elf_celestial_shift(ch)
+    elif ability == "halfelf_attunement":
+        ok, msg = apply_halfelf_attunement(ch)
+    elif ability == "wildblood_bloodrage":
+        ok, msg = apply_wildblood_bloodrage(ch)
+    elif ability == "hyliondrian_tidal_grace":
+        ok, msg = apply_hyliondrian_tidal_grace(ch)
+    elif ability == "sylvan_shrink":
+        ok, msg = apply_sylvan_shrink(ch)
     if not ok:
         raise HTTPException(status_code=400, detail=msg)
     await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
         "hp": ch.get("hp"),
         "statuses": ch.get("statuses", []),
+        "resolve": ch.get("resolve"),
         "defiance": ch.get("defiance"),
+        "celestial_charge": ch.get("celestial_charge"),
+        "harmony": ch.get("harmony"),
+        "inner_blood": ch.get("inner_blood"),
+        "tide": ch.get("tide"),
+        "verdant_essence": ch.get("verdant_essence"),
         "human_focus": ch.get("human_focus"),
         "human_focus_last_used": ch.get("human_focus_last_used"),
         "human_focus_expires": ch.get("human_focus_expires"),
         "dwarf_field_repair_last_used": ch.get("dwarf_field_repair_last_used"),
         "orc_break_chain_last_used": ch.get("orc_break_chain_last_used"),
+        "elf_celestial_shift_last_used": ch.get("elf_celestial_shift_last_used"),
+        "halfelf_attunement_last_used": ch.get("halfelf_attunement_last_used"),
+        "wildblood_bloodrage_last_used": ch.get("wildblood_bloodrage_last_used"),
+        "hyliondrian_tidal_grace_last_used": ch.get("hyliondrian_tidal_grace_last_used"),
+        "sylvan_shrink_last_used": ch.get("sylvan_shrink_last_used"),
     }})
     return {"character": ch, "message": msg}
 

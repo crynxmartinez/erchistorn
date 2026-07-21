@@ -457,7 +457,12 @@ def compute_player_power(character: dict) -> int:
     # Combat power: level scales, Might/Insight are primary damage stats, Grace tips accuracy.
     main = stats.get("might", 0) + stats.get("insight", 0) + stats.get("grace", 0) // 2
     life = stats.get("vitality", 0)  # small survivability contribution
-    return level * 2 + main + life // 2 + weapon_pow + armor_pow // 2 + stats.get("attack_success_mod", 0)
+    # Status modifiers (buffs & debuffs — Bloodrage, Heritage Attunement, Shrunken Form etc.)
+    status_atk_mod = 0
+    for s in character.get("statuses", []) or []:
+        mods = s.get("modifiers") or {}
+        status_atk_mod += int(mods.get("attack_success_mod", 0))
+    return level * 2 + main + life // 2 + weapon_pow + armor_pow // 2 + stats.get("attack_success_mod", 0) + status_atk_mod
 
 
 # ============================================================
@@ -468,7 +473,49 @@ extend_world_data(ITEMS, MONSTERS, BIOME_ACTIONS, ITEMS_BY_ID)
 
 
 # ============================================================
+# Canon migration — remap all monster.biome, BIOME_ACTIONS keys, and
+# ITEMS.biome_gather from the old codenames to the new canon IDs.
+# NOTE: Must run BEFORE the Phase-G boss injection so the migration's
+# dict rebuild doesn't overwrite freshly-injected 'boss' actions.
+# ============================================================
+def _apply_biome_id_migration() -> None:
+    # 1. Monsters
+    for m in MONSTERS:
+        old = m.get("biome")
+        if old and old in BIOME_ID_MAP:
+            m["biome"] = BIOME_ID_MAP[old]
+    # 2. BIOME_ACTIONS keys — merge lists on key collision instead of overwriting
+    remapped_actions: dict = {}
+    for k, v in BIOME_ACTIONS.items():
+        new_k = BIOME_ID_MAP.get(k, k)
+        if new_k in remapped_actions:
+            # Merge: preserve existing actions, extend targets where the same action id appears twice
+            existing_by_id = {a["id"]: a for a in remapped_actions[new_k]}
+            for act in v:
+                if act["id"] in existing_by_id:
+                    existing_targets = existing_by_id[act["id"]].setdefault("targets", [])
+                    for t in act.get("targets", []):
+                        if t not in existing_targets:
+                            existing_targets.append(t)
+                else:
+                    remapped_actions[new_k].append(act)
+                    existing_by_id[act["id"]] = act
+        else:
+            remapped_actions[new_k] = list(v)  # copy list so downstream mutations don't leak
+    BIOME_ACTIONS.clear()
+    BIOME_ACTIONS.update(remapped_actions)
+    # 3. ITEMS biome_gather references
+    for it in ITEMS:
+        gathers = it.get("biome_gather")
+        if gathers:
+            it["biome_gather"] = [BIOME_ID_MAP.get(b, b) for b in gathers]
+
+_apply_biome_id_migration()
+
+
+# ============================================================
 # Phase G — merge bosses + boss parts + cross-continent recipes
+# (Runs AFTER canon migration so injected 'boss' actions survive.)
 # ============================================================
 from world_content import (  # noqa: E402
     BOSSES,
@@ -504,27 +551,9 @@ for _p in BOSS_PARTS:
         ITEMS_BY_ID[_p["id"]] = _p
 
 
-# ============================================================
-# Canon migration — remap all monster.biome, BIOME_ACTIONS keys, and
-# ITEMS.biome_gather from the old codenames to the new canon IDs.
-# ============================================================
-def _apply_biome_id_migration() -> None:
-    # 1. Monsters
-    for m in MONSTERS:
-        old = m.get("biome")
-        if old and old in BIOME_ID_MAP:
-            m["biome"] = BIOME_ID_MAP[old]
-    # 2. BIOME_ACTIONS keys
-    remapped_actions: dict = {}
-    for k, v in BIOME_ACTIONS.items():
-        new_k = BIOME_ID_MAP.get(k, k)
-        remapped_actions[new_k] = v
-    BIOME_ACTIONS.clear()
-    BIOME_ACTIONS.update(remapped_actions)
-    # 3. ITEMS biome_gather references
-    for it in ITEMS:
-        gathers = it.get("biome_gather")
-        if gathers:
-            it["biome_gather"] = [BIOME_ID_MAP.get(b, b) for b in gathers]
-
-_apply_biome_id_migration()
+# Sanity assertion — every boss biome MUST expose a dedicated 'boss' action.
+for _b in BOSSES:
+    _bid = _b["biome"]
+    assert _bid in BIOME_ACTIONS, f"Boss biome '{_bid}' missing from BIOME_ACTIONS"
+    assert any(a["id"] == "boss" for a in BIOME_ACTIONS[_bid]), \
+        f"Boss biome '{_bid}' is missing dedicated 'boss' action"

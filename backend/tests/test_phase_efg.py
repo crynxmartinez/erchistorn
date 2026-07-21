@@ -317,17 +317,28 @@ class TestRacialStatusEndpoint:
         assert a["cooldown_hours"] == 12
         assert a["cost"] == 40
 
-    def test_other_races_empty(self):
-        for race in ("elf", "half_elf", "wildblood", "hyliondrian", "sylvan"):
+    def test_other_races_have_active_abilities(self):
+        """All 8 playable races now expose exactly one active racial ability (Phase E complete)."""
+        expected = {
+            "elf":         "elf_celestial_shift",
+            "half_elf":    "halfelf_attunement",
+            "wildblood":   "wildblood_bloodrage",
+            "hyliondrian": "hyliondrian_tidal_grace",
+            "sylvan":      "sylvan_shrink",
+        }
+        for race, ability_id in expected.items():
             email = f"TEST_{race}_{uuid.uuid4().hex[:8]}@erchis.io"
             s = _register(email)
+            # _create_char automatically injects half_elf heritage.
             _create_char(s, race=race, role="fighter", mastery="knight",
                          name=f"R{race[:4].capitalize()}_{uuid.uuid4().hex[:3]}")
             r = s.get(f"{API}/game/racial/status")
             assert r.status_code == 200
             d = r.json()
             assert d["race"] == race
-            assert d["abilities"] == [], f"race {race} should have empty abilities, got {d['abilities']}"
+            assert len(d["abilities"]) == 1, f"race {race} expected 1 ability, got {d['abilities']}"
+            a = d["abilities"][0]
+            assert a["id"] == ability_id, f"race {race} expected ability id {ability_id!r}, got {a['id']!r}"
 
 
 class TestRacialAbilityUse:
