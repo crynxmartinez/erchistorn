@@ -43,6 +43,13 @@ Regions + 2 towns (Ironhold Forge Town + Willowmere Sanctuary), Inn/Marketplace/
 - **Town Visit gating**: `/api/game/town/visit` now blocks travel to towns whose continent is below the character's current level or not the current continent (with friendly error text).
 - **HUD Town Discovery**: Unvisited towns in the current continent render as dashed-border `discover-town-<id>` buttons in the Game HUD so players see where they can wander next.
 
+### Phase 3.2 — Biome content for the higher continents (2026-02, current session)
+- **48 new monsters** across the 24 biomes of the 6 new continents (2 per biome). Power/HP scales from Vulkaros (Lv 8, power ~11–15) up to Verdania (Lv 45, power ~50–58).
+- **~50 new items**: continent-specific gather materials (ash_grass, basalt_shard, hex_moss, cold_iron, silverleaf, storm_glass, djinn_glass, abyss_coral, kraken_ink, etc.), monster loot drops, six late-game weapon/armor drops (basalt_axe → sylvan_glaive; ashplate → coral_platemail), and six skillbook drops (ember_lash, wraith_ward, frost_edge, wind_step, sunlance, tidefury).
+- **Biome actions** (hunt / gather / explore / loot_ruins / fish) wired for all 24 new biomes.
+- **Structure**: implemented as a merge module (`/app/backend/game_data_p3.py` → `extend_world_data`) so the base `game_data.py` stays readable.
+- **Tests**: 15/15 new pytest cases (`tests/test_phase3_biome_content.py`) pass — verifies monster count grew, items expanded, every new biome has a monster + hunt action, and monster power scales with continent level_req.
+
 ## Backlog
 
 ### P1 — Advanced Racial Ranks (deferred)
@@ -58,11 +65,12 @@ Heritage Ranks II–V per user's detailed spec (utility abilities, cooldowned ac
 - Marine adaptation Rank II abilities
 
 ### P3 — Content expansion
-- Populate Continents 2-7 with monsters + gather materials (**biomes + towns now done, Feb 2026**)
+- Populate Continents 2-7 with biomes + towns + monsters + gather materials (**COMPLETE, Feb 2026**)
 - Expand narrative pool from 10 → 20 variants per outcome
 - More recipes requiring cross-continent materials
 - Racial quests (unlock Heritage Ranks)
 - Guild hall upgrades (buffs)
+- Craft recipes for new-continent materials (basalt_axe, cold_iron_spear, storm_bow, djinn_scimitar, sylvan_glaive) — items exist as drops but currently have no craft path.
 
 ### P4 — Quality of life
 - Sprite upload for real pixel art (object storage integration)

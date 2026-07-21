@@ -515,3 +515,10 @@ def compute_player_power(character: dict) -> int:
     main = stats.get("might", 0) + stats.get("insight", 0) + stats.get("grace", 0) // 2
     life = stats.get("vitality", 0)  # small survivability contribution
     return level * 2 + main + life // 2 + weapon_pow + armor_pow // 2 + stats.get("attack_success_mod", 0)
+
+
+# ============================================================
+# Merge Phase 3.1 extended world data (higher continents) into base lists
+# ============================================================
+from game_data_p3 import extend_world_data  # noqa: E402
+extend_world_data(ITEMS, MONSTERS, BIOME_ACTIONS, ITEMS_BY_ID)

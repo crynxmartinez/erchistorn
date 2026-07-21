@@ -157,6 +157,7 @@ class TestAspectPersistence:
 
     def test_non_wildblood_non_hyliondrian_ignores_aspects(self):
         s = _register_fresh()
+        # Server now strictly rejects stray beast_aspect from non-Wildbloods.
         r = s.post(f"{API}/game/character", json={
             "name": "TESTHuman",
             "race": "human",
@@ -165,11 +166,34 @@ class TestAspectPersistence:
             "origin": "guardians_shield",
             "portrait_id": "human_aldric",
             "oath": "I shall not fail.",
-            "beast_aspect": "predator",       # should be ignored/nulled
-            "marine_adaptation": "jelly_kin", # should be ignored/nulled
+            "beast_aspect": "predator",       # not allowed for Human → 400
         }, timeout=15)
-        assert r.status_code == 200, r.text
-        ch = r.json()
-        # Server should either drop these fields or set to null for non-matching races
-        assert ch.get("beast_aspect") in (None, "", "predator")  # tolerant
-        assert ch.get("marine_adaptation") in (None, "", "jelly_kin")
+        assert r.status_code == 400, r.text
+        assert "Wildblood" in r.text
+        # And rejects stray marine_adaptation from non-Hyliondrians.
+        r2 = s.post(f"{API}/game/character", json={
+            "name": "TESTHuman",
+            "race": "human",
+            "role": "fighter",
+            "mastery": "knight",
+            "origin": "guardians_shield",
+            "portrait_id": "human_aldric",
+            "oath": "I shall not fail.",
+            "marine_adaptation": "jelly_kin", # not allowed for Human → 400
+        }, timeout=15)
+        assert r2.status_code == 400, r2.text
+        assert "Hyliondrian" in r2.text
+        # And when no aspect fields are sent, character creates cleanly with null aspects.
+        r3 = s.post(f"{API}/game/character", json={
+            "name": "TESTHuman",
+            "race": "human",
+            "role": "fighter",
+            "mastery": "knight",
+            "origin": "guardians_shield",
+            "portrait_id": "human_aldric",
+            "oath": "I shall not fail.",
+        }, timeout=15)
+        assert r3.status_code == 200, r3.text
+        ch = r3.json()
+        assert ch.get("beast_aspect") in (None, "")
+        assert ch.get("marine_adaptation") in (None, "")
