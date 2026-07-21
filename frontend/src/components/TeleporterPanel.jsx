@@ -9,7 +9,7 @@ import { Sparkles, ArrowRight, Coins } from "lucide-react";
  */
 export default function TeleporterPanel({ character, onTraveled }) {
     const [dests, setDests] = useState([]);
-    const [meta, setMeta] = useState({ cooldown_secs: 600, fee_base: 100 });
+    const [meta, setMeta] = useState({ cooldown_secs: 600, fee_base: 100, block_reason: "" });
     const [busy, setBusy] = useState(false);
     const [cdText, setCdText] = useState("");
 
@@ -18,10 +18,14 @@ export default function TeleporterPanel({ character, onTraveled }) {
             try {
                 const r = await api.get("/game/teleporter/destinations");
                 setDests(r.data.destinations);
-                setMeta({ cooldown_secs: r.data.cooldown_secs, fee_base: r.data.fee_base });
+                setMeta({
+                    cooldown_secs: r.data.cooldown_secs,
+                    fee_base: r.data.fee_base,
+                    block_reason: r.data.block_reason || "",
+                });
             } catch (e) { toast.error(extractError(e)); }
         })();
-    }, [character?.current_continent, character?.gold]);
+    }, [character?.current_continent, character?.current_town, character?.gold, character?.teleporter_last_used]);
 
     useEffect(() => {
         const t = setInterval(() => {
@@ -52,12 +56,17 @@ export default function TeleporterPanel({ character, onTraveled }) {
                 <div className="narr text-sm text-muted-foreground mt-1">
                     A ring of sun-warmed stones, thrumming quiet. Choose a continent; step through; be somewhere new.
                 </div>
-                <div className="stat-label mt-2 text-primary/80 flex items-center gap-3">
+                <div className="stat-label mt-2 text-primary/80 flex items-center gap-3 flex-wrap">
                     <span>FEE: <Coins size={10} className="inline text-primary" /> {meta.fee_base}g / hop</span>
                     <span>·</span>
                     <span>COOLDOWN: {Math.floor(meta.cooldown_secs / 60)}m</span>
                     {cdText && <span className="text-destructive">· recharging {cdText}</span>}
                 </div>
+                {meta.block_reason && (
+                    <div className="stat-label text-destructive mt-2 italic" data-testid="teleporter-block-reason">
+                        {meta.block_reason}
+                    </div>
+                )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -65,7 +74,7 @@ export default function TeleporterPanel({ character, onTraveled }) {
                     <button
                         key={d.continent_id}
                         data-testid={`teleporter-dest-${d.continent_id}`}
-                        disabled={busy || d.is_current || !!cdText || (character?.gold ?? 0) < d.fee}
+                        disabled={busy || d.is_current || !d.is_available || !!cdText || (character?.gold ?? 0) < d.fee}
                         onClick={() => travel(d.continent_id)}
                         className={`press-btn p-3 text-left border-2 transition-colors flex items-center justify-between ${
                             d.is_current

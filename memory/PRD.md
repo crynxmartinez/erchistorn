@@ -64,6 +64,15 @@ Regions + 2 towns (Ironhold Forge Town + Willowmere Sanctuary), Inn/Marketplace/
 - **Lazy-loaded + cached**: 7 parallel `/api/game/data/*` calls fire only on first open; subsequent opens re-use cached state (verified via network interceptor).
 - **Tests**: 13/13 frontend acceptance criteria pass. Fixed the Radix a11y warning by wiring `SheetTitle` + `SheetDescription` into the parchment header.
 
+### Phase A/B/C/D — Full world spec compliance (2026-02, current session)
+Massive rewrite to bring the world in line with the master design spec.
+- **Phase A · Canon world rename**: 7 legacy continents renamed + expanded to **8 accessible** (Valeria/Mushkara/Concordia/Khardrum/Haya/Gennel/Hylion/Daw'ul Talalu) + **3 locked** (Azurea/Vael'Turog/Orinth). All 14 hometowns and 24 biomes renamed to canon (Ironhold→Oathspire, Solunara, Jahrahold, Elaris, Grunhold, Rindivar Grove, Atlantyrion, Veilgrove, etc.). Startup migration rewrites any legacy character record IDs idempotently. Race → canonical homeland map: Sylvans really do start in Veilgrove now, Dwarves in Jahrahold, etc.
+- **Phase B · Grand Teleporter / Waystones / Homeland Reputation**: `/api/game/teleporter/travel` (100g fee, 10-min cooldown, hometown-only, arrival at destination hometown). 16 Waystones with discover→activate→travel (2 per continent, per-biome). Reputation dict per character, seeded Friendly for natives + Neutral for others (7 tiers hated→exalted).
+- **Phase C · Exploration Progress %**: per-biome character progress with 10/25/50/75/100 milestones. Explore actions add +20/+12/+6/+2/0/-2 per dice outcome; non-explore actions add half. Response body exposes `explore_hits`.
+- **Phase D · Formal Professions**: **19 professions** across gathering/crafting/service. Up to 3 slots per character (unlock at Lv 1/10/25). Ranks Novice→Grandmaster with 200/600/1500/3500/8000 xp thresholds. Learn/abandon endpoints; 25% xp saved on abandon; **7-day relearn cooldown** enforced. Every gather/hunt/fish/loot_ruins action grants XP to the matching learned profession.
+- **Frontend**: two new HUD tabs (**TRADES**, **TELEPORTER**). World map rewritten to show all 11 continents + a live Exploration Progress panel underneath. All race/continent names pretty-cased.
+- **Tests**: 23/23 pytest cases + 5/5 UI acceptance areas verified by testing agent. Fixed `rank_from_xp` off-by-one, added hometown-gating flag on teleporter destinations, cleaned teleporter arrival state.
+
 ## Backlog
 
 ### P1 — Advanced Racial Ranks (deferred)

@@ -182,13 +182,11 @@ PROFESSION_RANK_XP = {
 
 def rank_from_xp(xp: int) -> str:
     total = 0
-    rank = "novice"
     for r in PROFESSION_RANKS:
         need = PROFESSION_RANK_XP[r]
         if xp < total + need:
-            return rank
+            return r
         total += need
-        rank = r
     return "grandmaster"
 
 
@@ -198,6 +196,17 @@ def learn_profession(character: dict, profession_id: str) -> tuple[bool, str]:
     profs = character.setdefault("professions", [])
     if any(p["id"] == profession_id for p in profs):
         return False, "You already know this profession."
+    # 7-day cooldown after abandoning the same profession (spec: seven-day change cooldown).
+    abandoned = (character.get("abandoned_professions") or {}).get(profession_id)
+    if abandoned and abandoned.get("abandoned"):
+        try:
+            since = datetime.fromisoformat(abandoned["abandoned"])
+            days = (datetime.now(timezone.utc) - since).days
+            if days < 7:
+                remaining = 7 - days
+                return False, f"You set this trade aside recently. {remaining} more day(s) before you may take it up again."
+        except ValueError:
+            pass
     slots = profession_slots_unlocked(int(character.get("level", 1)))
     if len(profs) >= slots:
         need = 10 if slots == 1 else 25 if slots == 2 else None
@@ -207,10 +216,15 @@ def learn_profession(character: dict, profession_id: str) -> tuple[bool, str]:
         return False, msg
     profs.append({
         "id":       profession_id,
-        "xp":       0,
+        "xp":       int((character.get("abandoned_professions") or {}).get(profession_id, {}).get("xp", 0)),  # restore 25% saved
         "rank":     "novice",
         "learned":  datetime.now(timezone.utc).isoformat(),
     })
+    # After successful relearn, clear the abandoned record so a new 7-day timer starts fresh next time.
+    if abandoned:
+        character["abandoned_professions"].pop(profession_id, None)
+    # If we restored xp, recalc rank
+    profs[-1]["rank"] = rank_from_xp(profs[-1]["xp"])
     return True, f"You have taken up {PROFESSIONS_BY_ID[profession_id]['name']}."
 
 

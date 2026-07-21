@@ -2,6 +2,17 @@ import { useEffect, useState } from "react";
 import { Lock, Compass, Sparkles } from "lucide-react";
 import { api } from "@/lib/api";
 
+const RACE_LABEL = {
+    human: "Human", elf: "Elf", dwarf: "Dwarf", half_elf: "Half-Elf",
+    orc: "Orc", wildblood: "Wildblood", hyliondrian: "Hyliondrian", sylvan: "Sylvan",
+};
+const CONTINENT_LABEL = {
+    valeria: "Valeria", mushkara: "Mushkara", concordia: "Concordia", khardrum: "Khardrum",
+    haya: "Haya", gennel: "Gennel", hylion: "Hylion", daw_ul_talalu: "Daw'ul Talalu",
+    azurea: "Azurea", vael_turog: "Vael'Turog", orinth: "Orinth",
+};
+const prettifyContinents = (arr) => (arr || []).map((c) => CONTINENT_LABEL[c] || c).join(", ");
+
 /**
  * World Map — the 11 continents of Erchis (8 accessible + 3 locked) plus a
  * per-biome Exploration Progress readout for whichever continent you're on.
@@ -49,7 +60,7 @@ export default function WorldMap({ continents, character, onTravel }) {
                                     active ? <Compass size={16} className="text-primary" /> : null}
                             </div>
                             <div className="stat-label mt-1">
-                                {isLocked ? "Sealed" : `${c.biomes?.length || 0} biomes${c.home_race ? ` · Home of the ${c.home_race}` : ""}`}
+                                {isLocked ? "Sealed" : `${c.biomes?.length || 0} biomes${c.home_race ? ` · Home of the ${RACE_LABEL[c.home_race] || c.home_race}` : ""}`}
                             </div>
                             <div className="text-xs text-muted-foreground mt-2 leading-relaxed">{c.desc}</div>
                             {c.specialty && !isLocked && (

@@ -3,6 +3,13 @@ import { api, extractError } from "@/lib/api";
 import { toast } from "sonner";
 import { Hammer, Sprout, Anchor, X } from "lucide-react";
 
+const CONTINENT_LABEL = {
+    valeria: "Valeria", mushkara: "Mushkara", concordia: "Concordia", khardrum: "Khardrum",
+    haya: "Haya", gennel: "Gennel", hylion: "Hylion", daw_ul_talalu: "Daw'ul Talalu",
+    azurea: "Azurea", vael_turog: "Vael'Turog", orinth: "Orinth",
+};
+const prettifyContinents = (arr) => (arr || []).map((c) => CONTINENT_LABEL[c] || c).join(", ");
+
 /**
  * ProfessionsPanel — Codex-tab-style view of the character's 3 profession slots
  * plus the full catalog. First slot at Lv 1, second at Lv 10, third at Lv 25.
@@ -119,7 +126,7 @@ export default function ProfessionsPanel({ character, onChanged }) {
                                         </div>
                                         <div className="text-xs text-muted-foreground mt-1">{p.desc}</div>
                                         {p.best_continents?.length > 0 && (
-                                            <div className="stat-label text-primary/60 mt-1">Best in: {p.best_continents.join(", ")}</div>
+                                            <div className="stat-label text-primary/60 mt-1">Best in: {prettifyContinents(p.best_continents)}</div>
                                         )}
                                     </div>
                                 );

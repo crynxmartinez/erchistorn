@@ -1226,21 +1226,25 @@ async def teleporter_destinations(user: dict = Depends(_get_current_user)):
     """List accessible continents + their hometowns. Home continent is excluded from the fee list."""
     from world_data import HOMETOWN_BY_CONTINENT
     ch = await _get_character_or_404(user["_id"])
+    allowed, block_reason = teleporter_can_use(ch)
     dests = []
     for c in CONTINENTS:
         if c.get("locked"):
             continue
         hometown = HOMETOWN_BY_CONTINENT.get(c["id"])
         town = TOWNS_BY_ID.get(hometown) if hometown else None
+        is_current = c["id"] == ch.get("current_continent")
         dests.append({
             "continent_id": c["id"],
             "continent_name": c["name"],
             "hometown_id": hometown,
             "hometown_name": town["name"] if town else hometown,
-            "fee": TELEPORTER_FEE if c["id"] != ch.get("current_continent") else 0,
-            "is_current": c["id"] == ch.get("current_continent"),
+            "fee": TELEPORTER_FEE if not is_current else 0,
+            "is_current": is_current,
+            "is_available": allowed and not is_current,
         })
-    return {"destinations": dests, "cooldown_secs": TELEPORTER_COOLDOWN_SECS, "fee_base": TELEPORTER_FEE}
+    return {"destinations": dests, "cooldown_secs": TELEPORTER_COOLDOWN_SECS,
+            "fee_base": TELEPORTER_FEE, "block_reason": block_reason}
 
 
 @api.post("/game/teleporter/travel")
@@ -1275,9 +1279,9 @@ async def teleporter_travel(request: Request, user: dict = Depends(_get_current_
     ch["current_town"] = hometown
     if hometown not in ch.get("visited_towns", []):
         ch.setdefault("visited_towns", []).append(hometown)
-    # Land in the tier-1 biome of the new continent
-    if dest_cont.get("biomes"):
-        ch["current_biome"] = dest_cont["biomes"][0]["id"]
+    # Arrive INSIDE the hometown itself — biome is null until the player walks
+    # out. Matches the /waystone/travel pattern of a single-authoritative location.
+    ch["current_biome"] = None
     ch["teleporter_last_used"] = datetime.now(timezone.utc).isoformat()
     await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
         "gold": ch["gold"],
