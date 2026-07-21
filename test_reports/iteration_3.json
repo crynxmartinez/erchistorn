@@ -1,0 +1,31 @@
+{
+  "summary": "Verified the Weary/Exhausted disambiguation fix + tooltip enhancement end-to-end. Backend: 7/7 pytest cases pass — STATUS_TEMPLATES no longer contains 'exhausted', migration is idempotent, _tick_character_statuses correctly decrements + drops expired statuses, and a fresh Wildblood taking 20 hunt actions saw Weary appear and then naturally expire (no Inn required). Frontend: on the seed user (Erethon L2, currently carrying Bleeding (3) + Weary (3) badges after test actions), the STATUS row renders 'Weary (N)' with duration inline and NEVER shows the string 'Exhausted'. The numeric racial 'EXHAUST' meter is a separate bar still labeled EXHAUST with its own value (0/100) — semantic collision resolved. All 10 stat/status tooltips (stat-tip-might/grace/insight/vitality/cognition/essence/drive, hp-row-tip, exhaust-tip, resolve-tip) verified to render via Radix Portal on hover, and the Weary status tooltip contains the exact disambiguation phrase 'NOT the same as the Exhaustion meter' (screenshot-confirmed).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Character Sheet — Racial panel", "issues": ["EXHAUST and RESOLVE bar labels sit above bars, but numeric values are placed BELOW the bar on the right — with a tight two-column grid this pushes the numeric slightly outside the visual box. Cosmetic only."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_weary_and_tooltips.py",
+    "/app/test_reports/pytest/pytest_weary.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py _tick_character_statuses is called AFTER tick_racial_resources_on_action but BEFORE the DB write — correct order. Uses > 0 threshold so a status with duration=1 rolls to 0 and is dropped in the SAME action that ticks it. That means a Weary rolled with duration=2 in resolve_action() will get one tick immediately (2→1) and be gone after the next action; effective visible lifetime = up to 2 more actions. If designers want it to survive one full action cycle after application, consider skipping the tick on the action that just applied it.",
+    "The startup migration in server.py:1383 only rewrites status.id + name from 'exhausted' → 'weary'. It does NOT restore duration if the legacy record had duration:0 (which was possible under the old system) — but since it's a one-off migration and any 0-duration would be swept by the new tick anyway, this is fine.",
+    "STATUS_HINTS in CharacterSheet.jsx is client-side only. If backend later adds a new status id (e.g. 'thirsty'), the badge will fall back to '{name} — active status effect.' — acceptable graceful degradation.",
+    "RacialPanel.jsx EXHAUSTION_HINT string references 'Weary' by name — good cross-linking of the disambiguation. Consider also referencing the numeric Exhaustion meter in the Weary tooltip's copy for symmetry (already done: 'NOT the same as the Exhaustion meter' ✓).",
+    "Radix Tooltip with delayDuration=120 works but browsers with skipDelayDuration can flash tooltips between adjacent triggers. Not a bug, but end-users mousing quickly across MAIN STATS may see prior tooltip briefly."
+  ],
+  "updated_files": ["/app/backend/tests/test_weary_and_tooltips.py (created)"],
+  "success_rate": {"backend": "100% (7/7)", "frontend": "100% (10/10 stat/status tooltips + weary disambiguation phrase verified in DOM & screenshot)"},
+  "test_credentials": "test@erchis.io / password123 (Erethon L2 Human/Fighter/Knight; TEST_weary_<uuid>@erchis.io / password123 for fresh Wildblood runs)",
+  "seed_data_creation": "1 new Wildblood scout/hunter user TEST_weary_<uuid>@erchis.io with character 'WearyWolf' (predator aspect). Kept in DB.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "The Radix Tooltip content lives in a Portal at document.body — locate with page.locator('[role=\"tooltip\"]') and pick the visible one. Alternating hover across sibling stat cells can miss tooltips because Radix's skipDelayDuration debounces; move mouse to (1900, 1000) and wait ~1.2s between checks for reliable results, OR test tooltips one at a time. Confirmed working IDs: stat-tip-{might,grace,insight,vitality,cognition,essence,drive}, hp-row-tip, exhaust-tip, resolve-tip, and status-weary badge (tooltip contains 'NOT the same as the Exhaustion meter').",
+  "rca of the issue": "User-reported inconsistency (STATUS: EXHAUSTED while numeric Exhaust: 0) was a semantic collision — two independent systems (status debuffs + racial resource) sharing the 'Exhaustion' word. Root cause: game_engine STATUS_TEMPLATES had 'exhausted' as a debuff id and resolve_action's random.choice pool applied it on outcome 2/4. Fix: renamed id/name to 'weary', added a MongoDB startup migration for legacy characters, and wired _tick_character_statuses into /api/game/action so statuses expire naturally instead of accumulating forever. Also added TooltipProvider + STAT_HINTS/STATUS_HINTS maps in CharacterSheet.jsx and matching hint constants in RacialPanel.jsx so every stat/status/meter now has hover context. Verified: (1) no 'Exhausted' badge in DOM, (2) Weary tooltip contains disambiguating phrase, (3) 20-action Wildblood loop saw statuses expire, (4) numeric exhaustion meter unchanged by status system."
+}

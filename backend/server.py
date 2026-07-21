@@ -164,6 +164,19 @@ def _apply_status_to_character(character: dict, new_status: dict) -> None:
     statuses.append(new_status)
 
 
+def _tick_character_statuses(character: dict) -> None:
+    """Decrement each status duration by 1 and drop any that have expired.
+    Called at the end of every action so debuffs like Weary / Bleeding / Poisoned
+    eventually clear themselves, rather than sticking until an Inn visit."""
+    kept = []
+    for s in character.get("statuses", []):
+        dur = int(s.get("duration", 0)) - 1
+        if dur > 0:
+            s["duration"] = dur
+            kept.append(s)
+    character["statuses"] = kept
+
+
 def _add_item_to_inventory(character: dict, item_id: str, qty: int) -> None:
     if not item_id:
         return
@@ -621,6 +634,9 @@ async def do_action(payload: ActionPayload, user: dict = Depends(_get_current_us
 
     # Racial resource ticking
     racial_msgs = tick_racial_resources_on_action(ch, result["outcome"], payload.action_id)
+
+    # Tick status durations so debuffs (Bleeding, Weary, Poisoned, etc.) expire naturally.
+    _tick_character_statuses(ch)
 
     if ch["hp"] <= 0:
         ch["hp"] = 1
@@ -1364,6 +1380,16 @@ async def startup():
     await db.users.create_index("email", unique=True)
     await db.characters.create_index("user_id", unique=True)
     await db.world_events.create_index("created_at")
+    # One-time migration: rename any legacy "exhausted" debuff → "weary" (the
+    # numeric racial `exhaustion` meter kept the old name, this only touches
+    # the status badge that read "EXHAUSTED" and confused players).
+    mig = await db.characters.update_many(
+        {"statuses.id": "exhausted"},
+        {"$set": {"statuses.$[el].id": "weary", "statuses.$[el].name": "Weary"}},
+        array_filters=[{"el.id": "exhausted"}],
+    )
+    if mig.modified_count:
+        logger.info("Renamed legacy 'exhausted' status on %d characters.", mig.modified_count)
     logger.info("Erchis server up. Frontend origin: %s", frontend_url)
 
 

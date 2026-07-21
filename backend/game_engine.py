@@ -72,7 +72,7 @@ def roll_dice(player_power: int, target_power: int, luck: int = 0) -> dict:
 STATUS_TEMPLATES: dict[str, dict] = {
     "bleeding":  {"name": "Bleeding",  "kind": "debuff", "duration": 3, "magnitude": 2},
     "poisoned":  {"name": "Poisoned",  "kind": "debuff", "duration": 4, "magnitude": 3},
-    "exhausted": {"name": "Exhausted", "kind": "debuff", "duration": 2, "magnitude": 0},
+    "weary":     {"name": "Weary",     "kind": "debuff", "duration": 2, "magnitude": 0},
     "sick":      {"name": "Sick",      "kind": "debuff", "duration": 5, "magnitude": 1},
     "cursed":    {"name": "Cursed",    "kind": "debuff", "duration": 6, "magnitude": 0},
     "blessed":   {"name": "Blessed",   "kind": "buff",   "duration": 4, "magnitude": 2},
@@ -165,12 +165,12 @@ def resolve_action(character: dict, action_id: str, biome_id: str, target_id: st
     elif outcome == 2:  # fail + status
         hp_delta = -random.randint(2, 6)
         # apply a random bad status
-        status_applied = random.choice(["bleeding", "poisoned", "exhausted", "sick"])
+        status_applied = random.choice(["bleeding", "poisoned", "weary", "sick"])
     elif outcome == 3:  # fail
         hp_delta = 0
     elif outcome == 4:  # success + bad
         hp_delta = -random.randint(1, 4)
-        status_applied = random.choice(["bleeding", "exhausted"])
+        status_applied = random.choice(["bleeding", "weary"])
         _apply_action_rewards(action_id, target_id, rewards, tier="normal", monster=get_monster(target_id) if action_id == "hunt" else None)
         if action_id == "hunt":
             monster_slain = target_id
