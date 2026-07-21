@@ -92,6 +92,16 @@ def make_status(status_id: str) -> dict:
     return {"id": status_id, **tpl}
 
 
+def _append_status_dedup(char_or_state: dict, status: dict, key: str = "statuses") -> None:
+    """Add or refresh a status without duplicates."""
+    lst = char_or_state.setdefault(key, [])
+    for s in lst:
+        if s.get("id") == status.get("id"):
+            s["duration"] = max(int(s.get("duration", 0)), int(status.get("duration", 0)))
+            return
+    lst.append(status)
+
+
 def resolve_action(character: dict, action_id: str, biome_id: str, target_id: str | None) -> dict:
     """Resolve a non-combat action node. Returns dict with outcome, narrative, rewards, hp_delta, status."""
     action_meta = None
@@ -375,7 +385,7 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
         elif sk.get("power_type") == "defend":
             self_status = sk.get("self_status")
             if self_status:
-                character.setdefault("statuses", []).append(make_status(self_status))
+                _append_status_dedup(character, make_status(self_status))
             skill_used_msg = f"{character['name']} raises {sk['name']}."
         elif sk.get("power_type") == "debuff":
             skill_dmg = sk.get("power", 0)
@@ -392,7 +402,7 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
     state["monster_hp"] = max(0, state["monster_hp"] - total_dmg)
 
     if skill_status and outcome >= 4:
-        state.setdefault("monster_statuses", []).append(make_status(skill_status))
+        _append_status_dedup(state, make_status(skill_status), key="monster_statuses")
 
     log.append({
         "kind": "player_strike",

@@ -120,6 +120,17 @@ def _apply_rewards_to_character(character: dict, rewards: dict) -> None:
         _add_item_to_inventory(character, item_id, int(qty))
 
 
+def _apply_status_to_character(character: dict, new_status: dict) -> None:
+    """Add a status, or refresh duration if it already exists (no duplicates)."""
+    statuses = character.setdefault("statuses", [])
+    for s in statuses:
+        if s.get("id") == new_status.get("id"):
+            # refresh duration to the greater of the two, keep magnitude
+            s["duration"] = max(int(s.get("duration", 0)), int(new_status.get("duration", 0)))
+            return
+    statuses.append(new_status)
+
+
 def _add_item_to_inventory(character: dict, item_id: str, qty: int) -> None:
     if not item_id:
         return
@@ -479,7 +490,7 @@ async def do_action(payload: ActionPayload, user: dict = Depends(_get_current_us
 
     ch["hp"] = max(0, min(ch["max_hp"], ch["hp"] + result["hp_delta"]))
     if result.get("status_applied"):
-        ch.setdefault("statuses", []).append({
+        _apply_status_to_character(ch, {
             "id": result["status_applied"],
             "name": result["status_applied"].title(),
             "kind": "debuff",

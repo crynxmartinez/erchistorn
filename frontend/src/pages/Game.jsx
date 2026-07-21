@@ -236,7 +236,10 @@ export default function Game() {
             {showTutorial && (
                 <TutorialOverlay
                     character={character}
-                    onComplete={() => setShowTutorial(false)}
+                    onComplete={() => {
+                        setShowTutorial(false);
+                        setCharacter((prev) => (prev ? { ...prev, tutorial_complete: true } : prev));
+                    }}
                 />
             )}
         </div>
