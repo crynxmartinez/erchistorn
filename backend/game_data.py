@@ -142,68 +142,11 @@ MASTERIES: list[dict] = [
 
 
 # ============================================================
-# CONTINENTS + BIOMES + LOCATIONS
+# CONTINENTS + BIOMES (canon v2 — see world_data.py for the master list)
 # ============================================================
-CONTINENTS: list[dict] = [
-    {
-        "id": "aetheria", "name": "Aetheria", "level_req": 1,
-        "desc": "The heartland of the Human Empire. Rolling grasslands, ancient oakwoods, and rivers that whisper old oaths.",
-        "biomes": [
-            {"id": "grasslands", "name": "Whispering Grasslands", "desc": "Endless sunlit plains where wolves prowl and bandits watch the road."},
-            {"id": "oakwood",    "name": "Elder Oakwood",        "desc": "Old trees, older ghosts. Wisps drift between the trunks."},
-            {"id": "riverlands", "name": "Riverlands",           "desc": "Slow rivers, silver fish, and stones that hum when touched."},
-            {"id": "old_ruins",  "name": "Old Kingdom Ruins",    "desc": "Fallen stones of forgotten kings. Loot the dead, but keep one eye up."},
-        ],
-    },
-    {"id": "vulkaros",    "name": "Vulkaros",    "level_req": 8,
-     "desc": "Volcanic ashlands and lava caves. Home to Orc dominions and fire-drakes.",
-     "biomes": [
-        {"id": "ashlands",      "name": "Ashen Plains",       "desc": "Soot-choked steppes where basalt shards cut the wind. Orc war-camps burn on the horizon."},
-        {"id": "lava_caves",    "name": "Lava Caves",          "desc": "Molten veins snake through obsidian tunnels. Fire-drakes coil in the deep."},
-        {"id": "basalt_steppe", "name": "Basalt Steppe",       "desc": "Cracked plateaus where the earth still remembers old wars."},
-        {"id": "obsidian_pits", "name": "Obsidian Pits",       "desc": "Glassy craters left by fallen sky-stones. Warbands scavenge here."},
-     ]},
-    {"id": "nyxmoor",     "name": "Nyxmoor",     "level_req": 15,
-     "desc": "Cursed bogs where demons once walked. Wraiths and hags remember.",
-     "biomes": [
-        {"id": "bogland",       "name": "Whispering Bogland",  "desc": "Black water and reeds that murmur in dead tongues."},
-        {"id": "cursed_ruins",  "name": "Cursed Ruins",        "desc": "Sunken towers of a fallen coven. Every stone hums with old spite."},
-        {"id": "deadwood",      "name": "Deadwood",             "desc": "Trees that never rot but never live. The bark bleeds when cut."},
-        {"id": "ghost_road",    "name": "Ghost Road",           "desc": "An old imperial road drowned in mist and dread."},
-     ]},
-    {"id": "frosthelm",   "name": "Frosthelm",   "level_req": 22,
-     "desc": "Tundras and glaciers above the great Dwarven Undermountain.",
-     "biomes": [
-        {"id": "frozen_peaks",  "name": "Frozen Peaks",         "desc": "Wind-scoured summits where only the sure-footed survive."},
-        {"id": "glacier",       "name": "Ancient Glacier",      "desc": "Slow, patient ice that hides bronze-age bones."},
-        {"id": "tundra",        "name": "Endless Tundra",       "desc": "White plains under a violet sky. Mammoths trumpet in the distance."},
-        {"id": "ice_caverns",   "name": "Ice Caverns",          "desc": "Blue-veined vaults beneath the surface, thick with frost wyrms."},
-     ]},
-    {"id": "zephyria",    "name": "Zephyria",    "level_req": 30,
-     "desc": "Sky islands and storm-peaks — the Higher Enclave of the Elves.",
-     "biomes": [
-        {"id": "sky_isles",       "name": "Sky Isles",         "desc": "Floating cliffs bound by wind-currents and old elven pacts."},
-        {"id": "cloud_forest",    "name": "Cloud Forest",      "desc": "Silver-leaf trees drink the mist. Griffons nest in the crowns."},
-        {"id": "storm_plateau",   "name": "Storm Plateau",     "desc": "A high desert of lightning-glass where sky spirits duel."},
-        {"id": "celestial_ruins", "name": "Celestial Ruins",   "desc": "Stones of the first Enclave, drifting silent above the storms."},
-     ]},
-    {"id": "sablewaste",  "name": "Sablewaste",  "level_req": 38,
-     "desc": "Dunes and ancient ruins where djinn whisper broken bargains.",
-     "biomes": [
-        {"id": "dune_sea",        "name": "Dune Sea",           "desc": "Rolling golden dunes that hide caravans and city-bones alike."},
-        {"id": "oasis",           "name": "Oasis of Silver Palms","desc": "A jewel of water and shade. Fortunes are made and lost by its wells."},
-        {"id": "djinn_ruins",     "name": "Djinn Ruins",        "desc": "Marble bridges to nowhere. Wishes still linger in the sand."},
-        {"id": "sunken_temple",   "name": "Sunken Temple",      "desc": "A monastery half-swallowed by the dunes. Its bells still ring."},
-     ]},
-    {"id": "verdania",    "name": "Verdania",    "level_req": 45,
-     "desc": "Deep jungle and coral coasts leading to Atlantyrion.",
-     "biomes": [
-        {"id": "rainforest",       "name": "Emerald Rainforest", "desc": "Towering canopy woven with vine-bridges and sylvan choirs."},
-        {"id": "canopy_boughs",    "name": "Canopy Boughs",      "desc": "Sylvan villages perched on branches thick as roads."},
-        {"id": "coral_reef",       "name": "Coral Reef",         "desc": "The living wall between world and undersea kingdom."},
-        {"id": "sunken_atlantyrion","name": "Sunken Atlantyrion","desc": "Spiralling towers of pearl and jade beneath the tide."},
-     ]},
-]
+from world_data import CONTINENTS_V2, BIOME_ID_MAP  # noqa: E402
+
+CONTINENTS: list[dict] = CONTINENTS_V2
 
 
 # ============================================================
@@ -522,3 +465,29 @@ def compute_player_power(character: dict) -> int:
 # ============================================================
 from game_data_p3 import extend_world_data  # noqa: E402
 extend_world_data(ITEMS, MONSTERS, BIOME_ACTIONS, ITEMS_BY_ID)
+
+
+# ============================================================
+# Canon migration — remap all monster.biome, BIOME_ACTIONS keys, and
+# ITEMS.biome_gather from the old codenames to the new canon IDs.
+# ============================================================
+def _apply_biome_id_migration() -> None:
+    # 1. Monsters
+    for m in MONSTERS:
+        old = m.get("biome")
+        if old and old in BIOME_ID_MAP:
+            m["biome"] = BIOME_ID_MAP[old]
+    # 2. BIOME_ACTIONS keys
+    remapped_actions: dict = {}
+    for k, v in BIOME_ACTIONS.items():
+        new_k = BIOME_ID_MAP.get(k, k)
+        remapped_actions[new_k] = v
+    BIOME_ACTIONS.clear()
+    BIOME_ACTIONS.update(remapped_actions)
+    # 3. ITEMS biome_gather references
+    for it in ITEMS:
+        gathers = it.get("biome_gather")
+        if gathers:
+            it["biome_gather"] = [BIOME_ID_MAP.get(b, b) for b in gathers]
+
+_apply_biome_id_migration()

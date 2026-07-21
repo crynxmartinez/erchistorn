@@ -4,7 +4,7 @@ import { api, extractError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGameData } from "@/data/gameData";
 import { toast } from "sonner";
-import { LogOut, Trophy, Map, Package, Hammer, BookOpen, Home as HomeIcon, Building2, Shield } from "lucide-react";
+import { LogOut, Trophy, Map, Package, Hammer, BookOpen, Home as HomeIcon, Building2, Shield, Sparkles, Wrench } from "lucide-react";
 
 import CharacterSheet from "@/components/CharacterSheet";
 import BiomeView from "@/components/BiomeView";
@@ -19,6 +19,8 @@ import WorldEvents from "@/components/WorldEvents";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import LoginRewardModal from "@/components/LoginRewardModal";
 import JournalDrawer from "@/components/JournalDrawer";
+import TeleporterPanel from "@/components/TeleporterPanel";
+import ProfessionsPanel from "@/components/ProfessionsPanel";
 
 const TABS = [
     { id: "biome",   label: "Biome",    icon: HomeIcon },
@@ -26,6 +28,8 @@ const TABS = [
     { id: "inv",     label: "Inventory",icon: Package },
     { id: "craft",   label: "Forge",    icon: Hammer },
     { id: "skills",  label: "Skills",   icon: BookOpen },
+    { id: "prof",    label: "Trades",   icon: Wrench },
+    { id: "tele",    label: "Teleporter",icon: Sparkles },
 ];
 
 export default function Game() {
@@ -257,6 +261,16 @@ export default function Game() {
                                     teachers={gd.teachers}
                                     onCharacterUpdate={setCharacter}
                                 />
+                            )}
+                            {tab === "prof" && (
+                                <div className="panel p-6">
+                                    <ProfessionsPanel character={character} onChanged={setCharacter} />
+                                </div>
+                            )}
+                            {tab === "tele" && (
+                                <div className="panel p-6">
+                                    <TeleporterPanel character={character} onTraveled={setCharacter} />
+                                </div>
                             )}
                         </>
                     )}

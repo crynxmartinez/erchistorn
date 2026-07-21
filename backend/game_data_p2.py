@@ -6,125 +6,62 @@ from __future__ import annotations
 # REGIONS (nested inside continents)
 # ============================================================
 REGIONS: list[dict] = [
-    # ==================== AETHERIA (level 1) ====================
-    {
-        "id": "vale_of_elder_kings",
-        "name": "Vale of Elder Kings",
-        "continent": "aetheria",
-        "desc": "Sun-warmed valley cradling the old capital. Grasslands, oakwoods, and the founding town of the Empire.",
-        "biomes": ["grasslands", "oakwood"],
-        "town_ids": ["ironhold"],
-    },
-    {
-        "id": "blackmoor_reach",
-        "name": "Blackmoor Reach",
-        "continent": "aetheria",
-        "desc": "Where the rivers slow and the old kingdom ruins jut from the fog. Fewer travelers. More secrets.",
-        "biomes": ["riverlands", "old_ruins"],
-        "town_ids": ["willowmere"],
-    },
-    # ==================== VULKAROS (level 8) — Orc Dominion ====================
-    {
-        "id": "emberreach",
-        "name": "Emberreach",
-        "continent": "vulkaros",
-        "desc": "The heartland of the Liberated Orcs. Ash-dark skies and forges that never sleep.",
-        "biomes": ["ashlands", "lava_caves"],
-        "town_ids": ["emberhold"],
-    },
-    {
-        "id": "zaheer_march",
-        "name": "March of Zaheer",
-        "continent": "vulkaros",
-        "desc": "A wide black plain named for the Liberator himself. Warbands drill in the smoke.",
-        "biomes": ["basalt_steppe", "obsidian_pits"],
-        "town_ids": ["ashvault"],
-    },
-    # ==================== NYXMOOR (level 15) — Cursed Bogs ====================
-    {
-        "id": "hollow_fen",
-        "name": "Hollow Fen",
-        "continent": "nyxmoor",
-        "desc": "A sunken country where every stone remembers a demon's name.",
-        "biomes": ["bogland", "cursed_ruins"],
-        "town_ids": ["mourngate"],
-    },
-    {
-        "id": "wraith_scar",
-        "name": "Wraith Scar",
-        "continent": "nyxmoor",
-        "desc": "An old wound in the earth where the ghost road never ends.",
-        "biomes": ["deadwood", "ghost_road"],
-        "town_ids": ["black_hollow"],
-    },
-    # ==================== FROSTHELM (level 22) — Dwarven Undermountain ====================
-    {
-        "id": "undermountain_hall",
-        "name": "Undermountain Hall",
-        "continent": "frosthelm",
-        "desc": "The great vault-city of the Dwarves. Jahra forges glow beneath the ice.",
-        "biomes": ["frozen_peaks", "glacier"],
-        "town_ids": ["khaz_moroth"],
-    },
-    {
-        "id": "stone_wardens",
-        "name": "Reach of the Stone Wardens",
-        "continent": "frosthelm",
-        "desc": "Frontier tundra where dwarven wardens hunt frost wyrms and lost fools alike.",
-        "biomes": ["tundra", "ice_caverns"],
-        "town_ids": ["frostwatch"],
-    },
-    # ==================== ZEPHYRIA (level 30) — Elven Sky-Isles ====================
-    {
-        "id": "haya_ascendant",
-        "name": "Haya Ascendant",
-        "continent": "zephyria",
-        "desc": "The new home of the Higher Enclave — sky-cities suspended by song and sun.",
-        "biomes": ["sky_isles", "cloud_forest"],
-        "town_ids": ["sun_moon_haven"],
-    },
-    {
-        "id": "stormpeaks",
-        "name": "Stormpeaks",
-        "continent": "zephyria",
-        "desc": "A vast plateau of lightning glass where Sky-Riders test their wings.",
-        "biomes": ["storm_plateau", "celestial_ruins"],
-        "town_ids": ["windrest"],
-    },
-    # ==================== SABLEWASTE (level 38) — Djinn Dunes ====================
-    {
-        "id": "mirage_dunes",
-        "name": "Mirage Dunes",
-        "continent": "sablewaste",
-        "desc": "Endless golden waves. Merchant caravans and mirage-hunters cross under djinn law.",
-        "biomes": ["dune_sea", "oasis"],
-        "town_ids": ["sun_bazaar"],
-    },
-    {
-        "id": "broken_djinnhold",
-        "name": "Broken Djinnhold",
-        "continent": "sablewaste",
-        "desc": "A shattered city of glass where old wishes still drift like ash.",
-        "biomes": ["djinn_ruins", "sunken_temple"],
-        "town_ids": ["whispering_cairns"],
-    },
-    # ==================== VERDANIA (level 45) — Deep Jungle + Coral Coast ====================
-    {
-        "id": "deep_verdant",
-        "name": "Deep Verdant",
-        "continent": "verdania",
-        "desc": "A living jungle woven with sylvan roads. Every leaf listens.",
-        "biomes": ["rainforest", "canopy_boughs"],
-        "town_ids": ["emerald_bough"],
-    },
-    {
-        "id": "coral_gates",
-        "name": "Coral Gates",
-        "continent": "verdania",
-        "desc": "The shining reef-wall where Atlantyrion greets the surface world.",
-        "biomes": ["coral_reef", "sunken_atlantyrion"],
-        "town_ids": ["atlantyrion_gate"],
-    },
+    # ==================== VALERIA (Human Empire) ====================
+    {"id": "vale_of_oaths",       "name": "Vale of Oaths",       "continent": "valeria",
+     "desc": "Sun-warmed valley cradling the imperial capital. Golden fields and forge-lit cities.",
+     "biomes": ["golden_plains", "crownwood_forest"], "town_ids": ["oathspire"]},
+    {"id": "riverguard_march",    "name": "Riverguard March",    "continent": "valeria",
+     "desc": "Where the rivers slow and old kingdom ruins jut from the mist. Fewer travelers, more secrets.",
+     "biomes": ["imperial_riverlands", "ashen_border"], "town_ids": ["riverguard"]},
+    # ==================== MUSHKARA (Orc Dominion) ====================
+    {"id": "liberators_heart",    "name": "Heart of the Liberator", "continent": "mushkara",
+     "desc": "The seat of Zaheer's memory. Ash-dark skies and forges that never sleep.",
+     "biomes": ["red_steppe", "iron_scar"], "town_ids": ["grunhold"]},
+    {"id": "warforge_march",      "name": "Warforge March",      "continent": "mushkara",
+     "desc": "A wide black plain where warbands drill in the smoke of Demonfall.",
+     "biomes": ["ash_barrens", "demonfall_crater"], "town_ids": ["warforge"]},
+    # ==================== CONCORDIA (Half-Elf Federation) ====================
+    {"id": "elaris_reach",        "name": "Elaris Reach",        "continent": "concordia",
+     "desc": "Where the trade roads meet the sea. Ports fly every flag and inns speak every tongue.",
+     "biomes": ["mosaic_coast", "amber_vineyards"], "town_ids": ["elaris"]},
+    {"id": "silvergate_pass",     "name": "Silvergate Pass",     "continent": "concordia",
+     "desc": "The great trade highway, guarded by federation embassies and clean caravanserais.",
+     "biomes": ["silverroad", "diplomats_highlands"], "town_ids": ["silvergate"]},
+    # ==================== KHARDRUM (Dwarven Undermountain) ====================
+    {"id": "jahra_holdfast",      "name": "Jahra Holdfast",      "continent": "khardrum",
+     "desc": "The great vault-city of the Dwarves. Jahra veins run through the walls; every hearth sings.",
+     "biomes": ["granite_foothills", "ember_mines"], "town_ids": ["jahrahold"]},
+    {"id": "deepstone_watch",     "name": "Deepstone Watch",     "continent": "khardrum",
+     "desc": "A palisade fort ringed by crystal caverns and the ancestor-forges of the deep.",
+     "biomes": ["crystal_caverns", "deep_forges"], "town_ids": ["deepstone"]},
+    # ==================== HAYA (Higher Enclave / Elves) ====================
+    {"id": "solunara_ascendant",  "name": "Solunara Ascendant",  "continent": "haya",
+     "desc": "The new home of the Higher Enclave — sky-cities suspended by song and sun.",
+     "biomes": ["sunlit_canopy", "moonveil_woods"], "town_ids": ["solunara"]},
+    {"id": "starfall_march",      "name": "Starfall March",      "continent": "haya",
+     "desc": "A vast plateau of lightning-glass where Sky-Riders test their wings.",
+     "biomes": ["celestial_lake", "starfall_cliffs"], "town_ids": ["starfall_watch"]},
+    # ==================== GENNEL (Wildblood Sovereignty) ====================
+    {"id": "rindivar_reach",      "name": "Rindivar Reach",      "continent": "gennel",
+     "desc": "The blooming desert basin where the Primal Sovereignty first raised the totems.",
+     "biomes": ["blooming_desert", "beastwood"], "town_ids": ["rindivar_grove"]},
+    {"id": "beastcairn_pass",     "name": "Beastcairn Pass",     "continent": "gennel",
+     "desc": "A moving camp of tents pitched between old totems. The djinn-touched trade dreams for bread.",
+     "biomes": ["roaring_savanna", "ancient_den"], "town_ids": ["beastcairn"]},
+    # ==================== HYLION (Underwater Kingdom) ====================
+    {"id": "atlantyrion_gate",    "name": "Atlantyrion Gate",    "continent": "hylion",
+     "desc": "The shining reef-wall where Atlantyrion greets the surface world.",
+     "biomes": ["coral_gardens", "kelp_forest"], "town_ids": ["atlantyrion"]},
+    {"id": "abyssal_march",       "name": "Abyssal March",       "continent": "hylion",
+     "desc": "Storm reefs above the deep trench. Pearl divers, tidebound priests, and shipwreck salvagers.",
+     "biomes": ["storm_reefs", "abyssal_trench"], "town_ids": []},
+    # ==================== DAW'UL TALALU (Sylvan Mystleaf) ====================
+    {"id": "veilgrove_hollow",    "name": "Veilgrove Hollow",    "continent": "daw_ul_talalu",
+     "desc": "A living jungle woven with sylvan roads. Every leaf listens.",
+     "biomes": ["mistwood", "thorn_labyrinth"], "town_ids": ["veilgrove"]},
+    {"id": "elderroot_deep",      "name": "Elderroot Deep",      "continent": "daw_ul_talalu",
+     "desc": "The oldest heart of the Mystleaf. Only the initiated cross the outer wards.",
+     "biomes": ["lumina_grove", "elderroot_hollow"], "town_ids": []},
 ]
 
 
@@ -352,7 +289,123 @@ TOWNS: list[dict] = [
     },
 ]
 
-TOWNS_BY_ID: dict[str, dict] = {t["id"]: t for t in TOWNS}
+# ============================================================
+# Canon migration — rewrite all town/region/continent references from the
+# legacy codenames (Ironhold/Aetheria/etc.) to the canon (Oathspire/Valeria/etc.).
+# Also swaps in canonical hometown names + descriptions where relevant.
+# ============================================================
+from world_data import CONTINENT_ID_MAP, TOWN_ID_MAP  # noqa: E402
+
+# Canonical hometown display names + descriptions, keyed by the *new* id.
+_CANONICAL_TOWN_META: dict[str, dict] = {
+    "oathspire":       {"name": "Oathspire",       "type": "imperial_capital",
+                        "desc": "The imperial capital of Valeria. Cathedrals ring the hour with a hundred bells and every knight has an oath to spend.",
+                        "specialty": "The Grand Teleporter, the Emperor's Forge, and the Federated Bank — the heart of continental commerce."},
+    "riverguard":      {"name": "Riverguard",      "type": "river_sanctuary",
+                        "desc": "A quiet river town of white stone and willow trees. The priests of Riverguard heal any wound — for the right price.",
+                        "specialty": "Sanctuary — priests remove status effects instantly and train healing skills."},
+    "grunhold":        {"name": "Grunhold",        "type": "orc_capital",
+                        "desc": "The Liberator's seat. Basalt walls streaked red with vein-forges. Warhorns sound at every hour.",
+                        "specialty": "Warband Hall — recruit orc mercenaries and train fear-resist skills."},
+    "warforge":        {"name": "Warforge",        "type": "war_outpost",
+                        "desc": "A grim outpost carved into a basalt bluff. Ore, ash, and iron-hard drink.",
+                        "specialty": "War Foreman — deeper ore veins and volcanic weapon recipes."},
+    "elaris":          {"name": "Elaris",          "type": "half_elf_capital",
+                        "desc": "The federation's shining capital — a city that speaks every language and taxes none too heavily.",
+                        "specialty": "Grand Bazaar and Diplomatic Hall — hybrid recipes, foreign brokers, and every embassy of note."},
+    "silvergate":      {"name": "Silvergate",      "type": "caravan_hub",
+                        "desc": "A caravan hub where the Silverroad crosses the eastern march. Bards, brokers, and beguiling deals.",
+                        "specialty": "Caravan Master — long-haul contracts and remote-shipping arrangements."},
+    "jahrahold":       {"name": "Jahrahold",       "type": "dwarven_capital",
+                        "desc": "The great hall of the Undermountain. Jahra veins run through the walls; every hearth sings.",
+                        "specialty": "Jahra Forge — masterwork dwarven weapons and armor unlockable only here."},
+    "deepstone":       {"name": "Deepstone",       "type": "frontier_watch",
+                        "desc": "A palisade fort ringed by crystal caverns and wyrm-tracks. The wardens keep the pass at any cost.",
+                        "specialty": "Warden Hall — pelt tanning, wyrm-hunting bounties, and cold-forged bows."},
+    "solunara":        {"name": "Solunara",        "type": "sky_capital",
+                        "desc": "A city of silver spires suspended between two suns. Elven choirs guide travellers home.",
+                        "specialty": "Sun-Moon Sanctum — celestial magic training and star-forged trinkets."},
+    "starfall_watch":  {"name": "Starfall Watch",  "type": "sky_watch",
+                        "desc": "A tower-post at the storm's edge. Sky-Riders rest here between lightning-runs.",
+                        "specialty": "Sky-Rider Post — mounts, wind-forged bows, and storm-charm crafting."},
+    "rindivar_grove":  {"name": "Rindivar Grove",  "type": "wildblood_capital",
+                        "desc": "A ring of ancient totems where the Primal Sovereignty raises the young of every Aspect. Fires burn all night.",
+                        "specialty": "Totem Circle — Beast Aspect training and pack-bonding rites."},
+    "beastcairn":      {"name": "Beastcairn",      "type": "nomad_camp",
+                        "desc": "A moving camp of tents pitched between old totems. The djinn-touched trade dreams for bread.",
+                        "specialty": "Djinn Broker — one wish per week, if you can pay its riddle."},
+    "atlantyrion":     {"name": "Atlantyrion",     "type": "undersea_capital",
+                        "desc": "The pearl-white capital of the Underwater Kingdom. Coral bridges span the tide and every window is a lantern of light.",
+                        "specialty": "Tide Court — aquatic training, orb-shard trading, and tidebound relics."},
+    "veilgrove":       {"name": "Veilgrove",       "type": "sylvan_treecity",
+                        "desc": "The Mystleaf Council's seat — a city grown, not built, into living branches wider than roads.",
+                        "specialty": "Grove Circle — druidic training, living armor, and canopy-forged bows."},
+}
+
+# Region ids referenced by legacy QUESTS need to be rewritten too.
+_REGION_ID_MAP: dict[str, str] = {
+    "vale_of_elder_kings": "vale_of_oaths",
+    "blackmoor_reach":     "riverguard_march",
+    "emberreach":          "liberators_heart",
+    "zaheer_march":        "warforge_march",
+    "hollow_fen":          "elaris_reach",
+    "wraith_scar":         "silvergate_pass",
+    "undermountain_hall":  "jahra_holdfast",
+    "stone_wardens":       "deepstone_watch",
+    "haya_ascendant":      "solunara_ascendant",
+    "stormpeaks":          "starfall_march",
+    "mirage_dunes":        "rindivar_reach",
+    "broken_djinnhold":    "beastcairn_pass",
+    "deep_verdant":        "veilgrove_hollow",
+    "coral_gates":         "atlantyrion_gate",
+}
+
+# Notice-board giver ids used by regional quests reference old town ids.
+_GIVER_ID_MAP: dict[str, str] = {
+    "ironhold_notice_board":          "oathspire_notice_board",
+    "willowmere_notice_board":        "riverguard_notice_board",
+    "emberhold_notice_board":         "grunhold_notice_board",
+    "ashvault_notice_board":          "warforge_notice_board",
+    "mourngate_notice_board":         "elaris_notice_board",
+    "black_hollow_notice_board":      "silvergate_notice_board",
+    "khaz_moroth_notice_board":       "jahrahold_notice_board",
+    "frostwatch_notice_board":        "deepstone_notice_board",
+    "sun_moon_haven_notice_board":    "solunara_notice_board",
+    "windrest_notice_board":          "starfall_watch_notice_board",
+    "sun_bazaar_notice_board":        "rindivar_grove_notice_board",
+    "whispering_cairns_notice_board": "beastcairn_notice_board",
+    "emerald_bough_notice_board":     "veilgrove_notice_board",
+    "atlantyrion_gate_notice_board":  "atlantyrion_notice_board",
+}
+
+
+def _apply_canon_migration() -> None:
+    # 1. TOWNS — rewrite id / region / continent + canonical name/desc/specialty.
+    for t in TOWNS:
+        new_id = TOWN_ID_MAP.get(t["id"], t["id"])
+        t["id"] = new_id
+        t["region"] = _REGION_ID_MAP.get(t.get("region"), t.get("region"))
+        t["continent"] = CONTINENT_ID_MAP.get(t.get("continent"), t.get("continent"))
+        meta = _CANONICAL_TOWN_META.get(new_id)
+        if meta:
+            t["name"] = meta["name"]
+            t["type"] = meta.get("type", t.get("type"))
+            t["desc"] = meta["desc"]
+            t["specialty"] = meta["specialty"]
+
+    # 2. Special-case: Veilgrove is now the Sylvan capital in Daw'ul Talalu, not Hylion.
+    for t in TOWNS:
+        if t["id"] == "veilgrove":
+            t["continent"] = "daw_ul_talalu"
+            t["region"] = "veilgrove_hollow"
+        elif t["id"] == "atlantyrion":
+            t["continent"] = "hylion"
+            t["region"] = "atlantyrion_gate"
+
+    # 3. QUESTS — rewrite region + giver references.
+    for q in QUESTS:
+        q["region"] = _REGION_ID_MAP.get(q.get("region"), q.get("region"))
+        q["giver"] = _GIVER_ID_MAP.get(q.get("giver"), q.get("giver"))
 
 
 # ============================================================
@@ -627,5 +680,31 @@ def get_active_events(weekday: int) -> list[dict]:
 
 
 def default_home_town_for_race(race_id: str) -> str:
-    """Race's starting town — for now, all Aetheria races start at Ironhold."""
-    return "ironhold"
+    """Race's canonical starting town per the v2 world spec."""
+    from world_data import HOMELAND_TOWN_BY_RACE
+    return HOMELAND_TOWN_BY_RACE.get(race_id, "oathspire")
+
+
+def default_home_continent_for_race(race_id: str) -> str:
+    """Race's canonical home continent per the v2 world spec."""
+    from world_data import HOMETOWN_BY_CONTINENT
+    home_town = default_home_town_for_race(race_id)
+    for cont, town in HOMETOWN_BY_CONTINENT.items():
+        if town == home_town:
+            return cont
+    return "valeria"
+
+
+def default_home_biome_for_race(race_id: str) -> str:
+    """First biome the character sees — always the tier-1 biome of their home continent."""
+    from world_data import CONTINENTS_V2
+    cont_id = default_home_continent_for_race(race_id)
+    for c in CONTINENTS_V2:
+        if c["id"] == cont_id and c.get("biomes"):
+            return c["biomes"][0]["id"]
+    return "golden_plains"
+
+
+# Apply migration now that TOWNS + QUESTS lists are populated.
+_apply_canon_migration()
+TOWNS_BY_ID = {t["id"]: t for t in TOWNS}

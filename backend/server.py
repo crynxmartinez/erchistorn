@@ -63,6 +63,8 @@ from game_data_p2 import (  # noqa: E402
     TOWNS,
     TOWNS_BY_ID,
     default_home_town_for_race,
+    default_home_continent_for_race,
+    default_home_biome_for_race,
     get_active_events,
     get_quest,
     get_town,
@@ -80,6 +82,32 @@ from origins import (  # noqa: E402
     compute_final_stats,
     get_origin,
     origins_for_mastery,
+)
+from world_travel import (  # noqa: E402
+    TELEPORTER_FEE,
+    TELEPORTER_COOLDOWN_SECS,
+    teleporter_can_use,
+    WAYSTONES,
+    WAYSTONES_BY_ID,
+    REP_LEVELS,
+    REP_THRESHOLDS,
+    initial_reputation_for_race,
+    add_reputation,
+    rep_level_from_points,
+)
+from professions import (  # noqa: E402
+    PROFESSIONS,
+    PROFESSIONS_BY_ID,
+    PROFESSION_RANKS,
+    profession_slots_unlocked,
+    learn_profession,
+    abandon_profession,
+    gain_profession_xp,
+    rank_from_xp,
+    apply_exploration_progress,
+    exploration_delta_from_outcome,
+    EXPLORATION_THRESHOLDS,
+    is_biome_unlocked_for_gathering,
 )
 from models import (  # noqa: E402
     ActionPayload,
@@ -489,11 +517,15 @@ async def create_character(payload: CreateCharacterPayload, user: dict = Depends
         "equipped": {"weapon": "iron_dagger", "armor": "traveler_garb", "trinket": None},
         "skills": skills,
         "statuses": [],
-        "reputation": {},
+        "reputation": initial_reputation_for_race(
+            payload.race,
+            default_home_continent_for_race(payload.race),
+            [c["id"] for c in CONTINENTS if not c.get("locked")],
+        ),
         "tutorial_step": 0,
         "tutorial_complete": False,
-        "current_continent": "aetheria",
-        "current_biome": "grasslands",
+        "current_continent": default_home_continent_for_race(payload.race),
+        "current_biome": default_home_biome_for_race(payload.race),
         "login_streak": 0,
         "last_login_date": None,
         "last_daily_refresh": None,
@@ -518,6 +550,12 @@ async def create_character(payload: CreateCharacterPayload, user: dict = Depends
         "home_town": default_home_town_for_race(payload.race),
         "current_town": None,
         "visited_towns": [default_home_town_for_race(payload.race)],
+        "known_waystones": [],
+        "active_waystones": [],
+        "teleporter_last_used": None,
+        "professions": [],                 # Phase D — up to 3 slots
+        "abandoned_professions": {},       # keeps 25% xp for relearn
+        "exploration_progress": {},        # Phase C — per-biome %
         "guild_id": None,
         "guild_rank": None,
         "active_quests": [],
@@ -635,6 +673,30 @@ async def do_action(payload: ActionPayload, user: dict = Depends(_get_current_us
     # Racial resource ticking
     racial_msgs = tick_racial_resources_on_action(ch, result["outcome"], payload.action_id)
 
+    # Phase C — Exploration progress: every action nudges progress for the
+    # current biome (bigger nudges on explore actions, smaller on gather/hunt).
+    biome_key = payload.biome_id or ch.get("current_biome")
+    explore_hits: list[str] = []
+    if biome_key:
+        delta = exploration_delta_from_outcome(int(result["outcome"]))
+        if payload.action_id != "explore":
+            delta = max(0, delta // 2)  # non-explore actions still map the terrain, but slower
+        if delta:
+            _, _, explore_hits = apply_exploration_progress(ch, biome_key, delta)
+
+    # Phase D — Profession XP: gathering-family actions grant profession XP for
+    # the matching profession the character has learned.
+    profession_ranks: list[tuple[str, str]] = []
+    action_prof_map = {"gather": ["herbalism", "logging", "mining"], "fish": ["fishing"],
+                       "hunt": ["hunting"], "loot_ruins": ["excavation"]}
+    for pid in action_prof_map.get(payload.action_id, []):
+        has = any(p.get("id") == pid for p in ch.get("professions", []))
+        if has and result["outcome"] >= 3:
+            xp_gain = {3: 4, 4: 8, 5: 14, 6: 22}.get(result["outcome"], 0)
+            rank_change = gain_profession_xp(ch, pid, xp_gain)
+            if rank_change:
+                profession_ranks.append(rank_change)
+
     # Tick status durations so debuffs (Bleeding, Weary, Poisoned, etc.) expire naturally.
     _tick_character_statuses(ch)
 
@@ -658,13 +720,16 @@ async def do_action(payload: ActionPayload, user: dict = Depends(_get_current_us
         "inner_blood": ch.get("inner_blood", 0),
         "tide": ch.get("tide", 0),
         "verdant_essence": ch.get("verdant_essence", 0),
+        "exploration_progress": ch.get("exploration_progress", {}),
+        "professions": ch.get("professions", []),
     }})
 
     if result["outcome"] == 6:
         target_disp = result.get("target_name") or "the unknown"
         await _push_world_event(ch["name"], f"{ch['name']} achieved a critical {payload.action_id} against {target_disp}.", "loot")
 
-    return {"result": result, "character": ch, "racial_msgs": racial_msgs}
+    return {"result": result, "character": ch, "racial_msgs": racial_msgs,
+            "explore_hits": explore_hits, "profession_ranks": profession_ranks}
 
 
 # ---------------- COMBAT ----------------
@@ -1153,6 +1218,273 @@ async def fast_travel(request: Request, user: dict = Depends(_get_current_user))
     return {"character": ch, "cost": cost}
 
 
+# ============================================================
+# GRAND TELEPORTER (Phase B) — hometown-hub inter-continental travel
+# ============================================================
+@api.get("/game/teleporter/destinations")
+async def teleporter_destinations(user: dict = Depends(_get_current_user)):
+    """List accessible continents + their hometowns. Home continent is excluded from the fee list."""
+    from world_data import HOMETOWN_BY_CONTINENT
+    ch = await _get_character_or_404(user["_id"])
+    dests = []
+    for c in CONTINENTS:
+        if c.get("locked"):
+            continue
+        hometown = HOMETOWN_BY_CONTINENT.get(c["id"])
+        town = TOWNS_BY_ID.get(hometown) if hometown else None
+        dests.append({
+            "continent_id": c["id"],
+            "continent_name": c["name"],
+            "hometown_id": hometown,
+            "hometown_name": town["name"] if town else hometown,
+            "fee": TELEPORTER_FEE if c["id"] != ch.get("current_continent") else 0,
+            "is_current": c["id"] == ch.get("current_continent"),
+        })
+    return {"destinations": dests, "cooldown_secs": TELEPORTER_COOLDOWN_SECS, "fee_base": TELEPORTER_FEE}
+
+
+@api.post("/game/teleporter/travel")
+async def teleporter_travel(request: Request, user: dict = Depends(_get_current_user)):
+    from world_data import HOMETOWN_BY_CONTINENT
+    body = await request.json()
+    target_continent = body.get("continent_id")
+    if not target_continent:
+        raise HTTPException(status_code=400, detail="continent_id required")
+    ch = await _get_character_or_404(user["_id"])
+    # Validate: destination is accessible + not the current continent
+    dest_cont = next((c for c in CONTINENTS if c["id"] == target_continent), None)
+    if not dest_cont:
+        raise HTTPException(status_code=404, detail="Unknown continent")
+    if dest_cont.get("locked"):
+        raise HTTPException(status_code=403, detail=f"{dest_cont['name']} is sealed to travellers.")
+    if target_continent == ch.get("current_continent"):
+        raise HTTPException(status_code=400, detail="You are already on this continent.")
+    # Guard-check
+    allowed, reason = teleporter_can_use(ch)
+    if not allowed:
+        raise HTTPException(status_code=403, detail=reason)
+    # Fee
+    if ch["gold"] < TELEPORTER_FEE:
+        raise HTTPException(status_code=400, detail=f"Teleporter fee is {TELEPORTER_FEE}g.")
+    hometown = HOMETOWN_BY_CONTINENT.get(target_continent)
+    if not hometown:
+        raise HTTPException(status_code=500, detail="No hometown mapped for this continent.")
+    # Apply
+    ch["gold"] -= TELEPORTER_FEE
+    ch["current_continent"] = target_continent
+    ch["current_town"] = hometown
+    if hometown not in ch.get("visited_towns", []):
+        ch.setdefault("visited_towns", []).append(hometown)
+    # Land in the tier-1 biome of the new continent
+    if dest_cont.get("biomes"):
+        ch["current_biome"] = dest_cont["biomes"][0]["id"]
+    ch["teleporter_last_used"] = datetime.now(timezone.utc).isoformat()
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "gold": ch["gold"],
+        "current_continent": ch["current_continent"],
+        "current_town": ch["current_town"],
+        "current_biome": ch["current_biome"],
+        "visited_towns": ch["visited_towns"],
+        "teleporter_last_used": ch["teleporter_last_used"],
+    }})
+    return {"character": ch, "fee": TELEPORTER_FEE, "hometown": hometown, "narrative":
+            f"The Grand Teleporter hums awake. The world folds, and you step into {dest_cont['name']}."}
+
+
+# ============================================================
+# WAYSTONES (Phase B) — discover + activate + local fast-travel
+# ============================================================
+@api.get("/game/waystones")
+async def list_waystones(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    known = set(ch.get("known_waystones", []))
+    active = set(ch.get("active_waystones", []))
+    ws_list = []
+    for w in WAYSTONES:
+        ws_list.append({
+            **w,
+            "discovered": w["id"] in known,
+            "activated":  w["id"] in active,
+        })
+    return {"waystones": ws_list}
+
+
+@api.post("/game/waystone/discover")
+async def waystone_discover(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    ws_id = body.get("waystone_id")
+    ws = WAYSTONES_BY_ID.get(ws_id)
+    if not ws:
+        raise HTTPException(status_code=404, detail="Unknown waystone")
+    ch = await _get_character_or_404(user["_id"])
+    # must be in the correct biome
+    if ch.get("current_biome") != ws["biome"]:
+        raise HTTPException(status_code=403, detail=f"You are not standing near this waystone.")
+    known = ch.setdefault("known_waystones", [])
+    if ws_id in known:
+        return {"character": ch, "waystone": ws, "already_known": True}
+    known.append(ws_id)
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {"known_waystones": known}})
+    return {"character": ch, "waystone": ws, "already_known": False,
+            "narrative": f"You brush the stone. The {ws['name']} answers."}
+
+
+@api.post("/game/waystone/activate")
+async def waystone_activate(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    ws_id = body.get("waystone_id")
+    ws = WAYSTONES_BY_ID.get(ws_id)
+    if not ws:
+        raise HTTPException(status_code=404, detail="Unknown waystone")
+    ch = await _get_character_or_404(user["_id"])
+    if ws_id not in ch.get("known_waystones", []):
+        raise HTTPException(status_code=403, detail="You must first discover this waystone.")
+    if ws_id in ch.get("active_waystones", []):
+        raise HTTPException(status_code=400, detail="Already activated.")
+    cost = ws["activation_gold"]
+    if ch["gold"] < cost:
+        raise HTTPException(status_code=400, detail=f"Activation cost is {cost}g.")
+    ch["gold"] -= cost
+    active = ch.setdefault("active_waystones", [])
+    active.append(ws_id)
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "gold": ch["gold"], "active_waystones": active,
+    }})
+    return {"character": ch, "waystone": ws, "cost": cost,
+            "narrative": f"The {ws['name']} drinks in your gold and hums to life."}
+
+
+@api.post("/game/waystone/travel")
+async def waystone_travel(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    ws_id = body.get("waystone_id")
+    ws = WAYSTONES_BY_ID.get(ws_id)
+    if not ws:
+        raise HTTPException(status_code=404, detail="Unknown waystone")
+    ch = await _get_character_or_404(user["_id"])
+    if ws_id not in ch.get("active_waystones", []):
+        raise HTTPException(status_code=403, detail="This waystone is not yet activated.")
+    if ch.get("current_continent") != ws["continent"]:
+        raise HTTPException(status_code=403, detail="Waystones only work within their continent.")
+    ch["current_biome"] = ws["biome"]
+    ch["current_town"] = None
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "current_biome": ch["current_biome"], "current_town": None,
+    }})
+    return {"character": ch, "waystone": ws,
+            "narrative": f"You step into the {ws['name']} and step out at the far side of the map."}
+
+
+# ============================================================
+# HOMELAND REPUTATION (Phase B) — view + admin-style adjustments
+# ============================================================
+@api.get("/game/reputation")
+async def get_reputation(user: dict = Depends(_get_current_user)):
+    from world_data import HOMETOWN_BY_CONTINENT
+    ch = await _get_character_or_404(user["_id"])
+    rep = ch.get("reputation") or {}
+    out = []
+    for c in CONTINENTS:
+        if c.get("locked"):
+            continue
+        entry = rep.get(c["id"], {"points": 0, "level": "neutral"})
+        out.append({
+            "continent_id": c["id"],
+            "continent_name": c["name"],
+            "hometown": HOMETOWN_BY_CONTINENT.get(c["id"]),
+            "is_native": ch.get("race") and c.get("home_race") == ch["race"],
+            "points": int(entry.get("points", 0)),
+            "level": entry.get("level", "neutral"),
+        })
+    return {"reputation": out, "levels": REP_LEVELS, "thresholds": REP_THRESHOLDS}
+
+
+# ============================================================
+# PROFESSIONS (Phase D)
+# ============================================================
+@api.get("/game/professions/catalog")
+async def profession_catalog(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    return {
+        "catalog": PROFESSIONS,
+        "ranks": PROFESSION_RANKS,
+        "slots_unlocked": profession_slots_unlocked(int(ch.get("level", 1))),
+        "next_slot_at": [1, 10, 25],
+    }
+
+
+@api.get("/game/professions/mine")
+async def my_professions(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    out = []
+    for p in ch.get("professions", []):
+        meta = PROFESSIONS_BY_ID.get(p["id"], {})
+        out.append({
+            "id": p["id"],
+            "name": meta.get("name", p["id"]),
+            "kind": meta.get("kind"),
+            "rank": p.get("rank", "novice"),
+            "xp": p.get("xp", 0),
+            "learned": p.get("learned"),
+        })
+    return {"professions": out, "slots_unlocked": profession_slots_unlocked(int(ch.get("level", 1)))}
+
+
+@api.post("/game/professions/learn")
+async def learn_profession_endpoint(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    pid = body.get("profession_id")
+    ch = await _get_character_or_404(user["_id"])
+    ok, msg = learn_profession(ch, pid)
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "professions": ch["professions"],
+    }})
+    return {"character": ch, "message": msg}
+
+
+@api.post("/game/professions/abandon")
+async def abandon_profession_endpoint(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    pid = body.get("profession_id")
+    ch = await _get_character_or_404(user["_id"])
+    ok, msg = abandon_profession(ch, pid)
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "professions": ch["professions"],
+        "abandoned_professions": ch.get("abandoned_professions", {}),
+    }})
+    return {"character": ch, "message": msg}
+
+
+# ============================================================
+# EXPLORATION PROGRESS (Phase C)
+# ============================================================
+@api.get("/game/exploration")
+async def exploration_state(user: dict = Depends(_get_current_user)):
+    """Return per-biome exploration % for the current continent."""
+    ch = await _get_character_or_404(user["_id"])
+    cont_id = ch.get("current_continent")
+    cont = next((c for c in CONTINENTS if c["id"] == cont_id), None)
+    biomes = cont.get("biomes", []) if cont else []
+    ep = ch.get("exploration_progress", {}) or {}
+    out = []
+    for b in biomes:
+        pct = int(ep.get(b["id"], 0))
+        thresholds_met = [pct >= t[0] for t in EXPLORATION_THRESHOLDS]
+        out.append({
+            "biome_id": b["id"],
+            "biome_name": b["name"],
+            "level_req": b.get("level_req", 1),
+            "progress_pct": pct,
+            "thresholds_met": thresholds_met,   # [10%, 25%, 50%, 75%, 100%]
+        })
+    return {"continent_id": cont_id, "biomes": out,
+            "thresholds": [{"pct": t[0], "desc": t[1]} for t in EXPLORATION_THRESHOLDS]}
+
+
 @api.post("/game/town/market/buy")
 async def market_buy(request: Request, user: dict = Depends(_get_current_user)):
     body = await request.json()
@@ -1390,6 +1722,55 @@ async def startup():
     )
     if mig.modified_count:
         logger.info("Renamed legacy 'exhausted' status on %d characters.", mig.modified_count)
+    # Canon v2 migration: rewrite legacy continent/biome/town IDs on every
+    # existing character record. Idempotent — safe to run every boot.
+    from world_data import CONTINENT_ID_MAP, BIOME_ID_MAP, TOWN_ID_MAP  # noqa: E402
+    total_updated = 0
+    async for ch_doc in db.characters.find({}):
+        updates = {}
+        # continent
+        cc = ch_doc.get("current_continent")
+        if cc in CONTINENT_ID_MAP:
+            updates["current_continent"] = CONTINENT_ID_MAP[cc]
+        # biome
+        cb = ch_doc.get("current_biome")
+        if cb in BIOME_ID_MAP:
+            updates["current_biome"] = BIOME_ID_MAP[cb]
+        # town
+        ct = ch_doc.get("current_town")
+        if ct in TOWN_ID_MAP:
+            updates["current_town"] = TOWN_ID_MAP[ct]
+        # home_town
+        ht = ch_doc.get("home_town")
+        if ht in TOWN_ID_MAP:
+            updates["home_town"] = TOWN_ID_MAP[ht]
+        # visited_towns
+        vt = ch_doc.get("visited_towns") or []
+        new_vt = [TOWN_ID_MAP.get(t, t) for t in vt]
+        if new_vt != vt:
+            updates["visited_towns"] = new_vt
+        # Phase-B seed: reputation dict for existing characters that never had one
+        rep = ch_doc.get("reputation") or {}
+        if not rep:
+            from world_travel import initial_reputation_for_race
+            from game_data_p2 import default_home_continent_for_race
+            new_cc = updates.get("current_continent") or ch_doc.get("current_continent")
+            race = ch_doc.get("race", "human")
+            updates["reputation"] = initial_reputation_for_race(
+                race,
+                default_home_continent_for_race(race),
+                [c["id"] for c in CONTINENTS if not c.get("locked")],
+            )
+        # Phase-B seed: known_waystones / active_waystones fields (default empty)
+        if "known_waystones" not in ch_doc:
+            updates["known_waystones"] = []
+        if "active_waystones" not in ch_doc:
+            updates["active_waystones"] = []
+        if updates:
+            await db.characters.update_one({"_id": ch_doc["_id"]}, {"$set": updates})
+            total_updated += 1
+    if total_updated:
+        logger.info("Canon v2 rename applied on %d character(s).", total_updated)
     logger.info("Erchis server up. Frontend origin: %s", frontend_url)
 
 
