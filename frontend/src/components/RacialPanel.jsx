@@ -1,30 +1,21 @@
 import { HERITAGE_LABEL } from "@/data/racialConstants";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { RESOURCE_META as SHARED_RESOURCE_META, RACE_TO_RESOURCE, EXHAUSTION_HINT, RESOLVE_HINT } from "@/data/hints";
 
-const RESOURCE_META = {
-    oath_progress:    { label: "Oath Progress",    max: 100, color: "hsl(46 65% 52%)",  hint: "Fulfilling your Sacred Oath fills this meter. At 100 you awaken a Human ability."},
-    celestial_charge: { label: "Celestial Charge", max: 5,   color: "hsl(207 90% 54%)", hint: "Charges gained by acting under the right sky (☀ Solar / ☾ Lunar). Spend on Elven arts."},
-    stoneguard:       { label: "Stoneguard",       max: 5,   color: "hsl(35 5% 62%)",   hint: "Dwarven grit — earned in successful stands, spent to shrug off a hit."},
-    harmony:          { label: "Harmony",          max: 5,   color: "hsl(291 64% 52%)", hint: "Half-Elf's balance between two heritages. Peak Harmony unlocks the awakened hybrid gift."},
-    defiance:         { label: "Defiance",         max: 100, color: "hsl(0 60% 45%)",   hint: "Orc rage from broken chains. Grows on hardship, spent on furious counter-strikes."},
-    inner_blood:      { label: "Inner Blood",      max: 100, color: "hsl(4 90% 58%)",   hint: "Wildblood beast-fury. Rises with Exhaustion, unleashed in a single savage turn."},
-    tide:             { label: "Tide",             max: 5,   color: "hsl(196 70% 50%)", hint: "Hyliondrian sea-charge. Full pool = your Marine Adaptation triggers next action."},
-    verdant_essence:  { label: "Verdant Essence",  max: 5,   color: "hsl(122 39% 49%)", hint: "Sylvan grove-bond. Roots you to a biome and heals over time when full."},
+// Colors are UI-only, so we merge with the shared hint metadata.
+const RESOURCE_COLORS = {
+    oath_progress:    "hsl(46 65% 52%)",
+    celestial_charge: "hsl(207 90% 54%)",
+    stoneguard:       "hsl(35 5% 62%)",
+    harmony:          "hsl(291 64% 52%)",
+    defiance:         "hsl(0 60% 45%)",
+    inner_blood:      "hsl(4 90% 58%)",
+    tide:             "hsl(196 70% 50%)",
+    verdant_essence:  "hsl(122 39% 49%)",
 };
-
-const RACE_TO_RESOURCE = {
-    human: "oath_progress",
-    elf: "celestial_charge",
-    dwarf: "stoneguard",
-    half_elf: "harmony",
-    orc: "defiance",
-    wildblood: "inner_blood",
-    hyliondrian: "tide",
-    sylvan: "verdant_essence",
-};
-
-const EXHAUSTION_HINT = "Exhaustion (numeric resource, 0–100). Rises as you push through actions; NOT the 'Weary' status. Wildbloods weaponise it via Inner Blood; Orcs at high exhaust see Defiance spike.";
-const RESOLVE_HINT    = "Resolve (0–100). Mental steel — buffers against fear and rout effects. Drops on grim outcomes, recovers slowly with rest.";
+const RESOURCE_META = Object.fromEntries(
+    Object.entries(SHARED_RESOURCE_META).map(([k, v]) => [k, { ...v, color: RESOURCE_COLORS[k] }])
+);
 
 /** Compact racial panel — shows resource meter, heritage rank, celestial state */
 export default function RacialPanel({ character, timeOfDay }) {

@@ -1,47 +1,7 @@
 import { Heart, Zap, Coins, Star } from "lucide-react";
 import RacialPanel from "@/components/RacialPanel";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-
-// ============================================================
-// Stat hints — plain-English one-liners for every visible stat.
-// Keep them punchy: what the stat does + which action it flavours.
-// ============================================================
-const STAT_HINTS = {
-    // Main stats
-    might:      "Physical damage & melee attacks. Drives every swing of a weapon.",
-    grace:      "Accuracy, dodge, and ranged aim. Tips dice rolls toward hits and evasion.",
-    insight:    "Magical damage & spell effect. Fuels arcane and divine skills.",
-    // Life stats
-    vitality:   "Base HP pool and physical resilience. More VIT = harder to kill.",
-    cognition:  "Mana pool, skill slots, and lore checks. Higher COG = more casts before running dry.",
-    essence:    "Racial resource cap (Oath / Inner Blood / Tide, etc.). Powers your bloodline abilities.",
-    drive:      "Endurance & recovery. Reduces status-effect duration and speeds Inn rest.",
-    // Derived
-    armor_bonus:"Flat damage reduction on top of your armor's own value.",
-    evasion_mod:"Modifier to your evasion chance. Positive = dodgier, negative = clumsier.",
-    // Resource / meters
-    hp:         "Health. Reach 0 and you're downed — visit an Inn or use a potion to recover.",
-    xp:         "Experience toward the next level. Every level nudges every stat up.",
-    gold:       "Currency for markets, inns, fast travel, and trainers.",
-};
-
-const STATUS_HINTS = {
-    bleeding: "Bleeding — lose HP each action until it wears off.",
-    poisoned: "Poisoned — lose HP each action and your gathers can spoil.",
-    weary:    "Weary — reduced accuracy for a couple of turns; NOT the same as the Exhaustion meter.",
-    sick:     "Sick — reduced stats and slower recovery until it clears.",
-    cursed:   "Cursed — dice rolls skew slightly worse until removed by a priest.",
-    burning:  "Burning — heavy per-turn HP loss.",
-    stunned:  "Stunned — you skip your next action.",
-    shaken:   "Shaken — reduced accuracy from recent trauma.",
-    blinded:  "Blinded — hits often miss until vision returns.",
-    ensnared: "Ensnared — you can't flee or move biomes.",
-    blessed:  "Blessed — small bonus to your rolls.",
-    focused:  "Focused — improved accuracy and skill effects.",
-    warded:   "Warded — reduced incoming magic damage.",
-    hidden:   "Hidden — enemies can't detect you next action.",
-    evasive:  "Evasive — extra evasion chance for a few turns.",
-};
+import { STAT_HINTS, STATUS_HINTS } from "@/data/hints";
 
 function StatHint({ label }) {
     return <div className="font-pixel text-xs leading-snug max-w-[240px]">{label}</div>;

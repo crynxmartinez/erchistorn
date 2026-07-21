@@ -18,6 +18,7 @@ import DailyPanel from "@/components/DailyPanel";
 import WorldEvents from "@/components/WorldEvents";
 import TutorialOverlay from "@/components/TutorialOverlay";
 import LoginRewardModal from "@/components/LoginRewardModal";
+import JournalDrawer from "@/components/JournalDrawer";
 
 const TABS = [
     { id: "biome",   label: "Biome",    icon: HomeIcon },
@@ -175,6 +176,7 @@ export default function Game() {
                     >
                         <Shield size={14} strokeWidth={1.5} /> Guild House
                     </Link>
+                    <JournalDrawer />
                     <Link
                         to="/leaderboard"
                         data-testid="tab-leaderboard"
