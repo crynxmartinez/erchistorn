@@ -37,6 +37,12 @@ Regions + 2 towns (Ironhold Forge Town + Willowmere Sanctuary), Inn/Marketplace/
 ### Phase 3 (2026-07-21)
 **Character Creation redesign**: 7-step wizard adds Origin step (33 Origins, 3 per Mastery) and Summary step with layered stat breakdown. Backend now layers Race → Role → Mastery → Origin stats and stores Might/Grace/Insight/Armor_bonus/Evasion_mod separately. Role→Mastery availability matches user's spec exactly. Minimum-1 stat rule enforced.
 
+### Phase 3.1 — World + Wizard polish (2026-02, current session)
+- **Beast Aspect UI** (Wildblood) and **Marine Adaptation UI** (Hyliondrian) surfaced in the wizard as an extra step between Origin and Portrait. 5 Beast Aspects, 6 Marine Adaptations. Server enforces race-only validation (Human sending a beast_aspect is now rejected).
+- **World Expansion**: 12 new towns populated (2 per continent) across Vulkaros, Nyxmoor, Frosthelm, Zephyria, Sablewaste, Verdania — total 14 towns. Each continent now defines 4 biomes (previously non-Aetheria had 0).
+- **Town Visit gating**: `/api/game/town/visit` now blocks travel to towns whose continent is below the character's current level or not the current continent (with friendly error text).
+- **HUD Town Discovery**: Unvisited towns in the current continent render as dashed-border `discover-town-<id>` buttons in the Game HUD so players see where they can wander next.
+
 ## Backlog
 
 ### P1 — Advanced Racial Ranks (deferred)
@@ -52,7 +58,7 @@ Heritage Ranks II–V per user's detailed spec (utility abilities, cooldowned ac
 - Marine adaptation Rank II abilities
 
 ### P3 — Content expansion
-- Populate Continents 2-7 with biomes, monsters, towns
+- Populate Continents 2-7 with monsters + gather materials (**biomes + towns now done, Feb 2026**)
 - Expand narrative pool from 10 → 20 variants per outcome
 - More recipes requiring cross-continent materials
 - Racial quests (unlock Heritage Ranks)

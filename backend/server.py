@@ -437,10 +437,14 @@ async def create_character(payload: CreateCharacterPayload, user: dict = Depends
         beast_aspect = payload.beast_aspect or "predator"
         if beast_aspect not in [b["id"] for b in BEAST_ASPECTS]:
             raise HTTPException(status_code=400, detail="Invalid beast aspect")
+    elif payload.beast_aspect:
+        raise HTTPException(status_code=400, detail="Only Wildbloods may choose a Beast Aspect")
     if payload.race == "hyliondrian" and payload.marine_adaptation:
         if payload.marine_adaptation not in [m["id"] for m in MARINE_ADAPTATIONS]:
             raise HTTPException(status_code=400, detail="Invalid marine adaptation")
         marine_adaptation = payload.marine_adaptation
+    elif payload.race != "hyliondrian" and payload.marine_adaptation:
+        raise HTTPException(status_code=400, detail="Only Hyliondrians may choose a Marine Adaptation")
 
     max_hp = compute_starting_hp(stats)
     starting_skills = list(mastery.get("starting_skills", []))
