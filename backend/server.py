@@ -2131,11 +2131,17 @@ async def health():
 # ---------------- WIRE ----------------
 app.include_router(api)
 
-frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
-origins = [frontend_url, "http://localhost:3000"]
+# CORS — support multiple origins (comma-separated in FRONTEND_URL env var) PLUS
+# a regex allow for any Emergent-hosted preview/production domain. This handles
+# the production case where the API is at a custom domain (e.g. erchis.online)
+# but the app is served from *.emergent.host / *.emergentagent.com.
+_frontend_url_env = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+_env_origins = [o.strip() for o in _frontend_url_env.split(",") if o.strip()]
+origins = list({*_env_origins, "http://localhost:3000", "https://erchis.online"})
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"^https://([a-z0-9-]+\.)*(emergent\.host|emergentagent\.com|erchis\.online)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -2215,7 +2221,7 @@ async def startup():
             total_updated += 1
     if total_updated:
         logger.info("Canon v2 rename applied on %d character(s).", total_updated)
-    logger.info("Erchis server up. Frontend origin: %s", frontend_url)
+    logger.info("Erchis server up. Allowed origins: %s", origins)
 
 
 @app.on_event("shutdown")
