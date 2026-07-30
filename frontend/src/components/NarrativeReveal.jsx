@@ -1,11 +1,23 @@
 import { useEffect, useState } from "react";
 import Dice from "@/components/Dice";
+import PixelSprite from "@/components/PixelSprite";
+import ItemTooltip from "@/components/ItemTooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+const RARITY_STYLE = {
+    common: "text-muted-foreground border-border",
+    uncommon: "text-primary border-primary/40",
+    rare: "text-amber-400 border-amber-400/50",
+    epic: "text-orange-400 border-orange-400/50",
+    legendary: "text-purple-400 border-purple-400/50",
+    exotic: "text-pink-400 border-pink-400/50",
+};
 
 /**
  * NarrativeReveal: shows the dice + typewriter narrative for a resolved action.
- * `result` shape: { outcome, narrative, rewards, hp_delta, status_applied, target_name }
+ * `result` shape: { outcome, narrative, rewards, hp_delta, status_applied, target_name, discoveries }
  */
-export default function NarrativeReveal({ result, onClose }) {
+export default function NarrativeReveal({ result, onClose, itemsById }) {
     const [rolling, setRolling] = useState(true);
     const [revealed, setRevealed] = useState(false);
 
@@ -42,6 +54,7 @@ export default function NarrativeReveal({ result, onClose }) {
     }[result.outcome];
 
     return (
+        <TooltipProvider delayDuration={120}>
         <div
             className="fixed inset-0 z-40 bg-black/85 flex items-center justify-center p-4 animate-fade-in"
             data-testid="narrative-reveal"
@@ -100,17 +113,45 @@ export default function NarrativeReveal({ result, onClose }) {
                                 <div className="flex flex-wrap gap-2">
                                     {result.rewards.items.map((it, i) => {
                                         const [iid, q] = Array.isArray(it) ? it : [it, 1];
+                                        // Handle procedural item instances (dicts with instance_id)
+                                        const def = (typeof iid === "object" && iid !== null) ? iid : (itemsById?.[iid] || null);
+                                        const displayName = def?.name || (typeof iid === "string" ? iid.replace(/_/g, " ") : "Unknown");
+                                        const displayId = def?.instance_id || (typeof iid === "string" ? iid : `item-${i}`);
                                         return (
+                                            <ItemTooltip key={i} item={def}>
                                             <span
-                                                key={i}
-                                                className="stat-label px-2 py-1 border border-primary text-primary"
-                                                data-testid={`reward-item-${iid}`}
+                                                className="stat-label px-2 py-1 border border-primary text-primary flex items-center gap-1.5"
+                                                data-testid={`reward-item-${displayId}`}
                                             >
-                                                {iid.replace(/_/g, " ")} × {q}
+                                                {def && <PixelSprite item={def} size={20} />}
+                                                {displayName} × {q}
                                             </span>
+                                            </ItemTooltip>
                                         );
                                     })}
                                 </div>
+                            </div>
+                        )}
+
+                        {result.discoveries !== undefined && (
+                            <div className="border-t border-border pt-4 mt-4">
+                                <div className="stat-label mb-2">DISCOVERY</div>
+                                {result.discoveries.length === 0 ? (
+                                    <div className="text-sm text-muted-foreground">Nothing new discovered this time.</div>
+                                ) : (
+                                    <div className="flex flex-wrap gap-2">
+                                        {result.discoveries.map((d) => (
+                                            <span
+                                                key={`${d.kind}-${d.id}`}
+                                                className={`stat-label px-2 py-1 border ${RARITY_STYLE[d.rarity] || "text-primary border-primary"}`}
+                                                data-testid={`discovery-${d.kind}-${d.id}`}
+                                            >
+                                                {d.kind === "waystone" ? "WAYSTONE: " : d.kind === "monster" ? "MONSTER: " : d.kind === "node" ? "NODE: " : ""}
+                                                {d.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -125,5 +166,6 @@ export default function NarrativeReveal({ result, onClose }) {
                 )}
             </div>
         </div>
+        </TooltipProvider>
     );
 }

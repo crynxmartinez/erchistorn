@@ -5,7 +5,6 @@ import Auth from "@/pages/Auth";
 import CharacterCreate from "@/pages/CharacterCreate";
 import Game from "@/pages/Game";
 import LeaderboardPage from "@/pages/LeaderboardPage";
-import TownPage from "@/pages/TownPage";
 import GuildHouse from "@/pages/GuildHouse";
 import GuildDetail from "@/pages/GuildDetail";
 import { Toaster } from "@/components/ui/sonner";
@@ -41,9 +40,6 @@ function AppRoutes() {
             } />
             <Route path="/leaderboard" element={
                 <ProtectedRoute requireCharacter><LeaderboardPage /></ProtectedRoute>
-            } />
-            <Route path="/town/:townId" element={
-                <ProtectedRoute requireCharacter><TownPage /></ProtectedRoute>
             } />
             <Route path="/guild-house" element={
                 <ProtectedRoute requireCharacter><GuildHouse /></ProtectedRoute>

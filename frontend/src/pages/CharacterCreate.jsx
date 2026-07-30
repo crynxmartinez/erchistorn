@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Check, ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
 
-const BASE_STEPS = ["Race", "Role", "Mastery", "Origin", "Portrait", "Name", "Summary"];
+const BASE_STEPS = ["Race", "Gift", "Role", "Mastery", "Origin", "Portrait", "Name", "Summary"];
 
 const buildSteps = (raceId) => {
-    if (raceId === "wildblood") return ["Race", "Role", "Mastery", "Origin", "Aspect", "Portrait", "Name", "Summary"];
-    if (raceId === "hyliondrian") return ["Race", "Role", "Mastery", "Origin", "Adaptation", "Portrait", "Name", "Summary"];
+    if (raceId === "wildblood") return ["Race", "Gift", "Role", "Mastery", "Origin", "Aspect", "Portrait", "Name", "Summary"];
+    if (raceId === "hyliondrian") return ["Race", "Gift", "Role", "Mastery", "Origin", "Adaptation", "Portrait", "Name", "Summary"];
     return BASE_STEPS;
 };
 
@@ -38,6 +38,7 @@ export default function CharacterCreate() {
     const [heritage, setHeritage] = useState("");
     const [beastAspect, setBeastAspect] = useState(null);
     const [marineAdaptation, setMarineAdaptation] = useState(null);
+    const [racialGift, setRacialGift] = useState(null);
 
     const STEPS = useMemo(() => buildSteps(race?.id), [race?.id]);
     const stepName = STEPS[step];
@@ -91,7 +92,7 @@ export default function CharacterCreate() {
             vitality: race.starting_stats.vitality,
             cognition: race.starting_stats.cognition,
             essence: race.starting_stats.essence,
-            drive: race.starting_stats.drive,
+            durability: race.starting_stats.durability,
             might: 0, grace: 0, insight: 0,
             armor_bonus: 0, evasion_mod: 0, attack_success_mod: 0,
         };
@@ -109,15 +110,20 @@ export default function CharacterCreate() {
             for (const [k, v] of Object.entries(origin.bonus || {})) base[k] = (base[k] || 0) + v;
             for (const [k, v] of Object.entries(origin.drawback || {})) base[k] = (base[k] || 0) + v;
         }
-        for (const k of ["vitality","cognition","essence","drive","might","grace","insight"]) {
+        const gift = race?.gifts?.find((g) => g.id === racialGift);
+        if (gift?.bonus) {
+            for (const [k, v] of Object.entries(gift.bonus)) base[k] = (base[k] || 0) + v;
+        }
+        for (const k of ["vitality","cognition","essence","durability","might","grace","insight"]) {
             if (base[k] < 1) base[k] = 1;
         }
         return base;
-    }, [race, role, mastery, origin]);
+    }, [race, role, mastery, origin, racialGift]);
 
     const canNext = () => {
         switch (stepName) {
             case "Race":     return !!race;
+            case "Gift":     return !!racialGift;
             case "Role":     return !!role;
             case "Mastery":  return !!mastery;
             case "Origin":   return !!origin;
@@ -125,6 +131,7 @@ export default function CharacterCreate() {
             case "Adaptation": return !!marineAdaptation;
             case "Portrait": return !!portraitId;
             case "Name":
+                if (!racialGift) return false;
                 if (!name.trim()) return false;
                 if (race?.id === "human" && !oath.trim()) return false;
                 if (race?.id === "half_elf" && !heritage) return false;
@@ -144,6 +151,7 @@ export default function CharacterCreate() {
                 mastery: mastery.id,
                 origin: origin.id,
                 portrait_id: portraitId,
+                racial_gift: racialGift,
                 oath: race.id === "human" ? oath.trim() : null,
                 heritage: race.id === "half_elf" ? heritage : null,
                 beast_aspect: race.id === "wildblood" ? beastAspect : null,
@@ -162,7 +170,7 @@ export default function CharacterCreate() {
     // Reset dependent selections when parents change
     useEffect(() => {
         setRole(null); setMastery(null); setOrigin(null); setPortraitId(null);
-        setBeastAspect(null); setMarineAdaptation(null);
+        setBeastAspect(null); setMarineAdaptation(null); setRacialGift(null);
         setStep(0);
     }, [race]);
     useEffect(() => { setMastery(null); setOrigin(null); }, [role]);
@@ -229,6 +237,29 @@ export default function CharacterCreate() {
                                     >
                                         <div className="font-pixel text-xl uppercase text-primary">{r.name}</div>
                                         <div className="stat-label mt-1 truncate">{r.perk.name}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* STEP — GIFT */}
+                    {stepName === "Gift" && (
+                        <div>
+                            <h2 className="font-pixel text-3xl uppercase text-primary mb-2">Choose your Racial Gift</h2>
+                            <div className="stat-label mb-4 text-muted-foreground">A blessing of blood and birthright.</div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {race?.gifts?.map((g) => (
+                                    <button
+                                        key={g.id}
+                                        data-testid={`racial-gift-select-${g.id}`}
+                                        onClick={() => setRacialGift(g.id)}
+                                        className={`press-btn p-4 text-left border-2 transition-colors ${
+                                            racialGift === g.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/60"
+                                        }`}
+                                    >
+                                        <div className="font-pixel text-xl uppercase text-primary">{g.name}</div>
+                                        <div className="text-xs text-muted-foreground mt-1">{g.desc}</div>
                                     </button>
                                 ))}
                             </div>
@@ -469,6 +500,7 @@ export default function CharacterCreate() {
                             <h2 className="font-pixel text-3xl uppercase text-primary mb-4">Final Summary</h2>
                             <div className="space-y-4">
                                 <SummaryRow label="RACE"     value={race?.name} />
+                                <SummaryRow label="GIFT"     value={race?.gifts?.find((g) => g.id === racialGift)?.name} />
                                 <SummaryRow label="ROLE"     value={role?.name} />
                                 <SummaryRow label="MASTERY"  value={mastery?.name} />
                                 <SummaryRow label="ORIGIN"   value={origin?.name} />
@@ -544,6 +576,17 @@ function RaceDetail({ race }) {
             <div className="border-t border-border pt-3 mt-4">
                 <div className="stat-label mb-1">RACIAL PERK — {race.perk.name}</div>
                 <div className="text-sm text-foreground/80">{race.perk.desc}</div>
+            </div>
+            <div className="border-t border-border pt-3 mt-4">
+                <div className="stat-label mb-2">RACIAL GIFTS</div>
+                <div className="space-y-1">
+                    {race.gifts?.map((g) => (
+                        <div key={g.id} className="text-sm">
+                            <span className="text-primary font-pixel uppercase">{g.name}</span>
+                            <span className="text-muted-foreground ml-2">{g.desc}</span>
+                        </div>
+                    ))}
+                </div>
             </div>
             <div className="border-t border-border pt-3 mt-4">
                 <div className="stat-label mb-2">LIFE STATS</div>
@@ -702,7 +745,7 @@ function StatBreakdown({ race, role, mastery, origin, stats }) {
             <div className="stat-label text-primary/70 mb-2">FINAL STATS</div>
             <h3 className="font-pixel text-2xl uppercase text-primary mb-4">Stat Breakdown</h3>
             <div className="space-y-2 text-xs">
-                {["vitality","cognition","essence","drive","might","grace","insight"].map((k) => (
+                {["vitality","cognition","essence","durability","might","grace","insight"].map((k) => (
                     <div key={k} className="border-b border-border/40 pb-1.5">
                         <div className="flex justify-between font-mono">
                             <span className="uppercase text-muted-foreground">{k}</span>

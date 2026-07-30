@@ -169,25 +169,57 @@ def profession_slots_unlocked(character_level: int) -> int:
 
 
 PROFESSION_RANKS = ["novice", "apprentice", "journeyman", "expert", "master", "grandmaster"]
-# xp required to reach the NEXT rank
+
+# 100-point tier system: each rank requires 100 points to advance.
+# Points are earned by crafting (1 per craft, 2 on roll 5-6) and refining (1 per refine, 2 on roll 5-6).
+POINTS_PER_TIER = 100
+
+# Legacy XP thresholds kept for backward-compat migration of old characters.
 PROFESSION_RANK_XP = {
-    "novice":       200,
-    "apprentice":   600,
-    "journeyman":   1500,
-    "expert":       3500,
-    "master":       8000,
+    "novice":       100,
+    "apprentice":   100,
+    "journeyman":   100,
+    "expert":       100,
+    "master":       100,
     "grandmaster":  10_000_000,   # max rank
 }
 
 
+def _migrate_xp_to_points(xp: int) -> int:
+    """Convert legacy XP value to new point system.
+    Old thresholds were 200/600/1500/3500/8000 cumulative.
+    New system: 100 points per tier, 600 total for grandmaster.
+    Map proportionally, capped at 600."""
+    if xp <= 0:
+        return 0
+    # Old cumulative thresholds: 200, 800, 2300, 5800, 13800
+    old_total = 13800
+    return min(600, int(xp / old_total * 600))
+
+
 def rank_from_xp(xp: int) -> str:
-    total = 0
-    for r in PROFESSION_RANKS:
-        need = PROFESSION_RANK_XP[r]
-        if xp < total + need:
-            return r
-        total += need
-    return "grandmaster"
+    """Determine rank from point value. 100 points per tier.
+    Kept name 'rank_from_xp' for backward compat with existing callers."""
+    points = xp  # In new system, xp field stores points directly
+    tier_idx = min(points // POINTS_PER_TIER, len(PROFESSION_RANKS) - 1)
+    return PROFESSION_RANKS[tier_idx]
+    current_tier = min(points // POINTS_PER_TIER, len(PROFESSION_RANKS) - 1)
+    if current_tier >= len(PROFESSION_RANKS) - 1:
+        return 0  # max rank
+    return (current_tier + 1) * POINTS_PER_TIER - points
+
+
+def craft_points_for_roll(outcome: int) -> int:
+    """Points earned per craft based on dice roll.
+    Roll 1: 0 (critical fail, materials lost)
+    Roll 2-4: 1 point
+    Roll 5-6: 2 points (quality bonus)
+    """
+    if outcome <= 1:
+        return 0
+    if outcome >= 5:
+        return 2
+    return 1
 
 
 def learn_profession(character: dict, profession_id: str) -> tuple[bool, str]:
@@ -207,13 +239,6 @@ def learn_profession(character: dict, profession_id: str) -> tuple[bool, str]:
                 return False, f"You set this trade aside recently. {remaining} more day(s) before you may take it up again."
         except ValueError:
             pass
-    slots = profession_slots_unlocked(int(character.get("level", 1)))
-    if len(profs) >= slots:
-        need = 10 if slots == 1 else 25 if slots == 2 else None
-        msg = "You've filled every profession slot you have."
-        if need:
-            msg += f" Reach level {need} to unlock another."
-        return False, msg
     profs.append({
         "id":       profession_id,
         "xp":       int((character.get("abandoned_professions") or {}).get(profession_id, {}).get("xp", 0)),  # restore 25% saved
@@ -224,6 +249,10 @@ def learn_profession(character: dict, profession_id: str) -> tuple[bool, str]:
     if abandoned:
         character["abandoned_professions"].pop(profession_id, None)
     # If we restored xp, recalc rank
+    # Migrate legacy XP to points on relearn
+    raw_xp = profs[-1].get("xp", 0)
+    if raw_xp > 600:
+        profs[-1]["xp"] = _migrate_xp_to_points(raw_xp)
     profs[-1]["rank"] = rank_from_xp(profs[-1]["xp"])
     return True, f"You have taken up {PROFESSIONS_BY_ID[profession_id]['name']}."
 
@@ -244,15 +273,31 @@ def abandon_profession(character: dict, profession_id: str, cooldown_days: int =
 
 
 def gain_profession_xp(character: dict, profession_id: str, delta: int) -> tuple[str, str] | None:
-    """Add xp; return (new_rank, old_rank) if the character ranked up, else None."""
+    """Add points to a profession. Kept name for backward compat.
+    In the new system, 'delta' is craft points (1 or 2 based on roll).
+    Returns (new_rank, old_rank) if the character ranked up, else None."""
     profs = character.get("professions", []) or []
     prof = next((p for p in profs if p["id"] == profession_id), None)
     if not prof:
         return None
     old_rank = prof.get("rank", "novice")
-    prof["xp"] = int(prof.get("xp", 0)) + int(delta)
+    # Migrate legacy XP if detected (old values were > 600)
+    current = prof.get("xp", 0)
+    if current > 600:
+        current = _migrate_xp_to_points(current)
+    prof["xp"] = current + int(delta)
     new_rank = rank_from_xp(prof["xp"])
     prof["rank"] = new_rank
     if new_rank != old_rank:
         return new_rank, old_rank
     return None
+def has_profession_rank(character: dict, profession_id: str, min_rank: str) -> bool:
+    """True if character has the profession at or above min_rank."""
+    if not profession_id:
+        return True
+    prof = next((p for p in character.get("professions", []) if p["id"] == profession_id), None)
+    if not prof:
+        return False
+    rank_idx = PROFESSION_RANKS.index(prof.get("rank", "novice"))
+    min_idx = PROFESSION_RANKS.index(min_rank) if min_rank in PROFESSION_RANKS else 0
+    return rank_idx >= min_idx

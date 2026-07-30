@@ -68,7 +68,7 @@ REGIONS: list[dict] = [
 # ============================================================
 # TOWNS
 # ============================================================
-# services: subset of ["inn", "market", "trainers", "notice_board", "tavern", "alchemist"]
+# services: subset of ["sanctuary", "market", "trainers", "notice_board", "tavern", "alchemist"]
 TOWNS: list[dict] = [
     # ==================== AETHERIA ====================
     {
@@ -79,25 +79,28 @@ TOWNS: list[dict] = [
         "continent": "aetheria",
         "desc": "A soot-blackened town ringing with hammers. Ironhold's smiths forge armor for kings and killers alike.",
         "specialty": "Master Blacksmith — advanced weapon and armor recipes unlockable only here.",
-        "services": ["inn", "market", "trainers", "notice_board", "tavern"],
-        "inn_cost": 10,
+        "services": ["sanctuary", "market", "trainers", "notice_board", "tavern"],
+        "sanctuary_cost": 10,
         "fast_travel_cost": 25,
-        "market_items": ["iron_ore", "oak_log", "wild_herb", "bandage", "minor_healing_potion", "iron_dagger", "traveler_garb"],
+        "market_items": ["iron_ore", "oak_log", "wild_herb", "bandage", "minor_healing_potion",
+                         "iron_dagger", "iron_longsword", "bronze_mace", "bone_shield", "iron_helm",
+                         "iron_greaves", "ironshod_boots", "iron_kite_shield", "traveler_garb", "worn_trousers", "old_boots"],
         "trainer_ids": ["master_arden"],
         "vendor_recipe_ids": ["craft_iron_dagger", "craft_iron_longsword", "craft_wolfbone_axe"],
     },
     {
         "id": "willowmere",
         "name": "Willowmere",
-        "type": "sanctuary",
+        "type": "river_settlement",
         "region": "blackmoor_reach",
         "continent": "aetheria",
-        "desc": "A quiet town of white stone and willow trees. The priests of Willowmere heal any wound — for the right price.",
-        "specialty": "Sanctuary — priests remove status effects instantly and train healing skills.",
-        "services": ["inn", "market", "notice_board", "alchemist", "trainers"],
-        "inn_cost": 15,
+        "desc": "A quiet town of white stone and willow trees. The herbalists of Willowmere brew remedies for any ailment.",
+        "specialty": "Herbalist Guild — healing potions, antidotes, and rare herb recipes.",
+        "services": ["market", "notice_board", "alchemist", "trainers"],
         "fast_travel_cost": 25,
-        "market_items": ["wild_herb", "river_stone", "wisp_essence", "greater_healing_potion", "antidote", "bandage"],
+        "market_items": ["wild_herb", "river_stone", "wisp_essence", "greater_healing_potion", "antidote", "bandage",
+                         "leather_cap", "leather_boots", "wolfpelt_cloak", "wolf_tooth_pendant",
+                         "copper_ring", "ring_of_grace", "amulet_of_warding", "tattered_cape"],
         "trainer_ids": ["elder_lyria"],
         "vendor_recipe_ids": ["craft_minor_healing_potion", "craft_greater_healing_potion", "craft_antidote"],
     },
@@ -110,10 +113,12 @@ TOWNS: list[dict] = [
         "continent": "vulkaros",
         "desc": "The Liberator's seat. Basalt walls streaked red with vein-forges. Warhorns sound at every hour.",
         "specialty": "Warband Hall — recruit orc mercenaries and train fear-resist skills.",
-        "services": ["inn", "market", "trainers", "notice_board", "tavern"],
-        "inn_cost": 25,
+        "services": ["sanctuary", "market", "trainers", "notice_board", "tavern"],
+        "sanctuary_cost": 25,
         "fast_travel_cost": 60,
-        "market_items": ["iron_ore", "wolf_pelt", "greater_healing_potion", "iron_longsword", "boarhide_vest", "bandage"],
+        "market_items": ["iron_ore", "wolf_pelt", "greater_healing_potion", "bandage",
+                         "iron_longsword", "bronze_mace", "bone_shield", "iron_helm",
+                         "boarhide_vest", "leather_leggings", "amulet_of_warding", "ring_of_might"],
         "trainer_ids": [],
         "vendor_recipe_ids": ["craft_iron_longsword", "craft_wolfbone_axe"],
     },
@@ -125,10 +130,11 @@ TOWNS: list[dict] = [
         "continent": "vulkaros",
         "desc": "A grim mining post carved into a basalt bluff. Ore, ash, and iron-hard drink.",
         "specialty": "Mining Foreman — deeper ore veins and volcanic gem recipes.",
-        "services": ["inn", "market", "notice_board", "trainers"],
-        "inn_cost": 20,
+        "services": ["market", "notice_board", "trainers"],
         "fast_travel_cost": 60,
-        "market_items": ["iron_ore", "copper_ore", "relic_shard", "acid_flask_item", "bandage", "minor_healing_potion"],
+        "market_items": ["iron_ore", "copper_ore", "relic_shard", "acid_flask_item", "bandage", "minor_healing_potion",
+                         "iron_dagger", "leather_cap", "worn_trousers", "old_boots",
+                         "tattered_cape", "copper_ring", "wolf_tooth_pendant", "bone_shield"],
         "trainer_ids": [],
         "vendor_recipe_ids": ["craft_iron_dagger"],
     },
@@ -141,10 +147,12 @@ TOWNS: list[dict] = [
         "continent": "nyxmoor",
         "desc": "A pale-stone priory ringed by mist. The wards flicker; the bells never quite stop tolling.",
         "specialty": "Wardkeepers — cleansing rites, curse removal, and rare warding scrolls.",
-        "services": ["inn", "market", "notice_board", "alchemist"],
-        "inn_cost": 30,
+        "services": ["sanctuary", "market", "notice_board", "alchemist", "runesmith"],
+        "sanctuary_cost": 30,
         "fast_travel_cost": 90,
-        "market_items": ["wisp_essence", "ghast_dust", "greater_healing_potion", "antidote", "skillbook_ward"],
+        "market_items": ["wisp_essence", "ghast_dust", "greater_healing_potion", "antidote", "skillbook_ward",
+                         "sages_hood", "sages_robe", "pendant_of_insight", "band_of_essence",
+                         "essence_stud", "amulet_of_warding", "sages_trousers"],
         "trainer_ids": [],
         "vendor_recipe_ids": ["craft_antidote", "craft_greater_healing_potion"],
     },
@@ -156,10 +164,11 @@ TOWNS: list[dict] = [
         "continent": "nyxmoor",
         "desc": "A sunken hamlet ringed by black willow. Hags trade whispers for coin.",
         "specialty": "Coven Market — curses, hexes, and forbidden alchemy.",
-        "services": ["inn", "market", "notice_board", "alchemist", "tavern"],
-        "inn_cost": 30,
+        "services": ["market", "notice_board", "alchemist", "tavern"],
         "fast_travel_cost": 90,
-        "market_items": ["ghast_dust", "wisp_essence", "serpent_venom", "acid_flask_item", "skillbook_purge"],
+        "market_items": ["ghast_dust", "wisp_essence", "serpent_venom", "acid_flask_item", "skillbook_purge",
+                         "sages_trousers", "boots_of_the_mire", "robe_of_the_mire",
+                         "earring_of_resolve", "ring_of_grace", "cloak_of_shadows"],
         "trainer_ids": [],
         "vendor_recipe_ids": ["craft_antidote"],
     },
@@ -172,10 +181,12 @@ TOWNS: list[dict] = [
         "continent": "frosthelm",
         "desc": "The great hall of the Undermountain. Jahra veins run through the walls; every hearth sings.",
         "specialty": "Jahra Forge — masterwork dwarven weapons and armor unlockable only here.",
-        "services": ["inn", "market", "trainers", "notice_board", "tavern"],
-        "inn_cost": 40,
+        "services": ["sanctuary", "market", "trainers", "notice_board", "tavern"],
+        "sanctuary_cost": 40,
         "fast_travel_cost": 120,
-        "market_items": ["iron_ore", "copper_ore", "jahra_ingot", "iron_longsword", "scaled_hauberk", "greater_healing_potion"],
+        "market_items": ["iron_ore", "copper_ore", "jahra_ingot", "greater_healing_potion",
+                         "iron_longsword", "iron_greatsword", "iron_helm", "iron_greaves",
+                         "ironshod_boots", "iron_kite_shield", "scaled_hauberk", "bone_shield"],
         "trainer_ids": [],
         "vendor_recipe_ids": ["craft_iron_longsword", "craft_wolfbone_axe"],
     },
@@ -187,10 +198,11 @@ TOWNS: list[dict] = [
         "continent": "frosthelm",
         "desc": "A palisade fort ringed by tundra and wyrm-tracks. The wardens keep the pass at any cost.",
         "specialty": "Warden Hall — pelt tanning, wyrm-hunting bounties, cold-forged bows.",
-        "services": ["inn", "market", "notice_board", "trainers"],
-        "inn_cost": 35,
+        "services": ["market", "notice_board", "trainers"],
         "fast_travel_cost": 120,
-        "market_items": ["wolf_pelt", "boar_hide", "oak_shortbow", "minor_healing_potion", "bandage"],
+        "market_items": ["wolf_pelt", "boar_hide", "minor_healing_potion", "bandage",
+                         "oak_shortbow", "ashwood_longbow", "leather_cap", "leather_boots",
+                         "leather_leggings", "wolfpelt_cloak", "wolf_skull_helm", "wolf_tooth_pendant"],
         "trainer_ids": [],
         "vendor_recipe_ids": ["craft_iron_dagger"],
     },
@@ -203,10 +215,12 @@ TOWNS: list[dict] = [
         "continent": "zephyria",
         "desc": "A city of silver spires suspended between two suns. Elven choirs guide travellers home.",
         "specialty": "Sun-Moon Sanctum — celestial magic training and star-forged trinkets.",
-        "services": ["inn", "market", "trainers", "notice_board", "tavern", "alchemist"],
-        "inn_cost": 55,
+        "services": ["sanctuary", "market", "trainers", "notice_board", "tavern", "alchemist"],
+        "sanctuary_cost": 55,
         "fast_travel_cost": 160,
-        "market_items": ["wisp_essence", "relic_shard", "riverstone_staff", "skillbook_thornlash", "greater_healing_potion", "jahra_ingot"],
+        "market_items": ["wisp_essence", "relic_shard", "jahra_ingot", "greater_healing_potion",
+                         "riverstone_staff", "sages_hood", "sages_robe", "ring_of_twin_moons",
+                         "essence_stud", "pendant_of_insight", "scholars_mantle", "sages_trousers"],
         "trainer_ids": [],
         "vendor_recipe_ids": ["craft_greater_healing_potion"],
     },
@@ -218,10 +232,11 @@ TOWNS: list[dict] = [
         "continent": "zephyria",
         "desc": "A tower-post at the storm's edge. Sky-Riders rest here between lightning-runs.",
         "specialty": "Sky-Rider Post — mounts, wind-forged bows, and storm-charm crafting.",
-        "services": ["inn", "market", "notice_board"],
-        "inn_cost": 50,
+        "services": ["market", "notice_board"],
         "fast_travel_cost": 160,
-        "market_items": ["oak_shortbow", "wisp_essence", "minor_healing_potion", "bandage", "antidote"],
+        "market_items": ["oak_shortbow", "wisp_essence", "minor_healing_potion", "bandage", "antidote",
+                         "leather_boots", "wolfpelt_cloak", "ring_of_grace", "stud_of_the_quiet",
+                         "tattered_cape", "leather_cap", "copper_ring"],
         "trainer_ids": [],
         "vendor_recipe_ids": [],
     },
@@ -234,10 +249,13 @@ TOWNS: list[dict] = [
         "continent": "sablewaste",
         "desc": "A jewel of gold canvas and running water. Every rare thing is sold here — for a price you may regret.",
         "specialty": "Grand Bazaar — legendary rarities, djinn contracts, mirage silks.",
-        "services": ["inn", "market", "trainers", "notice_board", "tavern", "alchemist"],
-        "inn_cost": 70,
+        "services": ["sanctuary", "market", "trainers", "notice_board", "tavern", "alchemist"],
+        "sanctuary_cost": 70,
         "fast_travel_cost": 220,
-        "market_items": ["jahra_ingot", "relic_shard", "skillbook_smite", "greater_healing_potion", "riverstone_staff", "scaled_hauberk"],
+        "market_items": ["jahra_ingot", "relic_shard", "greater_healing_potion",
+                         "scaled_hauberk", "riverstone_staff", "knights_bastard_sword",
+                         "crown_of_will", "heartstone_amulet", "signet_of_old_road",
+                         "iron_kite_shield", "ironshod_boots", "skillbook_smite"],
         "trainer_ids": [],
         "vendor_recipe_ids": ["craft_greater_healing_potion"],
     },
@@ -249,10 +267,11 @@ TOWNS: list[dict] = [
         "continent": "sablewaste",
         "desc": "A moving camp of tents pitched between old ruins. The djinn-touched trade dreams for bread.",
         "specialty": "Djinn Broker — one wish per week, if you can pay its riddle.",
-        "services": ["inn", "market", "notice_board"],
-        "inn_cost": 65,
+        "services": ["market", "notice_board"],
         "fast_travel_cost": 220,
-        "market_items": ["relic_shard", "wisp_essence", "acid_flask_item", "antidote", "bandage"],
+        "market_items": ["relic_shard", "wisp_essence", "acid_flask_item", "antidote", "bandage",
+                         "copper_ring", "stud_of_the_quiet", "wolf_tooth_pendant", "tattered_cape",
+                         "old_boots", "worn_trousers", "earring_of_resolve", "leather_boots"],
         "trainer_ids": [],
         "vendor_recipe_ids": [],
     },
@@ -265,10 +284,12 @@ TOWNS: list[dict] = [
         "continent": "verdania",
         "desc": "A city grown, not built — sylvan homes carved into living branches wider than roads.",
         "specialty": "Grove Circle — druidic training, living armor, and canopy-forged bows.",
-        "services": ["inn", "market", "trainers", "notice_board", "tavern", "alchemist"],
-        "inn_cost": 85,
+        "services": ["sanctuary", "market", "trainers", "notice_board", "tavern", "alchemist"],
+        "sanctuary_cost": 85,
         "fast_travel_cost": 280,
-        "market_items": ["oak_log", "wild_herb", "wisp_essence", "oak_shortbow", "skillbook_thornlash", "greater_healing_potion"],
+        "market_items": ["oak_log", "wild_herb", "wisp_essence", "greater_healing_potion",
+                         "oak_shortbow", "ashwood_longbow", "leather_cap", "sages_hood",
+                         "ring_of_grace", "tide_walker_sandals", "cloak_of_shadows", "skillbook_thornlash"],
         "trainer_ids": [],
         "vendor_recipe_ids": ["craft_greater_healing_potion"],
     },
@@ -280,10 +301,12 @@ TOWNS: list[dict] = [
         "continent": "verdania",
         "desc": "A shell-white pier where pearl divers, tidebound priests, and Hyliondrian envoys pass between worlds.",
         "specialty": "Tide Court — aquatic training, orb-shard trading, and tidebound relics.",
-        "services": ["inn", "market", "trainers", "notice_board", "alchemist"],
-        "inn_cost": 90,
+        "services": ["sanctuary", "market", "trainers", "notice_board", "alchemist"],
+        "sanctuary_cost": 90,
         "fast_travel_cost": 280,
-        "market_items": ["serpent_scale", "serpent_venom", "wisp_essence", "orb_fragment", "greater_healing_potion", "antidote"],
+        "market_items": ["serpent_scale", "serpent_venom", "wisp_essence", "orb_fragment", "greater_healing_potion", "antidote",
+                         "tide_walker_sandals", "leggings_of_the_tide", "serpent_fang_dagger",
+                         "heartstone_amulet", "band_of_essence", "mantle_of_the_deep"],
         "trainer_ids": [],
         "vendor_recipe_ids": ["craft_antidote"],
     },
@@ -294,7 +317,7 @@ TOWNS: list[dict] = [
 # legacy codenames (Ironhold/Aetheria/etc.) to the canon (Oathspire/Valeria/etc.).
 # Also swaps in canonical hometown names + descriptions where relevant.
 # ============================================================
-from world_data import CONTINENT_ID_MAP, TOWN_ID_MAP  # noqa: E402
+from world_data import CONTINENT_ID_MAP, TOWN_ID_MAP, HOMETOWN_BY_CONTINENT  # noqa: E402
 
 # Canonical hometown display names + descriptions, keyed by the *new* id.
 _CANONICAL_TOWN_META: dict[str, dict] = {
@@ -342,6 +365,25 @@ _CANONICAL_TOWN_META: dict[str, dict] = {
                         "specialty": "Grove Circle — druidic training, living armor, and canopy-forged bows."},
 }
 
+
+TRADE_NPCS = {
+    "oathspire": {"id": "oathspire_trade", "name": "Aldric the Broker", "title": "Federated Broker", "desc": "If it can be counted, weighed, or sworn, Aldric has a rate for it.", "specialties": ["merchant", "cooking", "blacksmithing", "tailoring", "cartography"]},
+    "riverguard": {"id": "sister_maren", "name": "Sister Maren", "title": "Sanctuary Herbalist", "desc": "The river teaches patience, and Sister Maren brews it into every draught.", "specialties": ["herbalism", "alchemy", "enchanting", "cooking", "tailoring"]},
+    "grunhold": {"id": "gorash_bone_anvil", "name": "Gorash Bone-Anvil", "title": "Orc War-Smith", "desc": "Every hammer-strike is a war cry.", "specialties": ["blacksmithing", "armorsmithing", "mining", "leatherworking", "hunting"]},
+    "warforge": {"id": "thazka_emberhand", "name": "Thazka Emberhand", "title": "Volcanic Smith", "desc": "She folds ash and ore into blades that thirst.", "specialties": ["blacksmithing", "armorsmithing", "mining", "engineering", "leatherworking"]},
+    "elaris": {"id": "vex_elenor", "name": "Vex Elenor", "title": "Gem Broker", "desc": "Half-Elf coins spend twice as fast when they shine.", "specialties": ["jewelcrafting", "merchant", "enchanting", "tailoring", "blacksmithing"]},
+    "silvergate": {"id": "karvo_caravan", "name": "Karvo the Caravan Master", "title": "Long-Haul Trader", "desc": "He knows every road and every road knows his price.", "specialties": ["merchant", "cartography", "leatherworking", "cooking", "engineering"]},
+    "jahrahold": {"id": "brunmir_deep_finger", "name": "Brunmir Deep-Finger", "title": "Jahra Smith", "desc": "The mountain gave him hands that remember every vein.", "specialties": ["mining", "blacksmithing", "armorsmithing", "engineering", "jewelcrafting"]},
+    "deepstone": {"id": "hildra_cold_forge", "name": "Hildra Cold-Forge", "title": "Frontier Smith", "desc": "Cold steel, cold eyes, warm ale.", "specialties": ["mining", "leatherworking", "bow_crafting", "engineering", "armorsmithing"]},
+    "solunara": {"id": "serathiel_moonglow", "name": "Serathiel Moonglow", "title": "Celestial Enchanter", "desc": "Moonlight is merely starlight wearing a softer mask.", "specialties": ["enchanting", "herbalism", "alchemy", "bow_crafting", "tailoring"]},
+    "starfall_watch": {"id": "vaelion_sky_rider", "name": "Vaelion Sky-Rider", "title": "Storm Bowyer", "desc": "Arrows that outrun the wind, or so he claims.", "specialties": ["bow_crafting", "leatherworking", "enchanting", "engineering", "cartography"]},
+    "rindivar_grove": {"id": "rin_totem_speaker", "name": "Rin Totem-Speaker", "title": "Primal Crafter", "desc": "The beasts give, the beasts take, and Rin keeps the count.", "specialties": ["hunting", "leatherworking", "beast_taming", "herbalism", "cooking"]},
+    "beastcairn": {"id": "mirage_djinn", "name": "Mirage the Djinn-Touched", "title": "Nomad Trader", "desc": "Dreams for bread, bread for dreams.", "specialties": ["hunting", "leatherworking", "cooking", "merchant", "excavation"]},
+    "atlantyrion": {"id": "thalassa_pearlwarden", "name": "Thalassa Pearlwarden", "title": "Tide Forger", "desc": "The ocean yields ingredients; Thalassa yields wonders.", "specialties": ["fishing", "alchemy", "herbalism", "jewelcrafting", "enchanting"]},
+    "veilgrove": {"id": "willowen_rootweaver", "name": "Willowen Rootweaver", "title": "Mystleaf Artisan", "desc": "Branches bend for those who know how to ask.", "specialties": ["herbalism", "alchemy", "bow_crafting", "logging", "enchanting"]},
+}
+
+
 # Region ids referenced by legacy QUESTS need to be rewritten too.
 _REGION_ID_MAP: dict[str, str] = {
     "vale_of_elder_kings": "vale_of_oaths",
@@ -381,17 +423,20 @@ _GIVER_ID_MAP: dict[str, str] = {
 
 def _apply_canon_migration() -> None:
     # 1. TOWNS — rewrite id / region / continent + canonical name/desc/specialty.
+    _hometown_ids = set(HOMETOWN_BY_CONTINENT.values())
     for t in TOWNS:
         new_id = TOWN_ID_MAP.get(t["id"], t["id"])
         t["id"] = new_id
         t["region"] = _REGION_ID_MAP.get(t.get("region"), t.get("region"))
         t["continent"] = CONTINENT_ID_MAP.get(t.get("continent"), t.get("continent"))
+        t["hometown"] = new_id in _hometown_ids
         meta = _CANONICAL_TOWN_META.get(new_id)
         if meta:
             t["name"] = meta["name"]
             t["type"] = meta.get("type", t.get("type"))
             t["desc"] = meta["desc"]
             t["specialty"] = meta["specialty"]
+            t.setdefault("trade_npc", TRADE_NPCS.get(new_id))
 
     # 2. Special-case: Veilgrove is now the Sylvan capital in Daw'ul Talalu, not Hylion.
     for t in TOWNS:
@@ -417,6 +462,8 @@ QUESTS: list[dict] = [
     {
         "id": "regional_wolf_menace",
         "category": "regional",
+        "board": "lounge",
+        "town_id": "oathspire",
         "region": "vale_of_elder_kings",
         "title": "Wolf Menace",
         "giver": "ironhold_notice_board",
@@ -428,6 +475,8 @@ QUESTS: list[dict] = [
     {
         "id": "regional_bandit_hunt",
         "category": "regional",
+        "board": "lounge",
+        "town_id": "oathspire",
         "region": "vale_of_elder_kings",
         "title": "Bandit Hunt",
         "giver": "ironhold_notice_board",
@@ -439,6 +488,8 @@ QUESTS: list[dict] = [
     {
         "id": "regional_herbal_relief",
         "category": "regional",
+        "board": "notice",
+        "town_id": "riverguard",
         "region": "blackmoor_reach",
         "title": "Herbal Relief",
         "giver": "willowmere_notice_board",
@@ -450,6 +501,8 @@ QUESTS: list[dict] = [
     {
         "id": "regional_ruin_seeker",
         "category": "regional",
+        "board": "notice",
+        "town_id": "riverguard",
         "region": "blackmoor_reach",
         "title": "Ruin Seeker",
         "giver": "willowmere_notice_board",
@@ -487,6 +540,13 @@ QUESTS: list[dict] = [
         "unlocked_by": "story_ch1_first_steps",
     },
 ]
+
+# ============================================================
+# Auto-generated notice board quests — ~10 per town,
+# biome-appropriate kill/gather/action quests. See gen_npcs.py.
+# ============================================================
+from gen_npcs import generate_notice_board_quests  # noqa: E402
+QUESTS.extend(generate_notice_board_quests())
 
 QUESTS_BY_ID: dict[str, dict] = {q["id"]: q for q in QUESTS}
 
@@ -654,22 +714,93 @@ HERITAGE_RANK_1: dict[str, dict] = {
 }
 
 
+# ============================================================
+# Heritage Rank Progression — costs and stat rewards
+# ============================================================
+
+# Heritage point cost to reach each rank (index 0 = Rank 2, etc.)
+# No longer used — rank-up requires full resource bar + level gate
+
+# Level gate: must be at least this level to reach each rank
+HERITAGE_RANK_LEVEL_REQS = [10, 20, 30, 40]
+
+# Permanent stat bonuses per rank-up, per race — REMOVED in favor of Heritage Surge
+# Heritage Surge: powerful temporary buff, duration + cooldown scale with rank
+
+HERITAGE_SURGE_RANK_CONFIG = [
+    {"duration": 3, "cooldown_hours": 24},   # Rank 2
+    {"duration": 4, "cooldown_hours": 18},   # Rank 3
+    {"duration": 5, "cooldown_hours": 12},   # Rank 4
+    {"duration": 5, "cooldown_hours": 8},    # Rank 5
+]
+
+HERITAGE_SURGES: dict[str, dict] = {
+    "human": {
+        "id": "oathbreaker_resolve",
+        "name": "Oathbreaker's Resolve",
+        "desc": "All actions count as critical success for the surge duration.",
+        "effects": {"force_outcome": 6},
+        "narrative": "You shatter every oath that ever bound you. For a heartbeat, the world bends to your will — every strike true, every word sharp, every gamble certain.",
+    },
+    "elf": {
+        "id": "celestial_conjunction",
+        "name": "Celestial Conjunction",
+        "desc": "Both solar and lunar bonuses active at once: +6 strike, -30% damage taken, +10% heal.",
+        "effects": {"strike_bonus": 6, "damage_taken_mult": 0.70, "heal_mult": 1.10, "dual_celestial": True},
+        "narrative": "Sun and Moon collide in the sky above you. Both celestial tides flood your veins at once — starlight and sunlight, blade and grace, wrath and mercy.",
+    },
+    "dwarf": {
+        "id": "mountain_wrath",
+        "name": "Mountain's Wrath",
+        "desc": "Take 50% less damage, immune to debuffs, and repair armor 10% per action.",
+        "effects": {"damage_taken_mult": 0.50, "debuff_immune": True, "armor_repair_pct": 10},
+        "narrative": "The mountain wakes inside your bones. Stone-hard, ancient, unbreakable — you become the wall that no army has ever crossed.",
+    },
+    "half_elf": {
+        "id": "dual_awakening",
+        "name": "Dual Awakening",
+        "desc": "Both heritages fully active: full elf + full human bonuses, +2 to all racial resources.",
+        "effects": {"strike_bonus": 4, "heal_mult": 1.10, "damage_taken_mult": 0.85, "resource_boost": 2},
+        "narrative": "Both bloodlines roar awake at once — elf and human, moon and iron, grace and grit. You are no longer half of anything. You are whole.",
+    },
+    "orc": {
+        "id": "unchained_fury",
+        "name": "Unchained Fury",
+        "desc": "+10 strike, immune to control/fear, every hit deals double damage.",
+        "effects": {"strike_bonus": 10, "control_immune": True, "damage_mult": 2.0},
+        "narrative": "The chains inside you snap. Not the iron ones — the deeper ones. The ones that said 'know your place.' Fury becomes geometry. Every blow lands twice.",
+    },
+    "wildblood": {
+        "id": "primal_overdrive",
+        "name": "Primal Overdrive",
+        "desc": "+8 strike, +15% evasion, 25% lifesteal for the surge duration.",
+        "effects": {"strike_bonus": 8, "evasion_bonus": 15, "lifesteal_pct": 25},
+        "narrative": "The beast inside stops whispering and screams. Your veins run hot with primal fire — strike like a predator, dodge like a ghost, drink the life of your enemies.",
+    },
+    "hyliondrian": {
+        "id": "tidal_cataclysm",
+        "name": "Tidal Cataclysm",
+        "desc": "Instantly heal 50% HP, then +10% heal per action, immune to debuffs.",
+        "effects": {"instant_heal_pct": 50, "heal_per_action_pct": 10, "debuff_immune": True},
+        "narrative": "The ocean answers your call — not as a wave, but as a cataclysm. Salt water floods your wounds, closes them, remakes you. Every breath heals. No poison, no curse, no rot can touch you.",
+    },
+    "sylvan": {
+        "id": "verdant_bloom",
+        "name": "Verdant Bloom",
+        "desc": "+20% evasion, +30% stealth, gather yields 3x materials, immune to detection.",
+        "effects": {"evasion_bonus": 20, "stealth_bonus": 30, "gather_mult": 3, "detection_immune": True},
+        "narrative": "The forest blooms inside you. Leaves unfurl from your skin, roots weave through your shadow. You are the green — unseen, untouchable, abundant. The land gives triple to its child.",
+    },
+}
+
+# Passive multiplier per rank (1.0 at Rank 1, 2.0 at Rank 5)
+HERITAGE_RANK_MULT = [1.0, 1.25, 1.5, 1.75, 2.0]
+
+
 def get_town(town_id: str) -> dict | None:
     return TOWNS_BY_ID.get(town_id)
-
-
-def get_region(region_id: str) -> dict | None:
-    return next((r for r in REGIONS if r["id"] == region_id), None)
-
-
 def get_quest(quest_id: str) -> dict | None:
     return QUESTS_BY_ID.get(quest_id)
-
-
-def get_event(event_id: str) -> dict | None:
-    return EVENTS_BY_ID.get(event_id)
-
-
 def get_active_events(weekday: int) -> list[dict]:
     """Given today's weekday (0=Mon..6=Sun), return which events are active."""
     active = []

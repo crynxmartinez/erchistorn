@@ -28,8 +28,8 @@
         --accent: 46 65% 52%;
         --accent-foreground: 30 15% 4%;
 
-        --destructive: 0 60% 30%;        /* #7A1B1B blood */
-        --destructive-foreground: 40 15% 90%;
+        --destructive: 0 75% 55%;        /* bright crimson, readable on dark */
+        --destructive-foreground: 0 0% 8%;   /* near-black for destructive bg buttons */
 
         --border: 30 15% 20%;            /* #3A332A */
         --input: 30 15% 20%;
@@ -235,4 +235,12 @@
 .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+}
+
+/* Move scrollbar to the left edge (for left-side slide panels) */
+.scrollbar-left {
+    direction: rtl;
+}
+.scrollbar-left > * {
+    direction: ltr;
 }

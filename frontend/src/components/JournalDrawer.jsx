@@ -3,8 +3,9 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { api } from "@/lib/api";
+import PixelSprite from "@/components/PixelSprite";
 import { BookOpen } from "lucide-react";
-import { STAT_HINTS, STATUS_HINTS, EXHAUSTION_HINT, RESOLVE_HINT, RESOURCE_META, RACE_TO_RESOURCE } from "@/data/hints";
+import { STAT_HINTS, STATUS_HINTS, EXHAUSTION_HINT, RESOLVE_HINT, RESOURCE_META, RACE_TO_RESOURCE, PROFESSION_HINT, EXPLORATION_HINT, NODE_HINT, CONTINENT_BONUS_HINT, REPUTATION_HINT } from "@/data/hints";
 
 /**
  * JournalDrawer — a slide-in in-world manual (Codex).
@@ -13,19 +14,21 @@ import { STAT_HINTS, STATUS_HINTS, EXHAUSTION_HINT, RESOLVE_HINT, RESOURCE_META,
  * with tabs for Stats, Statuses, Races, World, Bestiary and Materials.
  * Data is loaded on-open only, then cached across re-opens for the session.
  */
-export default function JournalDrawer({ triggerClassName }) {
+export default function JournalDrawer({ triggerClassName, embedded }) {
     const [open, setOpen] = useState(false);
     const [tab, setTab] = useState("intro");
     const [data, setData] = useState(null); // {races, continents, monsters, items, beastAspects, marineAdaptations, heritage}
+    const [discoveries, setDiscoveries] = useState(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        if (!open || data || busy) return;
+        if (data || busy) return;
+        if (!embedded && !open) return;
         setBusy(true);
         (async () => {
             try {
-                const [r, c, m, i, ba, ma, h] = await Promise.all([
+                const [r, c, m, i, ba, ma, h, d] = await Promise.all([
                     api.get("/game/data/races"),
                     api.get("/game/data/continents"),
                     api.get("/game/data/monsters"),
@@ -33,6 +36,7 @@ export default function JournalDrawer({ triggerClassName }) {
                     api.get("/game/data/beast_aspects"),
                     api.get("/game/data/marine_adaptations"),
                     api.get("/game/data/heritage"),
+                    api.get("/game/discoveries"),
                 ]);
                 setData({
                     races: r.data.races,
@@ -43,13 +47,76 @@ export default function JournalDrawer({ triggerClassName }) {
                     marineAdaptations: ma.data.marine_adaptations,
                     heritage: h.data.heritage_rank_1,
                 });
+                setDiscoveries(d.data.biomes);
             } catch (e) {
                 setError(e?.response?.data?.detail || "Codex sealed. Try again.");
             } finally {
                 setBusy(false);
             }
         })();
-    }, [open, data, busy]);
+    }, [open, data, busy, embedded]);
+
+    const codexTabs = (
+        <Tabs value={tab} onValueChange={setTab} className="flex flex-col flex-1 overflow-hidden">
+            <TabsList className="rounded-none border-b border-border bg-transparent p-0 h-auto flex-wrap justify-start">
+                {[
+                    { id: "intro",     label: "Preface" },
+                    { id: "stats",     label: "Stats" },
+                    { id: "statuses",  label: "Statuses" },
+                    { id: "races",     label: "Races" },
+                    { id: "world",     label: "World" },
+                    { id: "discoveries", label: "Discoveries" },
+                    { id: "bestiary",  label: "Bestiary" },
+                    { id: "materials", label: "Materials" },
+                ].map((t) => (
+                    <TabsTrigger
+                        key={t.id}
+                        value={t.id}
+                        data-testid={`journal-tab-${t.id}`}
+                        className="rounded-none border-r border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-pixel uppercase text-sm px-3 py-2"
+                    >
+                        {t.label}
+                    </TabsTrigger>
+                ))}
+            </TabsList>
+
+            <ScrollArea className="flex-1 overflow-hidden">
+                <div className="p-6 min-h-full" data-testid="journal-body">
+                    {busy && <BusyNote />}
+                    {error && !busy && <ErrorNote message={error} />}
+                    {data && !busy && (
+                        <>
+                            <TabsContent value="intro"><Preface /></TabsContent>
+                            <TabsContent value="stats"><StatsPage /></TabsContent>
+                            <TabsContent value="statuses"><StatusesPage /></TabsContent>
+                            <TabsContent value="races">
+                                <RacesPage races={data.races} heritage={data.heritage}
+                                           beastAspects={data.beastAspects}
+                                           marineAdaptations={data.marineAdaptations} />
+                            </TabsContent>
+                            <TabsContent value="world"><WorldPage continents={data.continents} /></TabsContent>
+                            <TabsContent value="discoveries"><DiscoveriesPage biomes={discoveries} /></TabsContent>
+                            <TabsContent value="bestiary"><BestiaryPage monsters={data.monsters} continents={data.continents} /></TabsContent>
+                            <TabsContent value="materials"><MaterialsPage items={data.items} /></TabsContent>
+                        </>
+                    )}
+                </div>
+            </ScrollArea>
+        </Tabs>
+    );
+
+    if (embedded) return (
+        <div className="panel p-0 flex flex-col h-[70vh]" data-testid="journal-embedded">
+            <div className="p-5 border-b-2 border-primary bg-card">
+                <div className="stat-label text-primary/70 mb-1">CODEX &middot; A TRAVELER&apos;S JOURNAL</div>
+                <h2 className="font-pixel text-3xl uppercase text-primary tracking-wider">The Book of Erchis</h2>
+                <div className="narr text-sm text-muted-foreground mt-1">
+                    Turn a page. The world remembers itself when you read.
+                </div>
+            </div>
+            {codexTabs}
+        </div>
+    );
 
     return (
         <Sheet open={open} onOpenChange={setOpen}>
@@ -81,50 +148,7 @@ export default function JournalDrawer({ triggerClassName }) {
                         </SheetDescription>
                     </div>
 
-                    <Tabs value={tab} onValueChange={setTab} className="flex flex-col flex-1 overflow-hidden">
-                        <TabsList className="rounded-none border-b border-border bg-transparent p-0 h-auto flex-wrap justify-start">
-                            {[
-                                { id: "intro",     label: "Preface" },
-                                { id: "stats",     label: "Stats" },
-                                { id: "statuses",  label: "Statuses" },
-                                { id: "races",     label: "Races" },
-                                { id: "world",     label: "World" },
-                                { id: "bestiary",  label: "Bestiary" },
-                                { id: "materials", label: "Materials" },
-                            ].map((t) => (
-                                <TabsTrigger
-                                    key={t.id}
-                                    value={t.id}
-                                    data-testid={`journal-tab-${t.id}`}
-                                    className="rounded-none border-r border-border data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-pixel uppercase text-sm px-3 py-2"
-                                >
-                                    {t.label}
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
-
-                        <ScrollArea className="flex-1 overflow-hidden">
-                            <div className="p-6 min-h-full" data-testid="journal-body">
-                                {busy && <BusyNote />}
-                                {error && !busy && <ErrorNote message={error} />}
-                                {data && !busy && (
-                                    <>
-                                        <TabsContent value="intro"><Preface /></TabsContent>
-                                        <TabsContent value="stats"><StatsPage /></TabsContent>
-                                        <TabsContent value="statuses"><StatusesPage /></TabsContent>
-                                        <TabsContent value="races">
-                                            <RacesPage races={data.races} heritage={data.heritage}
-                                                       beastAspects={data.beastAspects}
-                                                       marineAdaptations={data.marineAdaptations} />
-                                        </TabsContent>
-                                        <TabsContent value="world"><WorldPage continents={data.continents} /></TabsContent>
-                                        <TabsContent value="bestiary"><BestiaryPage monsters={data.monsters} continents={data.continents} /></TabsContent>
-                                        <TabsContent value="materials"><MaterialsPage items={data.items} /></TabsContent>
-                                    </>
-                                )}
-                            </div>
-                        </ScrollArea>
-                    </Tabs>
+                    {codexTabs}
                 </div>
             </SheetContent>
         </Sheet>
@@ -164,7 +188,7 @@ function Preface() {
         <div>
             <div className="narr text-base text-foreground/90 leading-relaxed mb-4">
                 Written in the plain hand of a wandering scribe, this codex answers the
-                questions travelers most often shout at the innkeep after their third mug &mdash;
+                questions travelers most often shout at the sanctuary keeper after their third mug &mdash;
                 what a stat does, why a status won&apos;t leave, which continent hides which beast,
                 and what the strange stones in your pack are called.
             </div>
@@ -189,7 +213,7 @@ function StatsPage() {
                 <Row term="Vitality"  def={STAT_HINTS.vitality} />
                 <Row term="Cognition" def={STAT_HINTS.cognition} />
                 <Row term="Essence"   def={STAT_HINTS.essence} />
-                <Row term="Drive"     def={STAT_HINTS.drive} />
+                <Row term="Durability" def={STAT_HINTS.durability} />
             </Section>
             <Section title="Derived" sub="What your gear and origin add on top.">
                 <Row term="Armor+"      def={STAT_HINTS.armor_bonus} />
@@ -278,16 +302,32 @@ function RacesPage({ races, heritage, beastAspects, marineAdaptations }) {
 
 function WorldPage({ continents }) {
     return (
-        <Section title="The Seven Continents" sub="From the Vale of Elder Kings to the sunken towers of Atlantyrion.">
+        <Section title="The Eleven Continents" sub="Eight peopled, three sealed. Each land has its own voice.">
+            <div className="narr text-sm text-muted-foreground mb-4">
+                {CONTINENT_BONUS_HINT} {REPUTATION_HINT}
+            </div>
+            <div className="border border-border/60 p-3 mb-4 bg-background">
+                <div className="stat-label text-primary/80 mb-2">FIELD NOTES</div>
+                <div className="text-xs text-muted-foreground space-y-1.5">
+                    <p><span className="text-primary">Professions:</span> {PROFESSION_HINT}</p>
+                    <p><span className="text-primary">Exploration:</span> {EXPLORATION_HINT}</p>
+                    <p><span className="text-primary">Resource Nodes:</span> {NODE_HINT}</p>
+                </div>
+            </div>
             <div className="space-y-4">
                 {continents.map((c) => (
                     <div key={c.id} className="border border-border p-3" data-testid={`journal-continent-${c.id}`}>
                         <div className="flex items-baseline justify-between">
                             <div className="font-pixel text-lg uppercase text-primary">{c.name}</div>
-                            <div className="stat-label text-primary/70">Lv {c.level_req}+</div>
+                            <div className="stat-label text-primary/70">{c.locked ? "Sealed" : `Lv ${c.level_req}+`}</div>
                         </div>
                         <div className="narr text-sm text-muted-foreground mt-1">{c.desc}</div>
-                        {c.biomes?.length > 0 && (
+                        {c.bonus_desc && !c.locked && (
+                            <div className="stat-label text-primary/60 mt-2 italic">
+                                {c.bonus_desc}
+                            </div>
+                        )}
+                        {c.biomes?.length > 0 && !c.locked && (
                             <div className="mt-3">
                                 <div className="stat-label text-primary/80 mb-1">Biomes</div>
                                 <ul className="text-sm text-foreground/80 space-y-0.5">
@@ -300,6 +340,140 @@ function WorldPage({ continents }) {
                                 </ul>
                             </div>
                         )}
+                    </div>
+                ))}
+            </div>
+        </Section>
+    );
+}
+
+const RARITY_COLORS = {
+    common:    "text-foreground/80",
+    uncommon:  "text-rarity-uncommon",
+    rare:      "text-rarity-rare",
+    epic:      "text-rarity-epic",
+    legendary: "text-rarity-legendary",
+    mythic:    "text-rarity-mythic",
+    exotic:    "text-rarity-exotic",
+};
+
+function DiscoveriesPage({ biomes }) {
+    const [filter, setFilter] = useState("all");
+
+    const grouped = useMemo(() => {
+        if (!biomes) return {};
+        const g = {};
+        for (const b of biomes) {
+            const cont = b.continent_name || "Unknown";
+            g[cont] = g[cont] || [];
+            g[cont].push(b);
+        }
+        return g;
+    }, [biomes]);
+
+    if (!biomes) return <div className="stat-label text-primary/70">Loading discoveries…</div>;
+
+    const totalMonsters = biomes.reduce((s, b) => s + b.discovered_monsters, 0);
+    const totalMonstersAll = biomes.reduce((s, b) => s + b.total_monsters, 0);
+    const totalNodes = biomes.reduce((s, b) => s + b.discovered_nodes, 0);
+    const totalNodesAll = biomes.reduce((s, b) => s + b.total_nodes, 0);
+
+    return (
+        <Section title="Discoveries" sub="Every beast you've faced, every herb you've named. The world reveals itself to those who wander.">
+            {/* Summary */}
+            <div className="flex gap-4 mb-6 border border-border p-3 bg-background">
+                <div className="text-center">
+                    <div className="font-pixel text-2xl text-primary">{totalMonsters}/{totalMonstersAll}</div>
+                    <div className="stat-label text-muted-foreground text-[10px]">MONSTERS</div>
+                </div>
+                <div className="text-center">
+                    <div className="font-pixel text-2xl text-primary">{totalNodes}/{totalNodesAll}</div>
+                    <div className="stat-label text-muted-foreground text-[10px]">RESOURCES</div>
+                </div>
+            </div>
+
+            {/* Filter */}
+            <div className="flex gap-2 mb-4">
+                {["all", "monsters", "nodes"].map(f => (
+                    <button
+                        key={f}
+                        onClick={() => setFilter(f)}
+                        className={`press-btn font-pixel text-xs uppercase px-3 py-1 border-2 ${filter === f ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:border-primary"}`}
+                    >
+                        {f}
+                    </button>
+                ))}
+            </div>
+
+            {/* Per-continent, per-biome */}
+            <div className="space-y-6">
+                {Object.entries(grouped).map(([cont, biomeList]) => (
+                    <div key={cont}>
+                        <div className="font-pixel text-lg uppercase text-primary mb-2">{cont}</div>
+                        {biomeList.map(b => {
+                            const showMonsters = filter === "all" || filter === "monsters";
+                            const showNodes = filter === "all" || filter === "nodes";
+                            return (
+                                <div key={b.biome_id} className="mb-4 border border-border/60 p-3" data-testid={`discovery-biome-${b.biome_id}`}>
+                                    <div className="flex justify-between items-baseline mb-2">
+                                        <div className="font-pixel text-sm uppercase text-primary">{b.biome_name}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {b.exploration_pct}% explored
+                                        </div>
+                                    </div>
+                                    {showMonsters && b.monsters.length > 0 && (
+                                        <div className="mb-2">
+                                            <div className="stat-label text-muted-foreground text-[10px] mb-1">
+                                                MONSTERS ({b.discovered_monsters}/{b.total_monsters})
+                                            </div>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                                                {b.monsters.map((m, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className={`border px-2 py-1 text-xs ${m.discovered ? "border-border/60" : "border-dashed border-border/30 opacity-50"}`}
+                                                        data-testid={`discovery-monster-${b.biome_id}-${i}`}
+                                                    >
+                                                        <div className={`font-pixel uppercase text-[10px] ${m.discovered ? (RARITY_COLORS[m.rarity] || "text-foreground") : "text-muted-foreground"}`}>
+                                                            {m.discovered ? m.name : "???"}
+                                                        </div>
+                                                        {m.discovered && (
+                                                            <div className="text-muted-foreground text-[10px]">
+                                                                PWR {m.power}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {showNodes && b.nodes.length > 0 && (
+                                        <div>
+                                            <div className="stat-label text-muted-foreground text-[10px] mb-1">
+                                                RESOURCES ({b.discovered_nodes}/{b.total_nodes})
+                                            </div>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                                                {b.nodes.map((n, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className={`border px-2 py-1 text-xs ${n.discovered ? "border-border/60" : "border-dashed border-border/30 opacity-50"}`}
+                                                        data-testid={`discovery-node-${b.biome_id}-${i}`}
+                                                    >
+                                                        <div className={`font-pixel uppercase text-[10px] ${n.discovered ? (RARITY_COLORS[n.rarity] || "text-foreground") : "text-muted-foreground"}`}>
+                                                            {n.discovered ? n.name : "???"}
+                                                        </div>
+                                                        {n.discovered && n.profession && (
+                                                            <div className="text-muted-foreground text-[10px]">
+                                                                {n.profession}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 ))}
             </div>
@@ -392,9 +566,12 @@ function MaterialsPage({ items }) {
                         <div className={`font-pixel text-lg uppercase mb-1 ${RARITY_COLORS[r] || ""}`}>{RARITY_LABEL[r]}</div>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-1 text-xs">
                             {byRarity[r].map((it) => (
-                                <div key={it.id} className="border border-border/40 px-2 py-1" data-testid={`journal-item-${it.id}`}>
-                                    <div className={`font-pixel uppercase text-sm ${RARITY_COLORS[r] || ""}`}>{it.name}</div>
-                                    <div className="text-muted-foreground text-xs">{it.kind}{it.power ? ` · pow ${it.power}` : ""}</div>
+                                <div key={it.id} className="border border-border/40 px-2 py-1 flex items-center gap-2" data-testid={`journal-item-${it.id}`}>
+                                    <PixelSprite item={it} size={28} />
+                                    <div className="min-w-0">
+                                        <div className={`font-pixel uppercase text-sm truncate ${RARITY_COLORS[r] || ""}`}>{it.name}</div>
+                                        <div className="text-muted-foreground text-xs">{it.kind}{it.power ? ` · pow ${it.power}` : ""}</div>
+                                    </div>
                                 </div>
                             ))}
                         </div>

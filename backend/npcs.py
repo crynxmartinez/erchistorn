@@ -105,7 +105,7 @@ NPCS: list[dict] = [
              "requirements": {"kills": [("ruin_ghast", 6)], "character_level": 5},
              "rewards": {"gold": 800, "xp": 500, "relationship": 700,
                          "unique_item": {"id": "vigilkeeper", "name": "Vigilkeeper (Ansel's Blade)",
-                                         "rarity": "epic", "kind": "weapon", "power": 18, "slot": "weapon"}}},
+                                         "rarity": "epic", "kind": "weapon", "power": 18, "slot": "right_hand"}}},
         ],
     },
     # ---------------- MUSHKARA / GRUNHOLD ----------------
@@ -151,7 +151,7 @@ NPCS: list[dict] = [
              "requirements": {"kills": [("obsidian_wraith", 4)], "character_level": 10},
              "rewards": {"gold": 1200, "xp": 800, "relationship": 750,
                          "unique_item": {"id": "chainbreaker_hammer", "name": "Chainbreaker (Thraka's Hammer)",
-                                         "rarity": "epic", "kind": "weapon", "power": 22, "slot": "weapon"}}},
+                                         "rarity": "epic", "kind": "weapon", "power": 22, "slot": "right_hand"}}},
         ],
     },
     # ---------------- CONCORDIA / ELARIS ----------------
@@ -244,7 +244,7 @@ NPCS: list[dict] = [
              "requirements": {"kills": [("frost_wyrm_kin", 2)], "character_level": 22},
              "rewards": {"gold": 2000, "xp": 1200, "relationship": 850,
                          "unique_item": {"id": "marrowsong_spear", "name": "Marrowsong (Thora's Spear)",
-                                         "rarity": "epic", "kind": "weapon", "power": 26, "slot": "weapon"}}},
+                                         "rarity": "epic", "kind": "weapon", "power": 26, "slot": "right_hand"}}},
         ],
     },
     # ---------------- HAYA / SOLUNARA ----------------
@@ -425,6 +425,14 @@ NPCS: list[dict] = [
     },
 ]
 
+# ============================================================
+# Auto-generated NPCs — 4-5 additional NPCs per town with
+# ~20 quests each (chain, bounty, story).  See gen_npcs.py.
+# ============================================================
+from gen_npcs import generate_all_npcs  # noqa: E402
+_generated = generate_all_npcs()
+NPCS.extend(_generated)
+
 NPCS_BY_ID: dict[str, dict] = {n["id"]: n for n in NPCS}
 NPCS_BY_TOWN: dict[str, list[dict]] = {}
 for n in NPCS:
@@ -438,7 +446,7 @@ for n in NPCS:
 
 
 def initial_npc_relationships() -> dict:
-    """New characters start as strangers to every flagship NPC."""
+    """New characters start as strangers to every NPC."""
     return {n["id"]: {"points": 0, "level": "stranger"} for n in NPCS}
 
 

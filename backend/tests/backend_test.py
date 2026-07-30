@@ -294,15 +294,15 @@ class TestSkills:
 class TestEquip:
     def test_equip_weapon_from_inventory(self, existing_user_session):
         r = existing_user_session.post(f"{API}/game/equip", json={
-            "item_id": "iron_dagger", "slot": "weapon"
+            "item_id": "iron_dagger", "slot": "right_hand"
         }, timeout=10)
         assert r.status_code == 200
         ch = r.json()["character"]
-        assert ch["equipped"]["weapon"] == "iron_dagger"
+        assert ch["equipped"]["right_hand"] == "iron_dagger"
 
     def test_equip_wrong_slot_400(self, existing_user_session):
         r = existing_user_session.post(f"{API}/game/equip", json={
-            "item_id": "iron_dagger", "slot": "armor"
+            "item_id": "iron_dagger", "slot": "head"
         }, timeout=10)
         assert r.status_code == 400
 

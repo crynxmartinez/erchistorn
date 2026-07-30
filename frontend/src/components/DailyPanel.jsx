@@ -10,7 +10,7 @@ export default function DailyPanel({ character, onCharacterUpdate }) {
         try {
             const { data } = await api.post("/game/daily/claim", { mission_id });
             onCharacterUpdate?.(data.character);
-            toast.success(`Claimed ${data.reward.gold}g + ${data.reward.xp}xp!`);
+            toast.success(`Claimed ${data.reward?.gold ?? 0}g + ${data.reward?.xp ?? 0}xp!`);
         } catch (e) {
             toast.error(extractError(e));
         }

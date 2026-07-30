@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { api, extractError } from "@/lib/api";
 import { toast } from "sonner";
-import { ScrollText, Heart, Lock, Check, Sword } from "lucide-react";
+import { ScrollText, Heart, Lock, Check, Sword, RefreshCw, Users, XCircle } from "lucide-react";
+import QuestModal from "@/components/QuestModal";
 
 const TIER_LABEL = {
     stranger: "Stranger", acquainted: "Acquainted", friend: "Friend",
@@ -21,6 +22,18 @@ const STATE_LABEL = {
     locked: "LOCKED",
 };
 
+const QUEST_TYPE_BADGE = {
+    chain: { label: "CHAIN", cls: "text-rarity-legendary border-rarity-legendary/40" },
+    bounty: { label: "BOUNTY", cls: "text-primary border-primary/40" },
+    story: { label: "STORY", cls: "text-rarity-epic border-rarity-epic/40" },
+};
+
+function questType(q) {
+    if (q.repeatable) return "bounty";
+    if (q.order < 100) return "chain";
+    return "story";
+}
+
 /**
  * NpcPanel — shows all NPCs local to the character's current town, plus their
  * story-quest chain gated by relationship tier. Only the NPCs that live in the
@@ -31,6 +44,7 @@ export default function NpcPanel({ character, onCharacterUpdate }) {
     const [thresholds, setThresholds] = useState({});
     const [selectedNpc, setSelectedNpc] = useState(null);
     const [busy, setBusy] = useState(false);
+    const [questModal, setQuestModal] = useState(null);
 
     const reload = async () => {
         try {
@@ -42,6 +56,8 @@ export default function NpcPanel({ character, onCharacterUpdate }) {
         } catch (e) { toast.error(extractError(e)); }
     };
     useEffect(() => { reload(); }, [character?.current_town, character?.completed_npc_quests, character?.active_npc_quests]);
+
+    const active = npcs.find((n) => n.id === selectedNpc) || npcs[0];
 
     if (!character?.current_town) {
         return (
@@ -58,13 +74,11 @@ export default function NpcPanel({ character, onCharacterUpdate }) {
         );
     }
 
-    const active = npcs.find((n) => n.id === selectedNpc) || npcs[0];
-
     const acceptQuest = async (qid) => {
         setBusy(true);
         try {
             const r = await api.post("/game/npc/quest/accept", { quest_id: qid });
-            toast.success(r.data.narrative || "Quest accepted.");
+            setQuestModal({ type: "accept", quest: r.data.quest, narrative: r.data.narrative });
             onCharacterUpdate?.(r.data.character);
             await reload();
         } catch (e) { toast.error(extractError(e)); }
@@ -74,10 +88,20 @@ export default function NpcPanel({ character, onCharacterUpdate }) {
         setBusy(true);
         try {
             const r = await api.post("/game/npc/quest/complete", { quest_id: qid });
-            toast.success(r.data.narrative || "Quest complete.");
+            setQuestModal({ type: "complete", quest: r.data.quest, narrative: r.data.narrative });
             if (r.data.relationship_rank_change) {
                 toast.success(`Relationship: ${r.data.relationship_rank_change[1]} → ${r.data.relationship_rank_change[0]}!`);
             }
+            onCharacterUpdate?.(r.data.character);
+            await reload();
+        } catch (e) { toast.error(extractError(e)); }
+        finally { setBusy(false); }
+    };
+    const abandonQuest = async (qid) => {
+        setBusy(true);
+        try {
+            const r = await api.post("/game/npc/quest/abandon", { quest_id: qid });
+            setQuestModal({ type: "abandon", quest: r.data.quest, narrative: r.data.narrative });
             onCharacterUpdate?.(r.data.character);
             await reload();
         } catch (e) { toast.error(extractError(e)); }
@@ -99,23 +123,26 @@ export default function NpcPanel({ character, onCharacterUpdate }) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {/* Left rail: NPC list */}
-                <div className="md:col-span-1 space-y-1">
-                    {npcs.map((n) => (
-                        <button
-                            key={n.id}
-                            data-testid={`npc-select-${n.id}`}
-                            onClick={() => setSelectedNpc(n.id)}
-                            className={`press-btn text-left w-full p-2 border-2 ${
-                                selectedNpc === n.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/60"
-                            }`}
-                        >
-                            <div className="font-pixel text-sm uppercase text-primary">{n.name.split(" of ")[0]}</div>
-                            <div className={`stat-label ${TIER_COLOR[n.relationship.level] || "text-muted-foreground"}`}>
-                                {TIER_LABEL[n.relationship.level]}
-                            </div>
-                        </button>
-                    ))}
+                {/* Left rail: NPC list (scrollable for 5+ NPCs) */}
+                <div className="md:col-span-1">
+                    <div className="stat-label text-primary/70 mb-1 flex items-center gap-1"><Users size={12} /> {npcs.length} NPCs</div>
+                    <div className="space-y-1 max-h-[480px] overflow-y-auto pr-1">
+                        {npcs.map((n) => (
+                            <button
+                                key={n.id}
+                                data-testid={`npc-select-${n.id}`}
+                                onClick={() => setSelectedNpc(n.id)}
+                                className={`press-btn text-left w-full p-2 border-2 ${
+                                    selectedNpc === n.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/60"
+                                }`}
+                            >
+                                <div className="font-pixel text-sm uppercase text-primary">{n.name.split(" of ")[0]}</div>
+                                <div className={`stat-label ${TIER_COLOR[n.relationship.level] || "text-muted-foreground"}`}>
+                                    {TIER_LABEL[n.relationship.level]}
+                                </div>
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Right: NPC detail */}
@@ -125,6 +152,7 @@ export default function NpcPanel({ character, onCharacterUpdate }) {
                     <div className="narr text-sm text-foreground/85 mt-2">{active.description}</div>
                     <div className="stat-label text-primary/70 mt-2 italic">&ldquo;{active.personality}&rdquo;</div>
 
+                    <>
                     {/* Relationship bar */}
                     <div className="border-t border-border mt-4 pt-3">
                         <div className="stat-label flex justify-between mb-1">
@@ -136,16 +164,24 @@ export default function NpcPanel({ character, onCharacterUpdate }) {
                         </div>
                     </div>
 
-                    {/* Quests */}
+                    {/* Quests — grouped by type */}
                     <div className="border-t border-border mt-4 pt-3">
-                        <div className="stat-label text-primary/70 mb-2 flex items-center gap-1"><ScrollText size={12} /> STORY QUESTS</div>
-                        <div className="space-y-2">
-                            {active.quests.map((q) => (
+                        <div className="stat-label text-primary/70 mb-2 flex items-center gap-1"><ScrollText size={12} /> QUESTS ({active.quests.length})</div>
+                        <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                            {active.quests.map((q) => {
+                                const qt = questType(q);
+                                const badge = QUEST_TYPE_BADGE[qt];
+                                return (
                                 <div key={q.id} className="border border-border/70 p-3" data-testid={`npc-quest-${q.id}`}>
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <div className="font-pixel text-lg uppercase text-primary">{q.name}</div>
-                                            <div className="stat-label text-muted-foreground">Chain {q.order} · requires {TIER_LABEL[q.tier]}</div>
+                                            <div className="stat-label text-muted-foreground flex items-center gap-2">
+                                                {qt === "chain" && <span>Chain {q.order} · requires {TIER_LABEL[q.tier]}</span>}
+                                                {qt === "bounty" && <span className="flex items-center gap-1"><RefreshCw size={10} /> Repeatable</span>}
+                                                {qt === "story" && <span>Level {q.requirements?.character_level || 1}+</span>}
+                                                <span className={`px-1 border ${badge.cls}`}>{badge.label}</span>
+                                            </div>
                                         </div>
                                         <div className={`stat-label ${
                                             q.state === "completed" ? "text-primary/70" :
@@ -199,25 +235,40 @@ export default function NpcPanel({ character, onCharacterUpdate }) {
                                             data-testid={`npc-quest-accept-${q.id}`}
                                             className="press-btn font-pixel text-sm uppercase mt-2 px-3 py-1 border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
                                         >
-                                            Accept
+                                            {q.repeatable ? "Accept Again" : "Accept"}
                                         </button>
                                     )}
                                     {q.state === "active" && (
-                                        <button
-                                            onClick={() => completeQuest(q.id)}
-                                            disabled={busy}
-                                            data-testid={`npc-quest-complete-${q.id}`}
-                                            className="press-btn font-pixel text-sm uppercase mt-2 px-3 py-1 border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
-                                        >
-                                            Hand In
-                                        </button>
+                                        <div className="flex gap-2 mt-2">
+                                            <button
+                                                onClick={() => completeQuest(q.id)}
+                                                disabled={busy}
+                                                data-testid={`npc-quest-complete-${q.id}`}
+                                                className="press-btn font-pixel text-sm uppercase px-3 py-1 border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
+                                            >
+                                                Hand In
+                                            </button>
+                                            <button
+                                                onClick={() => abandonQuest(q.id)}
+                                                disabled={busy}
+                                                data-testid={`npc-quest-abandon-${q.id}`}
+                                                className="press-btn font-pixel text-sm uppercase px-3 py-1 border-2 border-destructive/60 text-destructive/80 hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50"
+                                            >
+                                                <XCircle size={12} className="inline mr-1" />Abandon
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
+                </>
                 </div>
             </div>
+            {questModal && (
+                <QuestModal result={questModal} onClose={() => setQuestModal(null)} />
+            )}
         </div>
     );
 }

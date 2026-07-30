@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, extractError } from "@/lib/api";
 import { toast } from "sonner";
-import { Hammer, Sprout, Anchor, X } from "lucide-react";
+import { Hammer, Sprout, Anchor, X, Wrench } from "lucide-react";
 
 const CONTINENT_LABEL = {
     valeria: "Valeria", mushkara: "Mushkara", concordia: "Concordia", khardrum: "Khardrum",
@@ -18,19 +18,21 @@ export default function ProfessionsPanel({ character, onChanged }) {
     const [catalog, setCatalog] = useState([]);
     const [ranks, setRanks] = useState([]);
     const [mine, setMine] = useState([]);
-    const [slots, setSlots] = useState(1);
+    const [tools, setTools] = useState([]);
     const [busy, setBusy] = useState(false);
+    const currentTown = character?.current_town;
 
     const reload = async () => {
         try {
-            const [c, m] = await Promise.all([
+            const [c, m, t] = await Promise.all([
                 api.get("/game/professions/catalog"),
                 api.get("/game/professions/mine"),
+                api.get("/game/tools"),
             ]);
             setCatalog(c.data.catalog);
             setRanks(c.data.ranks);
-            setSlots(c.data.slots_unlocked);
             setMine(m.data.professions);
+            setTools(t.data.tools);
         } catch (e) { toast.error(extractError(e)); }
     };
     useEffect(() => { reload(); }, [character?.level]);
@@ -65,12 +67,10 @@ export default function ProfessionsPanel({ character, onChanged }) {
     return (
         <div data-testid="professions-panel">
             <div className="mb-4">
-                <div className="stat-label text-primary/70">CRAFT · GATHER · SERVE</div>
-                <h2 className="font-pixel text-3xl uppercase text-primary">Professions</h2>
+                    <h2 className="font-pixel text-3xl uppercase text-primary">Specialties</h2>
                 <div className="narr text-sm text-muted-foreground mt-1">
-                    A hero may hold up to three trades in their hands. Choose them slowly — every abandonment costs.
+                    Learn and rank up professions offered by this town's trade master.
                 </div>
-                <div className="stat-label text-primary/80 mt-2">SLOTS UNLOCKED: {slots}/3 · next unlock at Lv {slots === 1 ? 10 : slots === 2 ? 25 : "—"}</div>
             </div>
 
             {/* Learned professions */}
@@ -78,23 +78,43 @@ export default function ProfessionsPanel({ character, onChanged }) {
                 <div className="stat-label text-primary/70 mb-2">YOUR PROFESSIONS</div>
                 {mine.length === 0 && <div className="stat-label text-muted-foreground">None yet. Pick one below.</div>}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {mine.map((p) => (
-                        <div key={p.id} className="border border-border p-3 flex justify-between items-start" data-testid={`prof-active-${p.id}`}>
-                            <div>
-                                <div className="font-pixel text-lg uppercase text-primary flex items-center gap-1.5">{kindIcon(p.kind)} {p.name}</div>
-                                <div className="stat-label text-muted-foreground">{p.rank.toUpperCase()} · {p.xp} xp</div>
+                    {mine.map((p) => {
+                        const tool = tools.find((t) => t.profession_id === p.id);
+                        const rankIdx = ranks.findIndex((r) => r.id === p.rank);
+                        const nextXp = rankIdx >= 0 && rankIdx < ranks.length - 1 ? ranks[rankIdx + 1].xp : null;
+                        const prevXp = rankIdx > 0 ? ranks[rankIdx].xp : 0;
+                        const pct = nextXp ? Math.min(100, Math.max(0, ((p.xp - prevXp) / (nextXp - prevXp)) * 100)) : 100;
+                        return (
+                            <div key={p.id} className="border border-border p-3 flex justify-between items-start" data-testid={`prof-active-${p.id}`}>
+                                <div className="flex-1">
+                                    <div className="font-pixel text-lg uppercase text-primary flex items-center gap-1.5">{kindIcon(p.kind)} {p.name}</div>
+                                    <div className="stat-label text-muted-foreground">{p.rank.toUpperCase()} · {p.xp} xp</div>
+                                    {nextXp && (
+                                        <div className="mt-2">
+                                            <div className="h-1.5 bg-background border border-border">
+                                                <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                                            </div>
+                                            <div className="text-[10px] text-muted-foreground mt-0.5">{nextXp - p.xp} xp to {ranks[rankIdx + 1]?.name}</div>
+                                        </div>
+                                    )}
+                                    {tool && (
+                                        <div className={`text-[10px] mt-1.5 flex items-center gap-1 ${tool.durability < tool.max_durability * 0.2 ? "text-destructive" : "text-muted-foreground"}`}>
+                                            <Wrench size={10} /> {tool.tool_name}: {tool.durability}/{tool.max_durability}
+                                        </div>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => abandon(p.id)}
+                                    disabled={busy}
+                                    data-testid={`prof-abandon-${p.id}`}
+                                    className="stat-label text-destructive hover:text-destructive/70 flex items-center gap-1 disabled:opacity-40"
+                                    title="Abandon (keeps 25% xp for relearn)"
+                                >
+                                    <X size={12} /> ABANDON
+                                </button>
                             </div>
-                            <button
-                                onClick={() => abandon(p.id)}
-                                disabled={busy}
-                                data-testid={`prof-abandon-${p.id}`}
-                                className="stat-label text-destructive hover:text-destructive/70 flex items-center gap-1 disabled:opacity-40"
-                                title="Abandon (keeps 25% xp for relearn)"
-                            >
-                                <X size={12} /> ABANDON
-                            </button>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 
@@ -107,6 +127,7 @@ export default function ProfessionsPanel({ character, onChanged }) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {catalog.filter((p) => p.kind === kind).map((p) => {
                                 const owned = mine.some((m) => m.id === p.id);
+                                const availableHere = !!currentTown;
                                 return (
                                     <div key={p.id} className="border border-border/60 p-3" data-testid={`prof-cat-${p.id}`}>
                                         <div className="flex justify-between items-baseline">
@@ -116,18 +137,15 @@ export default function ProfessionsPanel({ character, onChanged }) {
                                                 : (
                                                     <button
                                                         onClick={() => learn(p.id)}
-                                                        disabled={busy || mine.length >= slots}
+                                                        disabled={busy || !availableHere}
                                                         data-testid={`prof-learn-${p.id}`}
                                                         className="stat-label text-primary hover:text-primary/70 disabled:opacity-40"
                                                     >
-                                                        LEARN →
+                                                        {currentTown ? "LEARN →" : "IN TOWN"}
                                                     </button>
                                                 )}
                                         </div>
                                         <div className="text-xs text-muted-foreground mt-1">{p.desc}</div>
-                                        {p.best_continents?.length > 0 && (
-                                            <div className="stat-label text-primary/60 mt-1">Best in: {prettifyContinents(p.best_continents)}</div>
-                                        )}
                                     </div>
                                 );
                             })}

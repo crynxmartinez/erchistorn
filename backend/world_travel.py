@@ -8,7 +8,7 @@ Spec:
 - Homeland Reputation starts Friendly for the native race, Neutral for others.
 """
 from __future__ import annotations
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 # ============================================================
 # TELEPORTER
@@ -31,6 +31,9 @@ def teleporter_can_use(character: dict, now: datetime | None = None) -> tuple[bo
     ct = character.get("current_town")
     if not ct:
         return False, "The Grand Teleporter is only in a hometown. Enter a town first."
+    from world_data import HOMETOWN_BY_CONTINENT
+    if ct not in HOMETOWN_BY_CONTINENT.values():
+        return False, "The Grand Teleporter is only found in capital towns."
     last = character.get("teleporter_last_used")
     if last:
         # last is an ISO string
@@ -116,12 +119,6 @@ WAYSTONES: list[dict] = [
 ]
 
 WAYSTONES_BY_ID: dict[str, dict] = {w["id"]: w for w in WAYSTONES}
-
-
-def waystones_for_continent(cont_id: str) -> list[dict]:
-    return [w for w in WAYSTONES if w["continent"] == cont_id]
-
-
 # ============================================================
 # HOMELAND REPUTATION
 # ============================================================

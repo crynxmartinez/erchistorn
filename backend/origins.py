@@ -7,7 +7,7 @@ from __future__ import annotations
 #   best_for (str), mythicode_theme (str)
 #
 # Applicable stat keys:
-#   vitality, cognition, essence, drive, might, grace, insight,
+#   vitality, cognition, essence, durability, might, grace, insight,
 #   armor_bonus, evasion_mod, attack_success_mod
 
 ORIGINS: list[dict] = [
@@ -42,7 +42,7 @@ ORIGINS: list[dict] = [
     # ---------- LANCER ----------
     {"id": "silvered_wolf", "name": "The Silvered Wolf", "mastery": "lancer",
      "story": "Bound to the Wolfstar — swift and cunning.",
-     "bonus": {"grace": 3, "insight": 2}, "drawback": {"drive": -1},
+     "bonus": {"grace": 3, "insight": 2}, "drawback": {"durability": -1},
      "best_for": "Speed, accuracy, and instinct.", "mythicode": "Wolfstar"},
     {"id": "frosted_peak", "name": "The Frosted Peak", "mastery": "lancer",
      "story": "Born in the shadow of the Mountain That Never Melts.",
@@ -162,7 +162,7 @@ ORIGINS: list[dict] = [
      "best_for": "Life transmutation, healing potions, and risky experiments.", "mythicode": "Pierce"},
     {"id": "navigators_star", "name": "The Navigator's Star", "mastery": "alchemist",
      "story": "Guide-star of the questing spirit.",
-     "bonus": {"insight": 3, "drive": 1}, "drawback": {"evasion_mod": -2},
+     "bonus": {"insight": 3, "durability": 1}, "drawback": {"evasion_mod": -2},
      "best_for": "Discovery, crafting, and exploration.", "mythicode": "Navigator"},
 ]
 
@@ -220,7 +220,7 @@ def compute_final_stats(race_life_stats: dict, role_id: str, mastery_id: str, or
         "vitality":            int(race_life_stats.get("vitality", 3)),
         "cognition":           int(race_life_stats.get("cognition", 3)),
         "essence":             int(race_life_stats.get("essence", 3)),
-        "drive":               int(race_life_stats.get("drive", 3)),
+        "durability":           int(race_life_stats.get("durability", 3)),
         "might":               0,
         "grace":               0,
         "insight":             0,
@@ -255,7 +255,7 @@ def compute_final_stats(race_life_stats: dict, role_id: str, mastery_id: str, or
                 breakdown["origin_drawback"][k] = v
 
     # Minimum-1 rule for Life & Main stats
-    for k in ("vitality", "cognition", "essence", "drive", "might", "grace", "insight"):
+    for k in ("vitality", "cognition", "essence", "durability", "might", "grace", "insight"):
         if stats[k] < 1:
             stats[k] = 1
     # Armor cannot fall below 0

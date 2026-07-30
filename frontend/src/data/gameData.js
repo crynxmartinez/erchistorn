@@ -9,7 +9,7 @@ export function useGameData() {
         let mounted = true;
         (async () => {
             try {
-                const [races, roles, masteries, portraits, continents, items, skills, recipes, teachers, monsters] =
+                const [races, roles, masteries, portraits, continents, items, skills, recipes, teachers, monsters, rogueInnates, masteryPassives, runes, quests] =
                     await Promise.all([
                         api.get("/game/data/races"),
                         api.get("/game/data/roles"),
@@ -21,10 +21,15 @@ export function useGameData() {
                         api.get("/game/data/recipes"),
                         api.get("/game/data/teachers"),
                         api.get("/game/data/monsters"),
+                        api.get("/game/data/rogue-innates"),
+                        api.get("/game/data/mastery-passives"),
+                        api.get("/game/data/runes"),
+                        api.get("/game/data/quests"),
                     ]);
                 if (!mounted) return;
                 const itemsList = items.data.items;
                 const skillsList = skills.data.skills;
+                const questsList = quests.data.quests;
                 setData({
                     ready: true,
                     races: races.data.races,
@@ -36,9 +41,16 @@ export function useGameData() {
                     itemsById: Object.fromEntries(itemsList.map((i) => [i.id, i])),
                     skills: skillsList,
                     skillsById: Object.fromEntries(skillsList.map((s) => [s.id, s])),
+                    quests: questsList,
+                    questsById: Object.fromEntries(questsList.map((q) => [q.id, q])),
                     recipes: recipes.data.recipes,
                     teachers: teachers.data.teachers,
                     monsters: monsters.data.monsters,
+                    rogueInnateSkills: rogueInnates.data.innate_skills,
+                    roguePassives: rogueInnates.data.passives,
+                    masteryPassives: masteryPassives.data,
+                    runes: runes.data.runes,
+                    runesById: Object.fromEntries(runes.data.runes.map((r) => [r.id, r])),
                 });
             } catch {
                 if (mounted) setData({ ready: false, error: true });
@@ -57,6 +69,10 @@ export const RARITY_LABEL = {
     epic: "Epic",
     legendary: "Legendary",
     mythic: "Mythic",
+    normal: "Normal",
+    magic: "Magic",
+    unique: "Unique",
+    set: "Set",
 };
 
 export const RARITY_CLASS = {
@@ -66,6 +82,10 @@ export const RARITY_CLASS = {
     epic: "rarity-epic",
     legendary: "rarity-legendary",
     mythic: "rarity-mythic",
+    normal: "rarity-common",
+    magic: "rarity-uncommon",
+    unique: "rarity-epic",
+    set: "rarity-rare",
 };
 
 export const RARITY_TEXT = {
@@ -75,4 +95,8 @@ export const RARITY_TEXT = {
     epic: "text-rarity-epic",
     legendary: "text-rarity-legendary",
     mythic: "text-rarity-mythic",
+    normal: "text-rarity-common",
+    magic: "text-rarity-uncommon",
+    unique: "text-rarity-epic",
+    set: "text-rarity-rare",
 };

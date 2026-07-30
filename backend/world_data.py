@@ -40,6 +40,8 @@ CONTINENTS_V2: list[dict] = [
               "into strongholds — every forge here still remembers a broken chain."),
      "specialty": "Heavy weapons · Siege · Demon-hunting · War supplies",
      "biomes": [
+        {"id": "bloodwind_plains", "name": "Bloodwind Plains", "level_req": 1,
+         "desc": "War-camp outskirts where scavenger beasts pick at old battlefields and new recruits earn their scars."},
         {"id": "red_steppe",       "name": "Red Steppe",       "level_req": 6,
          "desc": "War-beast herds and orc settlements under a rust-coloured sky."},
         {"id": "iron_scar",        "name": "Iron Scar",        "level_req": 10,
@@ -55,6 +57,8 @@ CONTINENTS_V2: list[dict] = [
               "Trade cities, universities, embassies, and multicultural markets everywhere you turn."),
      "specialty": "Diplomacy · Trading · Jewelcrafting · Hybrid crafting",
      "biomes": [
+        {"id": "trade_road_outpost", "name": "Trade Road Outpost", "level_req": 1,
+         "desc": "Where the roads first reach Concordia. Roadside bandits, stray wildlife, and the first trade posts."},
         {"id": "mosaic_coast",       "name": "Mosaic Coast",       "level_req": 12,
          "desc": "Ports flying every flag. Foreign merchants haggle beside quiet smuggling routes."},
         {"id": "amber_vineyards",    "name": "Amber Vineyards",    "level_req": 14,
@@ -70,6 +74,8 @@ CONTINENTS_V2: list[dict] = [
               "of the world. The deepest veins yield Jahra — the legendary Dwarven metal."),
      "specialty": "Weapon & armor crafting · Mining · Engineering · Fortress construction",
      "biomes": [
+        {"id": "stone_ridge",     "name": "Stone Ridge",     "level_req": 1,
+         "desc": "Surface mining camps at the mountain's edge. Rock creatures, cave pests, and copper veins for greenhands."},
         {"id": "granite_foothills", "name": "Granite Foothills", "level_req": 16,
          "desc": "Common ore, stone-flesh creatures, and the mining camps that feed the halls below."},
         {"id": "ember_mines",       "name": "Ember Mines",       "level_req": 20,
@@ -85,6 +91,8 @@ CONTINENTS_V2: list[dict] = [
               "Sun and moon shape everything that walks or grows here."),
      "specialty": "Enchanting · Healing · Herbalism · Celestial equipment",
      "biomes": [
+        {"id": "verdant_edge",  "name": "Verdant Edge",  "level_req": 1,
+         "desc": "The forest's first whisper. Minor spirits, small beasts, and herbs that grow where sunlight still reaches."},
         {"id": "sunlit_canopy",  "name": "Sunlit Canopy",  "level_req": 26,
          "desc": "Solar herbs, healing creatures, and bright forest spirits who trade in favours."},
         {"id": "moonveil_woods", "name": "Moonveil Woods", "level_req": 30,
@@ -100,6 +108,8 @@ CONTINENTS_V2: list[dict] = [
               "The Wildbloods sang the sand into life."),
      "specialty": "Hunting · Leatherworking · Beast Taming · Survival",
      "biomes": [
+        {"id": "oasis_outskirts", "name": "Oasis Outskirts", "level_req": 1,
+         "desc": "Where the desert first blooms. Small scavengers, oasis wildlife, and hardy herbs for new hunters."},
         {"id": "blooming_desert", "name": "Blooming Desert", "level_req": 32,
          "desc": "Desert herbs, oases, and burrowers who remember the old dry-time."},
         {"id": "beastwood",       "name": "Beastwood",       "level_req": 36,
@@ -115,6 +125,8 @@ CONTINENTS_V2: list[dict] = [
               "with the right potion or a Hyliondrian guide."),
      "specialty": "Fishing · Water alchemy · Pearl gathering · Aquatic equipment",
      "biomes": [
+        {"id": "tide_pools",  "name": "Tide Pools",  "level_req": 1,
+         "desc": "Shallow water and sunlit rocks. Small sea creatures, beach pests, and healing plants that grow in tide-light."},
         {"id": "coral_gardens",  "name": "Coral Gardens",  "level_req": 42,
          "desc": "Living coral, small sea-creatures, and quiet healing plants that grow only in tide-light."},
         {"id": "kelp_forest",    "name": "Kelp Forest",    "level_req": 46,
@@ -130,6 +142,8 @@ CONTINENTS_V2: list[dict] = [
               "living trees. Every path answers your questions with two more."),
      "specialty": "Herbalism · Potion crafting · Magical wood · Bow crafting",
      "biomes": [
+        {"id": "misty_thicket",        "name": "Misty Thicket",        "level_req": 1,
+         "desc": "The forest's threshold. Illusion sprites, thorn pests, and shadow herbs that grow where the mist is thin."},
         {"id": "mistwood",             "name": "Mistwood",             "level_req": 48,
          "desc": "Illusion creatures, hidden paths, and stealth herbs favoured by every rogue in Erchis."},
         {"id": "thorn_labyrinth",      "name": "Thorn Labyrinth",      "level_req": 52,
@@ -257,19 +271,80 @@ TOWN_ID_MAP: dict[str, str] = {
     "atlantyrion_gate": "atlantyrion",
     "emerald_bough":    "veilgrove",  # relocated to Daw'ul Talalu
 }
+# ============================================================
+# Format: continent_id -> { activity/profession_id: xp_mult or special flag }
+CONTINENTAL_BONUSES: dict[str, dict] = {
+    "valeria": {
+        "merchant":       {"xp_mult": 1.05, "tax_reduction": 0.03},
+        "cooking":        {"xp_mult": 1.05},
+        "contract_quest_chance": 0.10,
+        "desc": "Commercial heart: +5% Trading & Cooking XP, -3% market tax.",
+    },
+    "haya": {
+        "enchanting":     {"xp_mult": 1.05},
+        "herbalism":      {"xp_mult": 1.05},
+        "healing_quality": 1.05,
+        "celestial_equip_chance": 0.10,
+        "desc": "Celestial magic: +5% Enchanting & Herbalism XP; better healing items.",
+    },
+    "khardrum": {
+        "mining":         {"xp_mult": 1.05, "gather_speed_mult": 0.95},
+        "blacksmithing":  {"xp_mult": 1.05, "craft_speed_mult": 0.90},
+        "armorsmithing":  {"xp_mult": 1.02, "craft_speed_mult": 0.92},
+        "repair_cost_reduction": 0.05,
+        "durable_equip_chance": 0.10,
+        "desc": "Forges of the deep: +10-8% faster smithing, +5% Mining & Blacksmithing XP, cheaper repairs.",
+    },
+    "concordia": {
+        "jewelcrafting":  {"xp_mult": 1.05, "craft_speed_mult": 0.95},
+        "foreign_reputation": 1.05,
+        "hybrid_recipe_chance": 0.10,
+        "desc": "Diplomatic federation: +5% faster jewelcrafting, +5% Jewelcrafting XP, +5% foreign reputation gains.",
+    },
+    "mushkara": {
+        "physical_combat_xp": 1.05,
+        "blacksmithing":      {"xp_mult": 1.05, "heavy_weapon_focus": True, "craft_speed_mult": 0.93},
+        "armorsmithing":      {"xp_mult": 1.02, "craft_speed_mult": 0.95},
+        "demon_damage_mult":  1.10,
+        "desc": "War-forged: +5% combat & heavy-weapon XP, faster demon-forged smithing, +10% damage vs demons.",
+    },
+    "gennel": {
+        "hunting":        {"xp_mult": 1.05},
+        "leatherworking": {"xp_mult": 1.05, "craft_speed_mult": 0.90},
+        "beast_taming":   {"xp_mult": 1.05, "duration_reduction": 0.10},
+        "beast_material_chance": 0.10,
+        "desc": "Primal wilds: +10% faster leatherworking, +5% Hunting, Leatherworking & Beast Taming XP.",
+    },
+    "hylion": {
+        "fishing":        {"xp_mult": 1.05, "gather_success": 1.05},
+        "alchemy":        {"xp_mult": 1.05, "water_alchemy": True, "craft_speed_mult": 0.90},
+        "pearl_coral_chance": 0.10,
+        "desc": "Ocean kingdom: +10% faster water alchemy, +5% Fishing & Water Alchemy XP, better aquatic yields.",
+    },
+    "daw_ul_talalu": {
+        "herbalism":      {"xp_mult": 1.05, "forest_gather_speed": 0.90},
+        "alchemy":        {"xp_mult": 1.05, "craft_speed_mult": 0.92},
+        "bow_crafting":   {"xp_mult": 1.03, "stealth_evasion_chance": 0.10, "craft_speed_mult": 0.90},
+        "magical_plant_chance": 0.10,
+        "desc": "Mystleaf forest: +8-10% faster alchemy & bow crafting, +5% Herbalism & Alchemy XP; magical wood & plants.",
+    },
+}
 
 
-def migrate_continent(cid: str | None) -> str | None:
-    if not cid:
-        return cid
-    return CONTINENT_ID_MAP.get(cid, cid)
+def continental_bonus_for(continent_id: str, key: str) -> dict | float | None:
+    """Return the bonus entry for a continent and activity/profession key."""
+    return CONTINENTAL_BONUSES.get(continent_id, {}).get(key)
 
-def migrate_biome(bid: str | None) -> str | None:
-    if not bid:
-        return bid
-    return BIOME_ID_MAP.get(bid, bid)
 
-def migrate_town(tid: str | None) -> str | None:
-    if not tid:
-        return tid
-    return TOWN_ID_MAP.get(tid, tid)
+def xp_multiplier_for(continent_id: str, key: str) -> float:
+    """Convenience: get xp_mult for a key, default 1.0."""
+    bonus = continental_bonus_for(continent_id, key)
+    if isinstance(bonus, dict):
+        return bonus.get("xp_mult", 1.0)
+    return 1.0
+
+
+# Attach continental bonus descriptions to each continent for the frontend.
+for _c in CONTINENTS_V2:
+    _c["bonus_desc"] = CONTINENTAL_BONUSES.get(_c["id"], {}).get("desc", "")
+    _c["specialty"] = _c.get("specialty", CONTINENTAL_BONUSES.get(_c["id"], {}).get("desc", "").split(":")[1] if _c.get("id") in CONTINENTAL_BONUSES else "")

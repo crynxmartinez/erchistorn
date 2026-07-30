@@ -83,14 +83,20 @@ async def get_current_user(request: Request, db) -> dict:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
+def _cookie_secure() -> bool:
+    return os.environ.get("COOKIE_SECURE", "true").lower() != "false"
+
+
 def set_auth_cookies(response, access_token: str, refresh_token: str) -> None:
+    secure = _cookie_secure()
+    samesite = "none" if secure else "lax"
     response.set_cookie(
         key="access_token", value=access_token, httponly=True,
-        secure=True, samesite="none", max_age=ACCESS_EXP_MIN * 60, path="/",
+        secure=secure, samesite=samesite, max_age=ACCESS_EXP_MIN * 60, path="/",
     )
     response.set_cookie(
         key="refresh_token", value=refresh_token, httponly=True,
-        secure=True, samesite="none", max_age=REFRESH_EXP_DAYS * 86400, path="/",
+        secure=secure, samesite=samesite, max_age=REFRESH_EXP_DAYS * 86400, path="/",
     )
 
 

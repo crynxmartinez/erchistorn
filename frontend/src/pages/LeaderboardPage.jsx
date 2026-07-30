@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { Trophy, Crown } from "lucide-react";
 
-export default function LeaderboardPage() {
+export default function LeaderboardPage({ embedded }) {
     const [rows, setRows] = useState([]);
 
     useEffect(() => {
@@ -13,18 +13,14 @@ export default function LeaderboardPage() {
         })();
     }, []);
 
-    return (
-        <div className="min-h-screen p-4 md:p-8" data-testid="leaderboard-page">
-            <div className="max-w-5xl mx-auto">
-                <Link to="/game" className="stat-label text-primary/70 hover:text-primary mb-6 block" data-testid="leaderboard-back">
-                    ← BACK TO GAME
-                </Link>
-                <div className="flex items-center gap-3 mb-8">
-                    <Trophy className="text-primary" size={32} />
-                    <h1 className="font-pixel text-5xl uppercase text-primary">Leaderboard</h1>
-                </div>
+    const content = (
+        <>
+            <div className="flex items-center gap-3 mb-8">
+                <Trophy className="text-primary" size={32} />
+                <h1 className="font-pixel text-5xl uppercase text-primary">Leaderboard</h1>
+            </div>
 
-                <div className="panel p-4">
+            <div className="panel p-4">
                     <div className="grid grid-cols-12 gap-2 stat-label text-primary/60 border-b border-border pb-2 mb-2">
                         <div className="col-span-1">#</div>
                         <div className="col-span-3">NAME</div>
@@ -58,6 +54,17 @@ export default function LeaderboardPage() {
                         <div className="stat-label text-muted-foreground text-center py-12">No heroes yet.</div>
                     )}
                 </div>
+            </>
+    );
+
+    if (embedded) return content;
+    return (
+        <div className="min-h-screen p-4 md:p-8" data-testid="leaderboard-page">
+            <div className="max-w-5xl mx-auto">
+                <Link to="/game" className="stat-label text-primary/70 hover:text-primary mb-6 block" data-testid="leaderboard-back">
+                    ← BACK TO GAME
+                </Link>
+                {content}
             </div>
         </div>
     );

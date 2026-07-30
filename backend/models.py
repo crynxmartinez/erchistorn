@@ -71,7 +71,7 @@ class CharacterStats(BaseModel):
     vitality: int
     cognition: int
     essence: int
-    drive: int
+    durability: int
     might: int = 0
     grace: int = 0
     insight: int = 0
@@ -139,6 +139,8 @@ class Character(BaseDocument):
     exhaustion: int = 0             # 0-100 — universal, feeds racial abilities
     resolve: int = 100              # 0-100 — used by risky/mental activities
     heritage_rank: int = 1          # 1..5 — unlocks Rank I on creation
+    heritage_surge_active: int = 0          # remaining actions for active surge
+    heritage_surge_last_used: Optional[str] = None  # ISO timestamp of last surge activation
     oath_progress: int = 0          # Human 0..100
     celestial_charge: int = 0       # Elf 0..5
     stoneguard: int = 0             # Dwarf 0..5
@@ -160,6 +162,20 @@ class Character(BaseDocument):
     completed_quests: list[str] = Field(default_factory=list)
     kills: int = 0
     crafts: int = 0
+    deaths: int = 0
+    last_death: Optional[dict] = None
+    last_sanctuary_town: str = "oathspire"
+    last_screen: Optional[str] = None
+    professions: list[dict] = Field(default_factory=list)
+    abandoned_professions: dict = Field(default_factory=dict)
+    crafting_queue: list[dict] = Field(default_factory=list)
+    tools: dict = Field(default_factory=dict)
+    node_cooldowns: dict = Field(default_factory=dict)
+    known_waystones: list[str] = Field(default_factory=list)
+    active_waystones: list[str] = Field(default_factory=list)
+    exploration_progress: dict = Field(default_factory=dict)
+    biome_discoveries: dict = Field(default_factory=dict)
+    npc_quest_progress: dict = Field(default_factory=dict)
     created_at: str = Field(default_factory=utc_now_iso)
 
 
@@ -194,6 +210,7 @@ class CreateCharacterPayload(BaseModel):
     heritage: Optional[str] = None
     beast_aspect: Optional[str] = None  # Wildblood only
     marine_adaptation: Optional[str] = None  # Hyliondrian only
+    racial_gift: str  # chosen racial gift id
 
 
 class ActionPayload(BaseModel):
@@ -211,6 +228,65 @@ class CombatTurnPayload(BaseModel):
     combat_id: str
     manual_skill_id: Optional[str] = None
     manual_item_id: Optional[str] = None
+    action_type: str = "strike"  # strike|defend|evade|aim|counter|focus
+
+
+class CombatTelegraphPayload(BaseModel):
+    combat_id: str
+
+
+class AlchemistCFPayload(BaseModel):
+    combat_id: str
+    action: str  # analysis|adjustment|optimization|perfect_formula
+    choice: str = ""  # perfect_formula: delivery|conversion|sequence|breakdown
+
+
+class AlchemistPreImbuePayload(BaseModel):
+    combat_id: str
+    skill_id: str
+
+
+class TamePayload(BaseModel):
+    combat_id: str
+
+
+class SkinPayload(BaseModel):
+    combat_id: str
+
+
+class SummonPayload(BaseModel):
+    combat_id: str
+    creature_id: str
+
+
+class UnsummonPayload(BaseModel):
+    combat_id: str
+    creature_id: str
+
+
+class FusePayload(BaseModel):
+    combat_id: str
+    creature_id: str
+
+
+class EndFusionPayload(BaseModel):
+    combat_id: str
+
+
+class SummonModePayload(BaseModel):
+    combat_id: str
+    creature_id: str
+    mode: str  # "auto" or "manual"
+
+
+class SummonSkillPayload(BaseModel):
+    combat_id: str
+    creature_id: str
+    skill_id: str
+
+
+class ReleaseCreaturePayload(BaseModel):
+    creature_id: str
 
 
 class CraftPayload(BaseModel):
@@ -221,3 +297,7 @@ class LearnSkillPayload(BaseModel):
     skill_id: str
     teacher_id: Optional[str] = None
     skillbook_item_id: Optional[str] = None
+
+
+class EncounterResolvePayload(BaseModel):
+    action_id: str
