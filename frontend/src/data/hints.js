@@ -15,7 +15,7 @@ export const STAT_HINTS = {
     armor_bonus:"Flat damage reduction on top of your armor's own value.",
     evasion_mod:"Modifier to your evasion chance. Positive = dodgier, negative = clumsier.",
     // Meters
-    hp:         "Health. Reach 0 and you're downed — visit an Inn or use a potion to recover.",
+    hp:         "Health. Reach 0 and you're downed — visit a Sanctuary or use a potion to recover. Racial HP regen restores HP passively over time, even while logged out.",
     xp:         "Experience toward the next level. Every level nudges every stat up.",
     gold:       "Currency for markets, inns, fast travel, and trainers.",
 };

@@ -108,21 +108,30 @@ export default function CharacterSheet({ character, portraits, race, role, maste
                 <div className="h-3 bg-background border border-border relative">
                     <div className="h-full bg-destructive transition-all" style={{ width: `${hpPct}%` }} />
                 </div>
-                {character.hp_regen_per_min > 0 && character.hp < character.max_hp && (
+                {character.hp_regen_per_min > 0 && (
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <div className="flex items-center gap-1 stat-label text-green-400/80 mt-0.5 cursor-help" data-testid="hp-regen-timer">
                                 <Activity size={9} />
                                 <span>+{character.hp_regen_per_min} HP/min</span>
-                                <span className="text-muted-foreground">·</span>
-                                <span className="text-muted-foreground">full in {Math.ceil((character.max_hp - character.hp) / character.hp_regen_per_min)}m</span>
+                                {character.hp < character.max_hp && (
+                                    <>
+                                        <span className="text-muted-foreground">·</span>
+                                        <span className="text-muted-foreground">full in {Math.ceil((character.max_hp - character.hp) / character.hp_regen_per_min)}m</span>
+                                    </>
+                                )}
+                                {character.hp >= character.max_hp && (
+                                    <span className="text-green-400/60">· Full</span>
+                                )}
                             </div>
                         </TooltipTrigger>
                         <TooltipContent side="bottom">
                             <div className="font-pixel text-xs leading-snug max-w-[240px]">
                                 Racial passive: +{character.hp_regen_per_min} HP per minute (real-time).
                                 Recovers even while logged out.
-                                Full in ~{Math.ceil((character.max_hp - character.hp) / character.hp_regen_per_min)} minutes.
+                                {character.hp < character.max_hp
+                                    ? ` Full in ~${Math.ceil((character.max_hp - character.hp) / character.hp_regen_per_min)} minutes.`
+                                    : " HP is full."}
                             </div>
                         </TooltipContent>
                     </Tooltip>
