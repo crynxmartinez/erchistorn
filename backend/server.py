@@ -267,6 +267,9 @@ async def _get_character_or_404(user_id: str) -> dict:
         ch["masteries"].insert(0, _mastery)
     ch.setdefault("training_skill_id", None)
     ch.setdefault("training_until", None)
+    # Always expose racial HP regen rate to frontend
+    _race = get_race(ch.get("race", ""))
+    ch["hp_regen_per_min"] = (_race or {}).get("hp_regen_per_min", 0)
     # Bard: quest passives list
     ch.setdefault("quest_passives", [])
     # Rogue: innate skill equip slots (default first 5 equipped)
@@ -1112,6 +1115,7 @@ async def get_character(user: dict = Depends(_get_current_user)):
         "max_hp": ch["max_hp"],
         "hp": ch["hp"],
         "last_hp_regen_at": ch["last_hp_regen_at"],
+        "hp_regen_per_min": ch.get("hp_regen_per_min", 0),
         "inventory": ch["inventory"],
     }})
     return {"character": ch, "login_reward": reward, "hp_regen_applied": regen_applied}
