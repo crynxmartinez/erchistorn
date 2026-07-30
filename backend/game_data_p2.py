@@ -215,7 +215,7 @@ TOWNS: list[dict] = [
         "continent": "zephyria",
         "desc": "A city of silver spires suspended between two suns. Elven choirs guide travellers home.",
         "specialty": "Sun-Moon Sanctum — celestial magic training and star-forged trinkets.",
-        "services": ["sanctuary", "market", "trainers", "notice_board", "tavern", "alchemist"],
+        "services": ["sanctuary", "market", "trainers", "notice_board", "tavern", "alchemist", "gemsmith"],
         "sanctuary_cost": 55,
         "fast_travel_cost": 160,
         "market_items": ["wisp_essence", "relic_shard", "jahra_ingot", "greater_healing_potion",

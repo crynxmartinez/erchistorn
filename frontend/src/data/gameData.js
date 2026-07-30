@@ -9,7 +9,7 @@ export function useGameData() {
         let mounted = true;
         (async () => {
             try {
-                const [races, roles, masteries, portraits, continents, items, skills, recipes, teachers, monsters, rogueInnates, masteryPassives, runes, quests] =
+                const [races, roles, masteries, portraits, continents, items, skills, recipes, teachers, monsters, rogueInnates, masteryPassives, runes, quests, gems] =
                     await Promise.all([
                         api.get("/game/data/races"),
                         api.get("/game/data/roles"),
@@ -25,6 +25,7 @@ export function useGameData() {
                         api.get("/game/data/mastery-passives"),
                         api.get("/game/data/runes"),
                         api.get("/game/data/quests"),
+                        api.get("/game/data/gems"),
                     ]);
                 if (!mounted) return;
                 const itemsList = items.data.items;
@@ -51,6 +52,8 @@ export function useGameData() {
                     masteryPassives: masteryPassives.data,
                     runes: runes.data.runes,
                     runesById: Object.fromEntries(runes.data.runes.map((r) => [r.id, r])),
+                    gems: gems.data.gems,
+                    gemsById: Object.fromEntries(gems.data.gems.map((g) => [g.id, g])),
                 });
             } catch {
                 if (mounted) setData({ ready: false, error: true });

@@ -2,13 +2,14 @@ import { useEffect, useState, useMemo } from "react";
 import { api, extractError } from "@/lib/api";
 import { useGameData, RARITY_TEXT, RARITY_CLASS } from "@/data/gameData";
 import { toast } from "sonner";
-import { BedDouble, ShoppingBag, ScrollText, Users, ArrowLeft, Coins, MessageCircle, Wrench, Swords, MapPin, TrendingUp, TrendingDown, Minus, Clock, Crown, CheckCircle2, Circle, Trophy, XCircle, Sparkles, HeartPulse, Shield } from "lucide-react";
+import { BedDouble, ShoppingBag, ScrollText, Users, ArrowLeft, Coins, MessageCircle, Wrench, Swords, MapPin, TrendingUp, TrendingDown, Minus, Clock, Crown, CheckCircle2, Circle, Trophy, XCircle, Sparkles, HeartPulse, Shield, Gem } from "lucide-react";
 import NpcPanel from "@/components/NpcPanel";
 import QuestModal from "@/components/QuestModal";
 import WaypointPanel from "@/components/WaypointPanel";
 import Inventory from "@/components/Inventory";
 import TradeNpcPanel from "@/components/TradeNpcPanel";
 import RunesmithPanel from "@/components/RunesmithPanel";
+import GemsmithPanel from "@/components/GemsmithPanel";
 import PixelSprite from "@/components/PixelSprite";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
@@ -407,6 +408,7 @@ export default function TownView({ townId, character, onCharacterUpdate, onLeave
         { id: "notice", label: "Notice Board", icon: ScrollText, avail: town.services.includes("notice_board") },
         { id: "trainers", label: "Trainers", icon: Users, avail: town.services.includes("trainers") },
         { id: "runesmith", label: "Runesmith", icon: Sparkles, avail: town.services.includes("runesmith") },
+        { id: "gemsmith", label: "Gemsmith", icon: Gem, avail: town.services.includes("gemsmith") },
     ].filter(t => t.avail);
 
     return (
@@ -1339,6 +1341,9 @@ export default function TownView({ townId, character, onCharacterUpdate, onLeave
             )}
             {tab === "runesmith" && (
                 <RunesmithPanel character={character} onCharacterUpdate={onCharacterUpdate} />
+            )}
+            {tab === "gemsmith" && (
+                <GemsmithPanel character={character} onCharacterUpdate={onCharacterUpdate} />
             )}
             {questModal && (
                 <QuestModal result={questModal} onClose={() => setQuestModal(null)} />

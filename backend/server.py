@@ -753,6 +753,12 @@ async def get_runes(user: dict = Depends(_get_current_user)):
     return {"runes": RUNES}
 
 
+@api.get("/game/data/gems")
+async def get_gems(user: dict = Depends(_get_current_user)):
+    from items.gems import GEMS
+    return {"gems": GEMS}
+
+
 @api.get("/game/data/skills")
 async def get_skills_route(user: dict = Depends(_get_current_user)):
     return {"skills": SKILLS}
@@ -4298,6 +4304,63 @@ async def item_runesmith(request: Request, user: dict = Depends(_get_current_use
     return {
         "character": ch,
         "message": " ".join(msg_parts) or "No runes socketed.",
+        "item": item,
+        "upgrade_summary": summary,
+        "socketed": socketed,
+        "failed": failed,
+    }
+
+
+@api.post("/game/item/gemsmith")
+async def item_gemsmith(request: Request, user: dict = Depends(_get_current_user)):
+    """Socket multiple gems into an item at once (gemsmithing service).
+    Body: { instance_id: str, gem_ids: [str, ...] }
+    Each gem is consumed from inventory and socketed into the item.
+    """
+    from game_data import socket_gem as _socket_gem, can_upgrade as _can_upgrade, get_upgrade_summary
+    body = await request.json()
+    instance_id = body.get("instance_id")
+    gem_ids = body.get("gem_ids", [])
+    if not instance_id or not gem_ids:
+        raise HTTPException(status_code=400, detail="Missing instance_id or gem_ids")
+    ch = await _get_character_or_404(user["_id"])
+    instances = ch.get("item_instances", [])
+    item = None
+    for inst in instances:
+        if isinstance(inst, dict) and inst.get("instance_id") == instance_id:
+            item = inst
+            break
+    if not item:
+        raise HTTPException(status_code=404, detail="Item instance not found")
+    socketed = []
+    failed = []
+    for gem_id in gem_ids:
+        if not _can_upgrade(item):
+            failed.append({"gem_id": gem_id, "reason": "Item has reached maximum upgrades (10/10)"})
+            break
+        if not _remove_item_from_inventory(ch, gem_id, 1):
+            failed.append({"gem_id": gem_id, "reason": "Gem not in inventory"})
+            continue
+        success, msg = _socket_gem(item, gem_id)
+        if not success:
+            _add_item_to_inventory(ch, gem_id, 1)
+            failed.append({"gem_id": gem_id, "reason": msg})
+        else:
+            socketed.append(gem_id)
+    if socketed:
+        await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+            "item_instances": ch["item_instances"],
+            "inventory": ch["inventory"],
+        }})
+    summary = get_upgrade_summary(item)
+    msg_parts = []
+    if socketed:
+        msg_parts.append(f"Socketed {len(socketed)} gem(s).")
+    if failed:
+        msg_parts.append(f"{len(failed)} failed.")
+    return {
+        "character": ch,
+        "message": " ".join(msg_parts) or "No gems socketed.",
         "item": item,
         "upgrade_summary": summary,
         "socketed": socketed,
