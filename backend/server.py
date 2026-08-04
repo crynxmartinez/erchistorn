@@ -1644,6 +1644,11 @@ async def combat_start(payload: CombatStartPayload, user: dict = Depends(_get_cu
     abandoned = await db.combats.find_one_and_delete(
         {"user_id": user["_id"], "state.active": True}
     )
+    # Finished fights are kept after the last turn so the corpse can still be
+    # skinned (see the turn handler), so they are not caught by the active-only
+    # filter above. Clear them here — this is what bounds the collection to at
+    # most one document per user.
+    await db.combats.delete_many({"user_id": user["_id"], "state.active": False})
     state = start_combat(ch, payload.monster_id)
     state["biome_id"] = biome
     if "error" in state:
@@ -1822,13 +1827,14 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
         ch.pop("knight_self_stat_mods", None)
 
     await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": updates})
-    if state.get("active"):
-        await db.combats.update_one({"_id": ObjectId(payload.combat_id)}, {"$set": {"state": state}})
-    else:
-        # The fight is over — drop the doc. It was never deleted before, so the
-        # collection grew without bound and the active-combat guard on
-        # /combat/start had nothing reliable to check against.
-        await db.combats.delete_one({"_id": ObjectId(payload.combat_id), "user_id": user["_id"]})
+    # Persist the finished state rather than deleting the document. Deleting it
+    # here made /game/combat/skin impossible to reach: the fight sets
+    # state["skinnable"] on victory, but the handler looks the combat up by id and
+    # 404s, so skinning was dead after every single kill. The document is instead
+    # cleared by the next /combat/start (and by the tutorial reset), which keeps
+    # the collection bounded without destroying the corpse the player just earned.
+    await db.combats.update_one({"_id": ObjectId(payload.combat_id)},
+                                {"$set": {"state": state}})
 
     return {"result": result, "character": ch, "combat_id": payload.combat_id}
 
