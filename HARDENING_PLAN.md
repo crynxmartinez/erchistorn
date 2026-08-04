@@ -1,5 +1,21 @@
 # Hardening Plan — Tiers 1 to 3
 
+> **Status: Tier 1 complete, Tier 2.3 complete, Tier 2.1 in progress.**
+> Results are recorded inline under each item. Five more bugs were found while
+> executing this plan, four of them player-facing:
+>
+> | # | Bug | Found by |
+> |---|---|---|
+> | 1 | Creation summary under-reported Vitality (showed 4, created 6) — client never applied `role.bonus` | 1.1, running the UI |
+> | 2 | Stat breakdown credited unnamed contributors; Resilience row absent entirely | 1.1 |
+> | 3 | Skill library rendered a bare "PWR" label — `skill.power` is now `skill.damage` | 1.1 |
+> | 4 | Victory panel reported double the rewards actually granted (+41 XP for 20) | 1.1 |
+> | 5 | **Skinning was dead after every victory** — the turn handler deleted the combat doc that `/combat/skin` looks up | 1.2, endpoint matrix |
+>
+> Plus stale content: the landing page advertised seven continents by names that
+> no longer exist, and nine strings named retired towns (Ironhold, Willowmere) or
+> a retired continent (Aetheria).
+
 Written after a full test-play pass over real HTTP and Mongo (357 tests green,
 eight request-time crashes fixed, three repos pushed). Everything below comes
 from something actually observed, not from a general checklist.
@@ -56,6 +72,23 @@ Mage/library, Alchemist/combo-flow).
 the least verified thing in the project.
 
 **Size.** Half a day, most of it fixing rather than finding.
+
+### RESULT — done
+
+Created two characters end to end through the forge, fought and won, walked all
+eight town tabs and five nav tabs. **Zero console errors, zero failed requests**
+at the end. Four bugs fixed on the way (rows 1–4 above).
+
+What the run confirmed was actually working: armor renders as `52 (34.3%)` rather
+than 0, monsters show `THREAT 11` and never "power", the `hands` slot appears in
+the equipment panel, `skill_bar` arrives populated (`Shield Bash / Iron Stance`
+visible in the combat HUD), and the mastery HUD offers all five Oaths.
+
+Two things I flagged and then disproved rather than "fixed":
+- `REACT_APP_BACKEND_URL` is empty, which looks broken but is correct — the UI
+  calls relative `/api` and craco's devServer proxies to port 8000.
+- Gather nodes read `novice(missing)` in extracted text, but `ml-1` supplies the
+  gap visually. Nothing to fix.
 
 ---
 
@@ -169,6 +202,56 @@ what this item exists to fix.
 mistake that produced two of the eight bugs.
 
 **Size.** Two days, mostly writing scenarios.
+
+### RESULT — measured, gap closed, and the number is smaller than it felt
+
+**The number, finally.** Branch coverage under the golden suite:
+
+| | default `pytest` (11 representative) | full sweep, before | full sweep, after |
+|---|---|---|---|
+| `game_engine.py` | 34% | 39% | **41%** |
+| `combat_turn` alone | 53% statements | — | — |
+| `mastery/core.py` | 88% | 99% | 99% |
+| `mastery/lancer.py` | 69% | 80% | 80% |
+| `mastery/mitigation.py` | 60% | 68% | **71%** |
+| `mastery/outgoing.py` *(where the crash was)* | 43% | 56% | **62%** |
+| `mastery/skill_effects.py` | 42% | 44% | 45% |
+| **TOTAL** | 37% | 42% | **44%** |
+
+Two things worth being blunt about:
+
+1. **The default `pytest` run executes only 11 scenarios**, not 1,584 — the full
+   sweep is gated behind `GOLDEN_FULL=1`. So during the refactor, "golden logs
+   identical" routinely meant *34% of `game_engine.py`*. That is a far weaker
+   statement than it sounded like at the time.
+2. **Tripling the scenario count bought 2 percentage points.** The resource-variant
+   dimension went 1,584 -> 5,040 scenarios and moved the total 42% -> 44%. Honest
+   conclusion: the remaining uncovered code is *not* gated on mastery resource
+   state. It is gated on things the matrix does not vary at all — defeat paths,
+   counter procs (`if random.random() < _cc`), stun handling, mage turn-stealing,
+   legendary powers. Those need different levers (a monster strong enough to win,
+   more seeds, status-bearing enemies), not more variants.
+
+**What the variants did fix is the specific hole that shipped a crash**, and that
+is provable rather than asserted. Perturbing the Vanguard rider in
+`mastery/outgoing.py`:
+
+```
+OLD set (1,584 — Knights always swore Iron)  ->  0 scenarios moved   *** bug ships ***
+NEW set (5,040 — all five oaths)             -> 40 scenarios moved   CAUGHT
+```
+
+The scenario expansion is purely additive: **0 of 1,584 pre-existing digests
+changed**, 3,456 added, 0 removed. Variant 0 of each mastery deliberately keeps
+the original unsuffixed key so its digest must still match byte for byte.
+
+Sabotage drill re-run: Vanguard oath (40 moved), Vanguard stack threshold (11
+moved), Alchemist Combo Flow (crash — caught). The two previous misses are now
+both caught.
+
+**Next lever for coverage** (not done): add a monster that can actually kill a
+level-1 character, to reach the `state["active"] = False` defeat blocks and the
+counter/death paths, which are the largest unexercised runs inside `combat_turn`.
 
 ---
 

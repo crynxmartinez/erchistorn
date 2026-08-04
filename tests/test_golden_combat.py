@@ -40,9 +40,16 @@ def test_fixtures_exist_and_cover_every_mastery(fixtures):
 
 def test_fixture_count_is_stable(fixtures):
     """Scenario ids are generated, so a change in count means the matrix moved —
-    which invalidates comparisons until fixtures are re-recorded."""
-    assert len(fixtures) == 1584, (
-        f"expected 1584 scenarios, fixture has {len(fixtures)}. "
+    which invalidates comparisons until fixtures are re-recorded.
+
+    5040 = 11 masteries x 4 levels x 3 monsters x 6 actions x 2 seeds, times each
+    mastery's resource variants. It was 1584 until the variant dimension was added:
+    the harness previously fixed one resource state per mastery (Knights always
+    swore the Oath of Iron), and that single choice is why a crash reached players
+    on the Oath of Vanguard while every golden log stayed byte-identical.
+    """
+    assert len(fixtures) == 5040, (
+        f"expected 5040 scenarios, fixture has {len(fixtures)}. "
         "Re-record if the scenario matrix changed on purpose."
     )
 

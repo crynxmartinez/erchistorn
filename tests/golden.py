@@ -163,40 +163,112 @@ TRACKED_STATE = [
 ]
 
 
-def _activate_resources(mastery: str, ch: dict, state: dict) -> None:
-    """Engage each mastery's resource system so its code paths actually run.
+def _druid_summon(ch, state):
+    """Summon the first bestiary-shaped creature so summon/pack/fusion paths run."""
+    import game_data as g
+    import game_engine as ge
+    entry = next((m for m in g.MONSTERS
+                  if m.get("profile_skills") and m.get("rarity") == "common"), None)
+    if entry:
+        try:
+            ge._druid_summon_creature(ch, state, entry, [])
+        except Exception:
+            pass  # summon preconditions vary by level; not worth failing the scenario
+
+
+def _alch_imbue(ch, state):
+    import game_data as g
+    imbue = next((s for s in g.SKILLS
+                  if s.get("power_type") == "imbue"
+                  and "alchemist" in (s.get("mastery_req") or [])), None)
+    if imbue:
+        state["alchemist_pre_imbue"] = imbue["id"]
+
+
+#: Per-mastery resource states to sweep, as (label, setup) pairs.
+#:
+#: This used to set exactly ONE state per mastery — `knight_oath = "iron"` — and
+#: that single choice is the whole reason a crash shipped: `mastery/outgoing.py`
+#: read a bare `turn` that the ctx unpack omitted, so every Knight sworn to the
+#: Oath of Vanguard 500'd on their first strike. The golden logs were byte-identical
+#: through the entire refactor because no scenario ever swore that oath.
+#:
+#: Measured before this change: combat_turn at 53% statement coverage,
+#: mastery/outgoing.py at 43%. Byte-identical output over half a function is a much
+#: weaker guarantee than it appears, which is why every alternative a player can
+#: actually choose is now walked rather than one representative.
+RESOURCE_VARIANTS: dict[str, list] = {
+    # All five, because picking one is exactly the mistake that let a crash through.
+    "knight": [(f"oath_{o}", (lambda o: lambda ch, st: st.update({"knight_oath": o}))(o))
+               for o in ("iron", "wrath", "bulwark", "endurance", "vanguard")],
+    "bard": [("song", lambda ch, st: st.update({"bard_mode": "song"})),
+             ("dance", lambda ch, st: st.update({"bard_mode": "dance"})),
+             # Crescendo at each threshold that changes behaviour.
+             ("cresc_mid", lambda ch, st: st.update({"bard_mode": "song",
+                                                     "bard_crescendo": 3})),
+             ("cresc_max", lambda ch, st: st.update({"bard_mode": "dance",
+                                                     "bard_crescendo": 6}))],
+    "alchemist": [("imbued", _alch_imbue),
+                  ("cf_low", lambda ch, st: st.update({"alchemist_cf": 5})),
+                  ("cf_max", lambda ch, st: st.update({"alchemist_cf": 20})),
+                  ("katar_cracked", lambda ch, st: st.update(
+                      {"alchemist_cf": 10, "alchemist_katar_cracked": True}))],
+    "druid": [("summoned", _druid_summon),
+              ("no_summon", lambda ch, st: None),
+              ("fusion", lambda ch, st: (_druid_summon(ch, st),
+                                         st.update({"druid_fusion_active": True,
+                                                    "druid_fusion_turns": 3}))[0])],
+    "mage": [("focus_0", lambda ch, st: None),
+             ("focus_high", lambda ch, st: st.update({"mage_arcane_focus": 5})),
+             ("glass_cannon", lambda ch, st: st.update(
+                 {"mage_glass_cannon_active": True, "mage_arcane_focus": 3}))],
+    "assassin": [("no_shadows", lambda ch, st: None),
+                 ("shadows", lambda ch, st: st.update({"assassin_shadows": 3})),
+                 ("burst_ready", lambda ch, st: st.update(
+                     {"assassin_shadows": 5, "assassin_burst_ready": True}))],
+    "lancer": [("plain", lambda ch, st: None),
+               ("overload", lambda ch, st: st.update({"lancer_overload_turns": 3}))],
+    "hunter": [("plain", lambda ch, st: None),
+               ("guided", lambda ch, st: st.update({"hunter_spirit_guidance": 3})),
+               ("ranged", lambda ch, st: st.update({"hunter_range": 2,
+                                                    "range_gap": 2}))],
+    "priest": [("plain", lambda ch, st: None),
+               ("shield_wall", lambda ch, st: st.update({"priest_shield_wall_hp": 20,
+                                                         "priest_shield_wall_max": 20})),
+               ("smiting", lambda ch, st: st.update({"priest_smite_active": 2,
+                                                     "priest_smiting": True}))],
+    "paladin": [("full_hp", lambda ch, st: None),
+                # Paladin power scales as HP falls, so the tiers are the mechanic.
+                ("hurt", lambda ch, st: ch.update({"hp": max(1, ch["max_hp"] // 2)})),
+                ("near_death", lambda ch, st: ch.update({"hp": max(1, ch["max_hp"] // 10)}))],
+    "rogue": [("plain", lambda ch, st: None),
+              ("combo", lambda ch, st: st.update({"combo_count": 3}))],
+}
+
+
+def _activate_resources(mastery: str, ch: dict, state: dict, variant=None) -> None:
+    """Engage a mastery's resource system so its code paths actually run.
 
     Without this the harness has a real blind spot. Verified by sabotage: changing
     the Knight's starting Oath stacks from 2 to 3 produced ZERO golden diffs,
     because `state["knight_oath"]` was never set and the whole Oath branch was
     dead in every scenario. A safety net that cannot fail is worthless, so each
-    mastery is now switched on explicitly.
+    mastery is now switched on explicitly — and every variant is swept, not one.
     """
-    import game_data as g
-    import game_engine as ge
-
-    if mastery == "knight":
-        state["knight_oath"] = "iron"          # any Oath engages the stack machinery
-    elif mastery == "bard":
-        state["bard_mode"] = "song"
-    elif mastery == "alchemist":
-        imbue = next((s for s in g.SKILLS
-                      if s.get("power_type") == "imbue"
-                      and "alchemist" in (s.get("mastery_req") or [])), None)
-        if imbue:
-            state["alchemist_pre_imbue"] = imbue["id"]
-    elif mastery == "druid":
-        # Summon the first bestiary-shaped creature so summon/pack/fusion paths run.
-        entry = next((m for m in g.MONSTERS
-                      if m.get("profile_skills") and m.get("rarity") == "common"), None)
-        if entry:
-            try:
-                ge._druid_summon_creature(ch, state, entry, [])
-            except Exception:
-                pass  # summon preconditions vary by level; not worth failing the scenario
+    if variant is None:
+        # Callers that predate the variant dimension (the representative-scenario
+        # test) must keep getting the original default, or the mastery silently
+        # runs with its resource system switched off and every stored digest for
+        # them changes.
+        variants = RESOURCE_VARIANTS.get(mastery)
+        if not variants:
+            return
+        variant = variants[0]
+    _label, setup = variant
+    setup(ch, state)
 
 
-def run_scenario(mastery, role, gear, level, monster_name, action, seed):
+def run_scenario(mastery, role, gear, level, monster_name, action, seed, variant=None):
     """Execute one scripted fight and return a canonical trace."""
     import game_data as g
     import game_engine as ge
@@ -210,7 +282,7 @@ def run_scenario(mastery, role, gear, level, monster_name, action, seed):
     state = ge.start_combat(ch, monster["id"])
     if "error" in state:
         return None
-    _activate_resources(mastery, ch, state)
+    _activate_resources(mastery, ch, state, variant)
 
     trace = []
     for _ in range(MAX_TURNS):
@@ -235,18 +307,30 @@ def run_scenario(mastery, role, gear, level, monster_name, action, seed):
 
 
 def build_all():
-    """Every scenario, keyed by a stable id."""
+    """Every scenario, keyed by a stable id.
+
+    The variant dimension is appended to the key rather than replacing anything, so
+    every pre-existing scenario id keeps its exact digest and the new ones are
+    additive. A changed digest on an old key still means a behavioural change.
+    """
     out = {}
     for mastery, role, gear in LOADOUTS:
+        variants = RESOURCE_VARIANTS.get(mastery) or [("default", lambda ch, st: None)]
         for level in LEVELS:
             for monster in MONSTERS:
                 for action in ACTIONS:
                     for seed in SEEDS:
-                        key = f"{mastery}|L{level}|{monster}|{action}|s{seed}"
-                        trace = run_scenario(mastery, role, gear, level,
-                                             monster, action, seed)
-                        if trace is not None:
-                            out[key] = trace
+                        for i, variant in enumerate(variants):
+                            # Variant 0 is the state the harness used before this
+                            # dimension existed, and keeps the original unsuffixed
+                            # key so its digest must still match byte for byte.
+                            # Everything after it is purely additive.
+                            base = f"{mastery}|L{level}|{monster}|{action}|s{seed}"
+                            key = base if i == 0 else f"{base}|{variant[0]}"
+                            trace = run_scenario(mastery, role, gear, level,
+                                                 monster, action, seed, variant)
+                            if trace is not None:
+                                out[key] = trace
     return out
 
 
