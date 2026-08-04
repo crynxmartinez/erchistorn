@@ -21,7 +21,8 @@ from game_data import (
     compute_magic_resistance,
     compute_physical_damage,
     compute_magical_damage,
-    compute_player_power,
+    compute_action_rating,
+    compute_monster_threat,
     compute_skill_capacity,
     compute_status_duration_mult,
     get_monster,
@@ -69,7 +70,9 @@ def _compute_weapon_damage(item: dict) -> int:
         # New-style base item template — sum base_stats
         return sum(v for v in item["base_stats"].values() if isinstance(v, (int, float)))
     # Old-style item — use power field
-    return int(item.get("power", 0))
+    # No item in the game carries a scalar `power` any more — every item's
+    # strength lives in its stats. Nothing left to fall back to.
+    return 0
 
 
 def _get_item_stats(item: dict) -> dict[str, int]:
@@ -654,6 +657,12 @@ STATUS_TEMPLATES: dict[str, dict] = {
     "weary":     {"name": "Weary",     "kind": "debuff", "duration": 2, "magnitude": 0},
     "sick":      {"name": "Sick",      "kind": "debuff", "duration": 5, "magnitude": 1},
     "cursed":    {"name": "Cursed",    "kind": "debuff", "duration": 6, "magnitude": 2, "dot_type": "magical"},
+    # Applied by high-tier monster rage skills ("Demonic Fury", "Primal Fury") when
+    # they drop to low HP. It had no template, so make_status fell through to the
+    # generic default and produced a *debuff* — the enrage did nothing for the
+    # monster, and anything counting debuffs on the target (e.g. the Mage's
+    # Delirium) treated the monster's own rage as a weakness to exploit.
+    "bloodrage":  {"name": "Bloodrage",  "kind": "buff",   "duration": 3, "magnitude": 3},
     "blessed":   {"name": "Blessed",   "kind": "buff",   "duration": 4, "magnitude": 2},
     "focused":   {"name": "Focused",   "kind": "buff",   "duration": 3, "magnitude": 2},
     "burning":   {"name": "Burning",   "kind": "debuff", "duration": 3, "magnitude": 3, "dot_type": "magical"},
@@ -719,6 +728,76 @@ def _clamp_and_sync_combat_hp(character: dict, state: dict, log: list[dict] | No
     # Paladin: update faith scaling whenever HP changes are synced
     if _is_paladin(character):
         _paladin_update_scaling(state, character, log if log is not None else [])
+
+
+def apply_self_stat_mods(state: dict, character: dict, mods: dict, duration: int,
+                         key: str, log: list, log_kind: str, label: str) -> None:
+    """Bank a self stat_mod bucket entry and apply it to the character now.
+
+    Seven near-identical copies of this lived inside `combat_turn`, one per
+    mastery, differing only in the state key and the log wording. Paired with
+    `tick_stat_mods` for expiry.
+    """
+    mods = dict(mods)
+    state.setdefault(key, []).append({"mods": mods, "duration": duration})
+    for stat, val in mods.items():
+        character["stats"][stat] = character["stats"].get(stat, 0) + val
+    if log_kind:
+        log.append({
+            "kind": log_kind,
+            "text": f"{label}{', '.join(f'{k} {v:+d}' for k, v in mods.items())} "
+                    f"for {duration} turns.",
+        })
+
+
+def apply_enemy_stat_mods(state: dict, mods: dict, duration: int, key: str,
+                          log: list | None = None, log_kind: str = "",
+                          label: str = "", apply_now: bool = False) -> None:
+    """Bank an enemy stat_mod bucket entry.
+
+    `apply_now` mirrors the originals: some masteries applied the modifier to
+    `monster_stats` immediately, others only banked it for the tick to handle.
+    """
+    mods = dict(mods)
+    state.setdefault(key, []).append({"mods": mods, "duration": duration})
+    if apply_now:
+        m_stats = state.setdefault("monster_stats", {})
+        for stat, val in mods.items():
+            m_stats[stat] = m_stats.get(stat, 0) + val
+    if log is not None and log_kind:
+        log.append({
+            "kind": log_kind,
+            "text": f"{label}{', '.join(f'{k} {v:+d}' for k, v in mods.items())} "
+                    f"to enemy for {duration} turns.",
+        })
+
+
+def tick_stat_mods(state: dict, key: str, target_stats: dict) -> None:
+    """Expire one bucket of temporary stat modifiers, refunding what they granted.
+
+    Every mastery kept its own bucket (`knight_self_stat_mods`,
+    `paladin_enemy_stat_mods`, ...) and `combat_turn` carried **21 copies of this
+    same loop** across 19 buckets — the single largest block of duplication in the
+    function, and a standing invitation for one copy to drift from the rest.
+
+    Semantics are preserved exactly: an entry with `duration > 0` survives this
+    turn and is decremented afterwards; an entry at 0 is removed and its stats are
+    subtracted. That ordering means a mod lasts one turn longer than its literal
+    duration, which is what every existing copy did.
+    """
+    entries = state.get(key) or []
+    if not entries:
+        return
+    surviving = []
+    for entry in entries:
+        if entry.get("duration", 0) > 0:
+            surviving.append(entry)
+        else:
+            for stat, val in (entry.get("mods") or {}).items():
+                target_stats[stat] = target_stats.get(stat, 0) - val
+    state[key] = surviving
+    for entry in surviving:
+        entry["duration"] -= 1
 
 
 def _append_status_dedup(char_or_state: dict, status: dict, key: str = "statuses") -> None:
@@ -806,10 +885,10 @@ def resolve_action(character: dict, action_id: str, biome_id: str, target_id: st
         if int(hunt_tool.get("durability", 0)) <= 0:
             return {"error": f"Your {tool_name} is broken! Repair it in town to hunt."}
 
-    player_pow = compute_player_power(character)
+    player_pow = compute_action_rating(character)
     if action_id == "hunt":
         monster = get_monster(target_id) if target_id else None
-        target_pow = monster["power"] if monster else 5
+        target_pow = compute_monster_threat(monster, character.get("level", 1)) if monster else 5
         target_name = monster["name"] if monster else "quarry"
     elif action_id in ("gather", "fish"):
         target_pow = 4
@@ -1071,7 +1150,7 @@ def generate_telegraph(state: dict, character: dict) -> dict:
     if not m_skill:
         # Basic attack — no skill
         m_stats = state.get("monster_stats", {})
-        c_base = 3 + (state["monster_power"] // 2)
+        c_base = 3 + (state["monster_threat"] // 2)
         min_dmg = int(c_base * 0.4)
         max_dmg = int(c_base * 1.6)
         return {
@@ -1094,12 +1173,12 @@ def generate_telegraph(state: dict, character: dict) -> dict:
     is_heavy = False
     if ptype in ("strike", "debuff"):
         m_stats = state.get("monster_stats", {})
-        c_base = m_skill.get("power", 3)
+        c_base = m_skill.get("damage", 3)
         if ptype == "strike":
             if dmg_type == "physical":
-                c_base = m_skill["power"] + int(m_stats.get("might", 0) * 0.5)
+                c_base = m_skill["damage"] + int(m_stats.get("might", 0) * 0.5)
             elif dmg_type == "magical":
-                c_base = m_skill["power"] + int(m_stats.get("insight", 0) * 0.5)
+                c_base = m_skill["damage"] + int(m_stats.get("insight", 0) * 0.5)
         min_dmg = int(c_base * 0.4)
         max_dmg = int(c_base * 1.6)
         est_damage = f"{min_dmg}-{max_dmg}"
@@ -1139,10 +1218,29 @@ def _is_alchemist(character: dict) -> bool:
     return "alchemist" in (character.get("masteries") or [])
 
 
-def _alch_load_imbue(state: dict, skill: dict, log: list[dict]) -> None:
+def _alch_has_passive(character: dict, passive_id: str) -> bool:
+    """Is this auto-learned Alchemist passive unlocked at the character's level?
+
+    ALCHEMIST_PASSIVES was missing entirely until now — the Alchemist was the
+    only mastery that gained nothing between level 10 and 100. Passives are
+    level-gated and auto-learned, so membership is purely a level check.
+    """
+    if not _is_alchemist(character):
+        return False
+    from game_data import ALCHEMIST_PASSIVES
+    entry = next((p for p in ALCHEMIST_PASSIVES if p["id"] == passive_id), None)
+    if not entry:
+        return False
+    return character.get("level", 1) >= entry.get("level", 999)
+
+
+def _alch_load_imbue(state: dict, skill: dict, log: list[dict], character: dict | None = None) -> None:
     """Load an imbue skill onto the katar."""
     state["alchemist_imbue"] = skill
     charges = skill.get("imbue_charges", 3)
+    # Stable Compound (L30): the coating lasts one extra hit.
+    if character is not None and _alch_has_passive(character, "stable_compound"):
+        charges += 1
     if state.get("alchemist_infinite_charges", 0) > 0:
         charges = 999
     state["alchemist_imbue_charges"] = charges
@@ -1164,7 +1262,10 @@ def _alch_apply_imbue_rider(state: dict, character: dict, monster: dict, log: li
 
     for _ in range(hit_count):
         if state.get("alchemist_infinite_charges", 0) <= 0:
-            state["alchemist_imbue_charges"] = charges_left - 1
+            # Endless Reaction (L90): charges hold while Combo Flow is 10+.
+            if not (_alch_has_passive(character, "endless_reaction")
+                    and state.get("alchemist_cf", 0) >= 10):
+                state["alchemist_imbue_charges"] = charges_left - 1
             charges_left -= 1
         if charges_left < 0 and state.get("alchemist_infinite_charges", 0) <= 0:
             break
@@ -1257,7 +1358,7 @@ def _alch_execute_mini_rule(state: dict, character: dict, monster: dict, log: li
     elif rule == "chain_on_3rd_hit":
         threshold = 1 if max_rules else 3
         if hits % threshold == 0:
-            extra_dmg = int(state.get("monster_power", 5) * 0.3)
+            extra_dmg = int(state.get("monster_threat", 5) * 0.3)
             if adjustment:
                 extra_dmg *= 2
                 state["alchemist_adjustment_bonus"] = False
@@ -1427,17 +1528,23 @@ def _alch_apply_strike_rule(state: dict, character: dict, monster: dict, log: li
     return total_dmg
 
 
-def _alch_gain_cf(state: dict, skill: dict, log: list[dict]) -> None:
+def _alch_gain_cf(state: dict, skill: dict, log: list[dict], character: dict | None = None) -> None:
     """Gain Combo Flow from a strike."""
     cf_gain = skill.get("cf_gain", 1)
     if cf_gain <= 0:
         return
+    # Steady Hands (L10): +1 Combo Flow per strike.
+    if character is not None and _alch_has_passive(character, "steady_hands"):
+        cf_gain += 1
     # Item bonus: combo_gain — boost CF gain by percentage
     _cg = state.get("item_bonus_effects", {}).get("combo_gain", 0)
     if _cg > 0:
         cf_gain = cf_gain + int(cf_gain * _cg)
     current = state.get("alchemist_cf", 0)
     cf_max = state.get("alchemist_cf_max", 20)
+    # Deep Reserves (L20): raise the Combo Flow ceiling.
+    if character is not None and _alch_has_passive(character, "deep_reserves"):
+        cf_max = max(cf_max, 25)
     new_cf = min(cf_max, current + cf_gain)
     if new_cf > current:
         state["alchemist_cf"] = new_cf
@@ -1456,6 +1563,12 @@ def _alch_spend_cf(state: dict, character: dict, monster: dict, log: list[dict],
     cf = state.get("alchemist_cf", 0)
     costs = {"analysis": 5, "adjustment": 10, "optimization": 15, "perfect_formula": 20}
     cost = costs.get(action, 0)
+    # Transmuter's Insight (L50): Combo Flow actions cost 1 less.
+    if _alch_has_passive(character, "transmuters_insight"):
+        cost = max(1, cost - 1)
+    # Perfect Transmutation (L100): Combo Flow actions are free.
+    if _alch_has_passive(character, "perfect_transmutation"):
+        cost = 0
     if cf < cost:
         return False
 
@@ -1963,17 +2076,7 @@ def _knight_tick_end_of_turn(state: dict, character: dict, log: list[dict]) -> N
         state["knight_eternal_oath"] = True
 
     # Tick Knight self stat_mods
-    knight_mods = state.get("knight_self_stat_mods", [])
-    active_knight = []
-    for entry in knight_mods:
-        if entry["duration"] > 0:
-            active_knight.append(entry)
-        else:
-            for stat, val in entry["mods"].items():
-                character["stats"][stat] = character["stats"].get(stat, 0) - val
-    state["knight_self_stat_mods"] = active_knight
-    for entry in state.get("knight_self_stat_mods", []):
-        entry["duration"] -= 1
+    tick_stat_mods(state, "knight_self_stat_mods", character["stats"])
 
     # Tick Knight enemy stat_mods
     knight_enemy = state.get("knight_enemy_stat_mods", [])
@@ -2386,17 +2489,7 @@ def _assassin_tick_end_of_turn(state: dict, character: dict, log: list) -> None:
             log.append({"kind": "assassin_passive", "text": "Shadow linger fades."})
 
     # Tick Assassin self stat_mods
-    assassin_mods = state.get("assassin_self_stat_mods", [])
-    active_assassin = []
-    for entry in assassin_mods:
-        if entry["duration"] > 0:
-            active_assassin.append(entry)
-        else:
-            for stat, val in entry["mods"].items():
-                character["stats"][stat] = character["stats"].get(stat, 0) - val
-    state["assassin_self_stat_mods"] = active_assassin
-    for entry in state.get("assassin_self_stat_mods", []):
-        entry["duration"] -= 1
+    tick_stat_mods(state, "assassin_self_stat_mods", character["stats"])
 
     # Tick Assassin enemy stat_mods
     assassin_enemy = state.get("assassin_enemy_stat_mods", [])
@@ -2824,6 +2917,33 @@ def _hunter_tick_end_of_turn(state: dict, character: dict, log: list) -> None:
     if not _is_hunter(character):
         return
 
+    # Spirit Guidance breaks when the Hunter's concentration does.
+    #
+    # This reset was never implemented, which left Unbreakable Focus (L80) —
+    # "Spirit Guidance doesn't reset when stunned" — guarding against something
+    # that could not happen, so the passive was a no-op. Both halves are here now:
+    # losing a hard-won stack count to a stun is a real vulnerability, and the
+    # L80 passive is what removes it.
+    stacks = state.get("hunter_spirit_guidance", 0)
+    if stacks > 0:
+        level = character.get("level", 1)
+        breaking = []
+        if _has_player_status(character, state, "stunned"):
+            breaking.append("stunned")
+        # Communion tier of the passive also covers silence.
+        if _has_player_status(character, state, "silenced"):
+            breaking.append("silenced")
+        if breaking:
+            if level >= 80:
+                log.append({"kind": "hunter_passive",
+                            "text": "UNBREAKABLE FOCUS — Spirit Guidance holds through "
+                                    f"{breaking[0]}!"})
+            else:
+                state["hunter_spirit_guidance"] = 0
+                log.append({"kind": "hunter_guidance_lost",
+                            "text": f"Concentration broken — Spirit Guidance reset from {stacks} "
+                                    f"to 0 ({breaking[0]})."})
+
     # World Hunt repeat (communion): auto-attack
     if state.get("hunter_world_hunt_active") and state.get("monster_hp", 0) > 0:
         repeat_dmg = int(character["stats"].get("grace", 10) * 0.5)
@@ -2883,17 +3003,7 @@ def _hunter_tick_end_of_turn(state: dict, character: dict, log: list) -> None:
     # (these are consumed on use, not ticked)
 
     # Tick Hunter self stat_mods
-    hunter_mods = state.get("hunter_self_stat_mods", [])
-    active_hunter = []
-    for entry in hunter_mods:
-        if entry["duration"] > 0:
-            active_hunter.append(entry)
-        else:
-            for stat, val in entry["mods"].items():
-                character["stats"][stat] = character["stats"].get(stat, 0) - val
-    state["hunter_self_stat_mods"] = active_hunter
-    for entry in state.get("hunter_self_stat_mods", []):
-        entry["duration"] -= 1
+    tick_stat_mods(state, "hunter_self_stat_mods", character["stats"])
 
     # Tick Hunter enemy stat_mods
     hunter_enemy = state.get("hunter_enemy_stat_mods", [])
@@ -3081,6 +3191,9 @@ def _rogue_slippery_tick(state: dict, log: list) -> None:
 
     import random
     chance = state.get("rogue_slippery_chance", 0.25)
+    # Slippery Soul (L90): the Slippery innate shakes debuffs at 50% instead of 25%.
+    if state.get("_rogue_level", 1) >= 90:
+        chance = max(chance, 0.50)
     if state.get("rogue_master_of_tricks"):
         chance = min(1.0, chance * 2)
 
@@ -3095,6 +3208,9 @@ def _rogue_get_con_artist_bonus(state: dict) -> int:
     if not state.get("rogue_con_artist"):
         return 0
     bonus = state.get("rogue_con_artist_bonus", 1)
+    # Con Master (L80): Con Artist grants +2 turns instead of +1.
+    if state.get("_rogue_level", 1) >= 80:
+        bonus = max(bonus, 2)
     if state.get("rogue_master_of_tricks"):
         bonus *= 2
     return bonus
@@ -3127,31 +3243,10 @@ def _rogue_tick_end_of_turn(state: dict, character: dict, log: list) -> None:
     _rogue_check_light_feet(state, character, log)
 
     # Tick Rogue self stat_mods
-    rogue_self = state.get("rogue_self_stat_mods", [])
-    active_rogue = []
-    for entry in rogue_self:
-        if entry["duration"] > 0:
-            active_rogue.append(entry)
-        else:
-            for stat, val in entry["mods"].items():
-                character["stats"][stat] = character["stats"].get(stat, 0) - val
-    state["rogue_self_stat_mods"] = active_rogue
-    for entry in state.get("rogue_self_stat_mods", []):
-        entry["duration"] -= 1
+    tick_stat_mods(state, "rogue_self_stat_mods", character["stats"])
 
     # Tick Rogue enemy stat_mods
-    rogue_enemy = state.get("rogue_enemy_stat_mods", [])
-    active_rogue_enemy = []
-    for entry in rogue_enemy:
-        if entry["duration"] > 0:
-            active_rogue_enemy.append(entry)
-        else:
-            m_stats = state.get("monster_stats", {})
-            for stat, val in entry["mods"].items():
-                m_stats[stat] = m_stats.get(stat, 0) - val
-    state["rogue_enemy_stat_mods"] = active_rogue_enemy
-    for entry in state.get("rogue_enemy_stat_mods", []):
-        entry["duration"] -= 1
+    tick_stat_mods(state, "rogue_enemy_stat_mods", state.setdefault("monster_stats", {}))
 
 
 def _rogue_on_strike(state: dict, character: dict, log: list) -> None:
@@ -3283,18 +3378,7 @@ def _bard_tick_crescendo(state: dict, character: dict, log: list):
         entry["duration"] -= 1
 
     # Tick Bard enemy stat_mods
-    bard_enemy = state.get("bard_enemy_stat_mods", [])
-    active_enemy = []
-    for entry in bard_enemy:
-        if entry["duration"] > 0:
-            active_enemy.append(entry)
-        else:
-            m_stats = state.get("monster_stats", {})
-            for stat, val in entry["mods"].items():
-                m_stats[stat] = m_stats.get(stat, 0) - val
-    state["bard_enemy_stat_mods"] = active_enemy
-    for entry in state.get("bard_enemy_stat_mods", []):
-        entry["duration"] -= 1
+    tick_stat_mods(state, "bard_enemy_stat_mods", state.setdefault("monster_stats", {}))
 
     crescendo = state.get("bard_crescendo", 0)
     crescendo_max = _bard_get_crescendo_max(character)
@@ -3313,12 +3397,29 @@ def _bard_tick_crescendo(state: dict, character: dict, log: list):
         crescendo = 0
         log.append({"kind": "bard_crescendo_reset", "text": "Stunned — Crescendo resets!"})
 
-    # Steady Rhythm (level 20): +2/turn instead of +1
-    gain = 2 if character.get("level", 0) >= 20 else 1
-    crescendo = min(crescendo + gain, crescendo_max)
-    state["bard_crescendo"] = crescendo
-    if crescendo > 0:
-        log.append({"kind": "bard_crescendo", "text": f"Crescendo builds to {crescendo}!"})
+    # Crescendo only builds while the Bard is actually performing.
+    #
+    # It used to build every single turn regardless, so a Bard who never played a
+    # note still reached max Crescendo — which contradicts the mastery's whole
+    # identity. Seven skills declare `crescendo: True` and the frontend advertises
+    # it, but the engine never read the field; this is what makes it load-bearing.
+    active_perfs = state.get("bard_active_performances", []) or []
+    building = any(
+        (SKILLS_BY_ID.get(pid) or {}).get("crescendo")
+        for pid in active_perfs
+    )
+    if building:
+        # Steady Rhythm (level 20): +2/turn instead of +1
+        gain = 2 if character.get("level", 0) >= 20 else 1
+        crescendo = min(crescendo + gain, crescendo_max)
+        state["bard_crescendo"] = crescendo
+        if crescendo > 0:
+            log.append({"kind": "bard_crescendo", "text": f"Crescendo builds to {crescendo}!"})
+    else:
+        state["bard_crescendo"] = crescendo
+        if crescendo > 0:
+            log.append({"kind": "bard_crescendo",
+                        "text": f"No performance active — Crescendo holds at {crescendo}."})
 
     # Ensure encore performance stays in active list while encore lasts
     encore_turns = state.get("bard_encore_turns", 0)
@@ -3515,11 +3616,14 @@ def _bard_process_performance(state: dict, character: dict, sk: dict, log: list)
         elif m == "dance":
             _bard_apply_dance_effect(state, character, sk, chance, log)
 
-    # Encore check
-    encore_chance = _bard_get_encore_chance(character)
+    # Encore check — only for skills that declare they can encore. The field was
+    # declared on 7 skills and shown in the UI but never read by the engine, so
+    # every performance could encore regardless of what the client advertised.
+    encore_chance = _bard_get_encore_chance(character) if sk.get("encore") else 0.0
     if crescendo >= _bard_get_crescendo_max(character) and character.get("level", 0) >= 100:
-        encore_chance = 1.0  # guaranteed at max crescendo with Legend of the Stage
-    if random.random() < encore_chance:
+        if sk.get("encore"):
+            encore_chance = 1.0  # guaranteed at max crescendo with Legend of the Stage
+    if encore_chance > 0 and random.random() < encore_chance:
         encore_duration = 2 if character.get("level", 0) >= 90 else 1
         state["bard_encore_turns"] = encore_duration
         state["bard_encore_performance"] = sk["id"]
@@ -3948,9 +4052,9 @@ def _druid_pick_summon_skill(summon: dict, state: dict, character: dict, turn: i
         for sk in skills:
             ptype = sk.get("power_type", "strike")
             if ptype == "strike":
-                score = sk.get("power", 5) + sk.get("hits", 1) * 3
+                score = sk.get("damage", 5) + sk.get("hits", 1) * 3
             elif ptype == "heal":
-                score = sk.get("power", 10) + 20
+                score = sk.get("damage", 10) + 20
             elif ptype == "buff":
                 score = 15
             elif ptype == "debuff":
@@ -4040,7 +4144,7 @@ def _druid_execute_summon_action(summon: dict, state: dict, character: dict, log
 
     if ptype in ("strike", "debuff"):
         # Deal damage to monster
-        base_power = sk.get("power", 5)
+        base_power = sk.get("damage", 5)
         might = s_stats.get("might", 5)
         dmg = int(base_power + might * 0.8)
 
@@ -4140,6 +4244,43 @@ def _druid_execute_summon_action(summon: dict, state: dict, character: dict, log
     return {"action": "pass"}
 
 
+def _druid_bonded_senses_rider(state: dict, character: dict, log: list) -> int:
+    """Bonded Senses (L30): the Druid borrows its summon's attack as a passive rider.
+
+    Spec: "While a summon is active, the Druid also gains the summon's Attack skill
+    as a passive rider (weaker version — no status apply, just damage)."
+
+    This passive had no engine implementation at all. Returns the extra damage dealt
+    so callers can log or aggregate it.
+    """
+    if not _is_druid(character) or character.get("level", 1) < 30:
+        return 0
+    active = state.get("druid_active_summons", []) or []
+    if not active or state.get("monster_hp", 0) <= 0:
+        return 0
+
+    # Use the strongest active summon's primary attack, at half strength and with
+    # no status rider — the "weaker version" the spec calls for.
+    best = 0
+    source = None
+    for summon in active:
+        attacks = (summon.get("profile_skills") or {}).get("attack") or []
+        for atk in attacks:
+            dmg = int(atk.get("damage", 0))
+            if dmg > best:
+                best, source = dmg, (summon, atk)
+    if not source or best <= 0:
+        return 0
+
+    summon, atk = source
+    rider = max(1, int(best * 0.5) + int(summon.get("stats", {}).get("might", 0) * 0.15))
+    state["monster_hp"] = max(0, state.get("monster_hp", 0) - rider)
+    log.append({"kind": "druid_bonded_senses",
+                "text": f"BONDED SENSES — you echo {summon.get('name', 'your companion')}'s "
+                        f"{atk.get('name', 'attack')} for {rider} damage!"})
+    return rider
+
+
 def _druid_tick_summons(state: dict, character: dict, log: list):
     """Process all active summon actions at the start of the turn (after Druid acts, before enemy)."""
     if not _is_druid(character):
@@ -4148,6 +4289,9 @@ def _druid_tick_summons(state: dict, character: dict, log: list):
     active = state.get("druid_active_summons", [])
     if not active:
         return
+
+    # Bonded Senses (L30) fires once per turn while any summon is out.
+    _druid_bonded_senses_rider(state, character, log)
 
     synergy = state.get("druid_pack_synergy")
     turn = state.get("turn", 0)
@@ -4353,7 +4497,7 @@ def _druid_apply_fusion_attack_rider(state: dict, character: dict, log: list, to
 
     riders = _druid_get_fusion_riders(state)
     for atk_sk in riders["attack_skills"]:
-        rider_dmg = atk_sk.get("power", 5)
+        rider_dmg = atk_sk.get("damage", 5)
         s_stats = {}
         for summon in state.get("druid_active_summons", []):
             if summon.get("fused"):
@@ -4400,7 +4544,7 @@ def _druid_apply_fusion_defense(state: dict, character: dict, log: list, c_dmg: 
                 break
 
         # Damage reduction: based on summon's durability and skill power
-        reduction = int(def_sk.get("power", 0) + s_stats.get("durability", 5) * 0.5)
+        reduction = int(def_sk.get("damage", 0) + s_stats.get("durability", 5) * 0.5)
         if reduction > 0 and c_dmg > 0:
             c_dmg = max(0, c_dmg - reduction)
             log.append({
@@ -4447,7 +4591,7 @@ def _druid_apply_fusion_signature(state: dict, character: dict, log: list) -> in
                 s_stats = summon.get("stats", {})
                 break
 
-        base_power = sig_sk.get("power", 10)
+        base_power = sig_sk.get("damage", 10)
         might = s_stats.get("might", 5)
         hits = sig_sk.get("hits", 1)
         dmg_per_hit = int(base_power + might * 0.8)
@@ -4625,8 +4769,17 @@ def _mage_has_passive(character: dict, passive_id: str) -> bool:
     return passive_id in _mage_get_equipped_passives(character)
 
 
-def _mage_get_skill_tags(skill: dict) -> set:
-    """Get the spell tags for a skill."""
+def _mage_get_skill_tags(skill: dict | None) -> set:
+    """Get the spell tags for a skill.
+
+    `skill` is None whenever the player takes an innate action (a plain strike
+    with no skill selected, which is the default for anyone who has not assigned
+    skills to their skill bar yet). Every mage passive helper funnels its tag
+    lookup through here, so tolerating None in one place keeps basic attacks from
+    raising a 500 across all of them.
+    """
+    if not skill:
+        return set()
     return set(skill.get("spell_tags", []))
 
 
@@ -4686,7 +4839,7 @@ def _mage_apply_passive_modifiers(state: dict, character: dict, skill: dict, tot
     if is_strike and _mage_has_passive(character, "echo_chamber"):
         state.setdefault("mage_echo_next_turn", []).append({
             "skill_id": skill.get("id"),
-            "power": int(total_dmg * 0.50),
+            "damage": int(total_dmg * 0.50),
         })
         log.append({"kind": "mage_passive", "text": "Echo Chamber — will repeat next turn!"})
 
@@ -4735,8 +4888,10 @@ def _mage_apply_passive_modifiers(state: dict, character: dict, skill: dict, tot
     return total_dmg
 
 
-def _mage_get_status_override(character: dict, skill: dict) -> str | None:
+def _mage_get_status_override(character: dict, skill: dict | None) -> str | None:
     """Check if an Arcane Library passive overrides the skill's normal status. Returns new status or None."""
+    if not skill:
+        return None
     tags = _mage_get_skill_tags(skill)
     original_status = skill.get("status_apply")
 
@@ -4767,7 +4922,7 @@ def _mage_get_status_override(character: dict, skill: dict) -> str | None:
     return None
 
 
-def _mage_get_extra_status(character: dict, skill: dict) -> str | None:
+def _mage_get_extra_status(character: dict, skill: dict | None) -> str | None:
     """Check for passives that add an extra status. Returns additional status or None."""
     tags = _mage_get_skill_tags(skill)
 
@@ -4775,7 +4930,322 @@ def _mage_get_extra_status(character: dict, skill: dict) -> str | None:
     if "Lightning" in tags and _mage_has_passive(character, "thunderblood"):
         return "bleeding"
 
+    # Double Jeopardy (Mental): Debuff-tagged skills apply 2 statuses instead of 1.
+    if "Debuff" in tags and _mage_has_passive(character, "double_jeopardy"):
+        return "shaken"
+
     return None
+
+
+def _mage_apply_arcane_library_control(state: dict, character: dict, log: list) -> None:
+    """Arcane Library control passives that resolve against enemy state.
+
+    These were declared in MAGE_PASSIVES and equippable through the Library, but
+    the engine never referenced them — a player could research and slot them and
+    they would do nothing at all.
+
+    Only the passives that are meaningful in this game's 1v1 combat are handled.
+    `wildfire`, `hallucination`, `mass_hysteria` and `delirium` all describe
+    spreading to "adjacent enemies" or making a target "attack their own ally",
+    which has no meaning without multi-enemy encounters — see MASTERY_PLANS.md.
+    """
+    if not _is_mage(character):
+        return
+
+    monster_statuses = state.get("monster_statuses", []) or []
+    has = {s.get("id") for s in monster_statuses}
+
+    # Absolute Zero (Elements): an already-ensnared target becomes fully frozen.
+    if "ensnared" in has and _mage_has_passive(character, "absolute_zero"):
+        if "stunned" not in has:
+            _append_status_dedup(state, make_status("stunned"), key="monster_statuses")
+            log.append({"kind": "mage_passive",
+                        "text": "ABSOLUTE ZERO — the ensnared target freezes solid!"})
+
+    # Mind Fracture (Mental): a shaken target bleeds a random stat each turn.
+    if "shaken" in has and _mage_has_passive(character, "mind_fracture"):
+        m_stats = state.setdefault("monster_stats", {})
+        candidates = [k for k in ("might", "grace", "insight", "durability") if k in m_stats]
+        if candidates:
+            victim = random.choice(candidates)
+            state.setdefault("mage_mind_fracture_drain", {})
+            state["mage_mind_fracture_drain"][victim] = \
+                state["mage_mind_fracture_drain"].get(victim, 0) + 1
+            m_stats[victim] = m_stats.get(victim, 0) - 1
+            log.append({"kind": "mage_passive",
+                        "text": f"MIND FRACTURE — the shaken mind sheds {victim} (-1)."})
+
+    # Paranoia (Mental): a shaken target cannot benefit from buffs.
+    if "shaken" in has and _mage_has_passive(character, "paranoia"):
+        if not state.get("mage_paranoia_active"):
+            state["mage_paranoia_active"] = True
+            log.append({"kind": "mage_passive",
+                        "text": "PARANOIA — the target trusts nothing; buffs will not hold."})
+
+    # Wildfire (Elements): an already-burning target burns twice as hard.
+    #
+    # Spec said the burning "spreads to all adjacent enemies", which has no meaning
+    # in 1v1 combat. Reinterpreted as intensification so the passive keeps its
+    # identity (fire propagates) and actually does something.
+    if "burning" in has and _mage_has_passive(character, "wildfire"):
+        for st in monster_statuses:
+            if st.get("id") == "burning" and not st.get("_wildfire_applied"):
+                st["magnitude"] = int(st.get("magnitude", 3)) * 2
+                st["_wildfire_applied"] = True
+                log.append({"kind": "mage_passive",
+                            "text": f"WILDFIRE — the flames redouble ({st['magnitude']} per turn)!"})
+                break
+
+
+def _mage_get_debuff_duration_multiplier(character: dict) -> float:
+    """Mass Hysteria (Mental): debuffs the Mage applies last 50% longer.
+
+    Spec said debuffs "spread to 1 adjacent enemy at 50% duration" — meaningless
+    in 1v1, so the spread becomes depth on the single target instead.
+    """
+    if _is_mage(character) and _mage_has_passive(character, "mass_hysteria"):
+        return 1.5
+    return 1.0
+
+
+def _mage_check_enemy_self_attack(state: dict, character: dict, log: list) -> bool:
+    """Delirium (Mental): a heavily-debuffed enemy may turn its attack on itself.
+
+    Spec said it attacks "their own ally"; with a single opponent the equivalent
+    misdirection is self-harm.
+    """
+    if not _is_mage(character) or not _mage_has_passive(character, "delirium"):
+        return False
+    debuff_count = sum(
+        1 for s in (state.get("monster_statuses") or [])
+        if s.get("kind") == "debuff" or s.get("id") in (
+            "burning", "bleeding", "poisoned", "shaken", "stunned",
+            "ensnared", "blinded", "cursed", "silenced", "confused")
+    )
+    if debuff_count >= 2 and random.random() < 0.25:
+        log.append({"kind": "mage_passive",
+                    "text": "DELIRIUM — the addled enemy turns its own attack on itself!"})
+        return True
+    return False
+
+
+# ---- School of Spatial ----------------------------------------------------
+# The Spatial school was entirely inert: 13 equippable passives, none referenced
+# by the engine. On inspection the combat loop *does* maintain a real range model
+# (`player_range`, `monster_range`, `range_gap`, updated every turn for the
+# Hunter), so the range-based passives are implementable after all. Only the ones
+# needing portals, terrain or allies are not — those are flagged `planned` in
+# MAGE_PASSIVES and filtered out of the equippable Library.
+def _mage_apply_spatial_range(state: dict, character: dict, log: list) -> None:
+    """Long Range / Point Blank: adjust the Mage's effective range once per fight."""
+    if not _is_mage(character) or state.get("mage_spatial_range_applied"):
+        return
+    state["mage_spatial_range_applied"] = True
+
+    delta = 0
+    if _mage_has_passive(character, "long_range"):
+        delta += 1
+    if _mage_has_passive(character, "point_blank"):
+        delta -= 1
+    if delta:
+        state["player_range"] = max(0, state.get("player_range", 0) + delta)
+        state["range_gap"] = state["player_range"] - state.get("monster_range", 0)
+        label = "LONG RANGE" if delta > 0 else "POINT BLANK"
+        log.append({"kind": "mage_passive",
+                    "text": f"{label} — effective range is now {state['player_range']}."})
+
+
+def _mage_get_spatial_damage_mult(state: dict, character: dict) -> float:
+    """Point Blank: +30% damage while at range 0-1."""
+    if not _is_mage(character) or not _mage_has_passive(character, "point_blank"):
+        return 1.0
+    if state.get("player_range", 0) <= 1:
+        return 1.30
+    return 1.0
+
+
+def _mage_ignores_range_minimum(character: dict) -> bool:
+    """Far Strike: strike-tagged skills can be cast at any range."""
+    return _is_mage(character) and _mage_has_passive(character, "far_strike")
+
+
+def _mage_apply_spatial_riders(state: dict, character: dict, skill: dict | None, log: list) -> None:
+    """Gravity Shift, Reposition and Blink Step — all pure range/status effects."""
+    if not _is_mage(character) or not skill:
+        return
+    tags = _mage_get_skill_tags(skill)
+    ptype = skill.get("power_type")
+
+    # Gravity Shift: debuffs drag the enemy a step closer.
+    if (ptype == "debuff" or "Debuff" in tags) and _mage_has_passive(character, "gravity_shift"):
+        state["monster_range"] = state.get("monster_range", 0) + 1
+        state["range_gap"] = state.get("player_range", 0) - state["monster_range"]
+        log.append({"kind": "mage_passive", "text": "GRAVITY SHIFT — the enemy is dragged a step closer!"})
+
+    # Reposition: defend-tagged skills push the Mage a step away.
+    if (ptype == "defend" or "Defend" in tags) and _mage_has_passive(character, "reposition"):
+        state["player_range"] = state.get("player_range", 0) + 1
+        state["range_gap"] = state["player_range"] - state.get("monster_range", 0)
+        log.append({"kind": "mage_passive", "text": "REPOSITION — the Mage slides out of reach."})
+
+    # Blink Step: teleport-tagged skills also grant `hidden`.
+    if "Teleport" in tags and _mage_has_passive(character, "blink_step"):
+        _append_status_dedup(state, make_status("hidden"), key="player_statuses")
+        log.append({"kind": "mage_passive", "text": "BLINK STEP — the Mage blinks out of sight."})
+
+
+def _mage_get_expanding_radius_bonus(character: dict) -> float:
+    """Expanding Radius: spec hits 'target + 1 adjacent'. With one opponent the
+    equivalent is concentrating the extra blast on the sole target."""
+    if _is_mage(character) and _mage_has_passive(character, "expanding_radius"):
+        return 1.20
+    return 1.0
+
+
+def _mage_check_mirror_position(state: dict, character: dict, log: list) -> None:
+    """Mirror Position: dodging swaps the combatants' range, disrupting melee."""
+    if not _is_mage(character) or not _mage_has_passive(character, "mirror_position"):
+        return
+    p, m = state.get("player_range", 0), state.get("monster_range", 0)
+    if p != m:
+        state["player_range"], state["monster_range"] = m, p
+        state["range_gap"] = state["player_range"] - state["monster_range"]
+        log.append({"kind": "mage_passive",
+                    "text": "MIRROR POSITION — the Mage and its foe trade places!"})
+
+
+def _mage_apply_status_stack_bonus(state: dict, character: dict, status_id: str, log: list) -> None:
+    """Elemental Overload: elemental statuses land at +2 stacks instead of +1."""
+    if not _is_mage(character) or not _mage_has_passive(character, "elemental_overload_mage"):
+        return
+    ELEMENTAL = {"burning", "frostburn", "shocked", "ensnared", "corroded",
+                 "shadowfrost", "magma", "voidmarked"}
+    if status_id not in ELEMENTAL:
+        return
+    for st in state.get("monster_statuses", []) or []:
+        if st.get("id") == status_id:
+            st["magnitude"] = int(st.get("magnitude", 1)) + 2
+            st["duration"] = int(st.get("duration", 2)) + 1
+            log.append({"kind": "mage_passive",
+                        "text": f"ELEMENTAL OVERLOAD — {status_id} lands at full force!"})
+            break
+
+
+def _mage_queue_temporal_echo(state: dict, character: dict, skill: dict | None,
+                              total_dmg: float, log: list) -> None:
+    """Temporal Echo: Dual Cast skills echo at 25% power on the next odd turn.
+
+    Reuses the existing `mage_echo_next_turn` queue that Echo Chamber already
+    drains, so no second echo mechanism is needed.
+    """
+    if not _is_mage(character) or not skill:
+        return
+    if not _mage_has_passive(character, "temporal_echo"):
+        return
+    tags = _mage_get_skill_tags(skill)
+    if "Dual Cast" not in tags and not skill.get("dual_cast"):
+        return
+    if (state.get("turn", 0) + 1) % 2 == 0:
+        return  # only echoes onto odd turns
+    state.setdefault("mage_echo_next_turn", []).append({
+        "skill_id": skill.get("id", "spell"),
+        "damage": int(total_dmg * 0.25),
+    })
+    log.append({"kind": "mage_passive",
+                "text": "TEMPORAL ECHO — the dual cast will ring again next turn."})
+
+
+def _mage_get_overload_debuff_bonus(character: dict, skill: dict | None) -> float:
+    """Overload: spec turns single-target debuffs into AoE. With one opponent the
+    equivalent is landing the full area effect on that target."""
+    if not _is_mage(character) or not skill:
+        return 1.0
+    if not _mage_has_passive(character, "overload_mage"):
+        return 1.0
+    tags = _mage_get_skill_tags(skill)
+    if skill.get("power_type") == "debuff" or "Debuff" in tags:
+        return 1.25
+    return 1.0
+
+
+def _mage_get_decoy_miss_chance(state: dict, character: dict) -> float:
+    """Hallucination (Mental): decoys absorb attacks while the Mage is evasive.
+
+    Spec said it "creates 2 extra copies instead of 1". There is no illusion-copy
+    entity in combat, so the copies are expressed as a flat chance for an incoming
+    attack to hit a decoy instead.
+    """
+    if not _is_mage(character) or not _mage_has_passive(character, "hallucination"):
+        return 0.0
+    player = state.get("player_statuses", []) or []
+    if any(s.get("id") == "evasive" for s in player):
+        return 0.30
+    return 0.0
+
+
+def _mage_check_enemy_turn_skip(state: dict, character: dict, log: list) -> bool:
+    """Mind Control (Mental) + Time Loop (Temporal): can the enemy act this turn?
+
+    Returns True when the enemy's turn is consumed. Both passives were declared
+    and equippable but had no engine implementation.
+    """
+    if not _is_mage(character):
+        return False
+
+    has = {s.get("id") for s in (state.get("monster_statuses") or [])}
+
+    # Mind Control: shaken enemies have a 15% chance to lose their turn.
+    if "shaken" in has and _mage_has_passive(character, "mind_control"):
+        if random.random() < 0.15:
+            log.append({"kind": "mage_passive",
+                        "text": "MIND CONTROL — the enemy hesitates, its turn lost!"})
+            return True
+
+    # Time Loop: a stunned enemy repeats its last action, wasting the turn.
+    if "stunned" in has and _mage_has_passive(character, "time_loop"):
+        log.append({"kind": "mage_passive",
+                    "text": "TIME LOOP — the enemy replays its last move and accomplishes nothing."})
+        return True
+
+    return False
+
+
+def _mage_check_illusion_mastery(state: dict, character: dict, log: list) -> None:
+    """Illusion Mastery (Mental): `evasive` also grants `hidden`."""
+    if not _is_mage(character) or not _mage_has_passive(character, "illusion_mastery"):
+        return
+    player = state.get("player_statuses", []) or []
+    if any(s.get("id") == "evasive" for s in player) and \
+       not any(s.get("id") == "hidden" for s in player):
+        _append_status_dedup(state, make_status("hidden"), key="player_statuses")
+        log.append({"kind": "mage_passive",
+                    "text": "ILLUSION MASTERY — the Mage vanishes mid-dodge."})
+
+
+def _mage_get_cooldown_modifier(character: dict) -> int:
+    """Turns to subtract from a skill's cooldown after use.
+
+    Sources:
+      - Quickened Mind (Temporal): "All cooldowns reduced by 1."
+      - Temporal school synergy at 3 and at 5 equipped passives.
+
+    This function was referenced by combat_turn but never defined, so every Mage
+    who cast a skill raised NameError and got a 500 — the mastery was unplayable
+    the moment a spell left the bar. Implemented to mirror
+    _mage_get_debuff_duration_modifier, the sibling helper directly below.
+    """
+    reduction = 0
+    if _mage_has_passive(character, "quickened_mind"):
+        reduction += 1
+    synergy = _mage_get_school_synergy(character)
+    temporal = synergy.get("Temporal", 0)
+    if temporal >= 3:
+        reduction += 1
+    if temporal >= 5:
+        reduction += 1
+    return reduction
+
+
 def _mage_get_debuff_duration_modifier(character: dict) -> int:
     """Get extra turns for debuffs from passives. Returns integer to add to duration."""
     extra = 0
@@ -4789,11 +5259,12 @@ def _mage_get_debuff_duration_modifier(character: dict) -> int:
     return extra
 
 
-def _mage_check_phobia_implant(state: dict, character: dict, skill: dict, log: list) -> None:
+def _mage_check_phobia_implant(state: dict, character: dict, skill: dict | None, log: list) -> None:
     """Phobia Implant: first debuff each combat also stuns."""
     if not _mage_has_passive(character, "phobia_implant"):
         return
-    if skill.get("power_type") != "debuff":
+    # None on innate actions — an unskilled strike is not a debuff.
+    if not skill or skill.get("power_type") != "debuff":
         return
     if state.get("mage_phobia_used"):
         return
@@ -4809,7 +5280,7 @@ def _mage_process_echo(state: dict, log: list) -> int:
         return 0
     total_echo = 0
     for echo in echoes:
-        total_echo += echo.get("power", 0)
+        total_echo += echo.get("damage", 0)
         log.append({"kind": "mage_echo", "text": f"Echo Chamber — {echo.get('skill_id', 'spell')} repeats for {echo.get('power', 0)} damage!"})
     state["mage_echo_next_turn"] = []
     return total_echo
@@ -4845,6 +5316,13 @@ def _mage_tick_end_of_turn(state: dict, character: dict, log: list) -> None:
 
     # Temporal Echo: if dual cast was used, set echo for next odd turn
     # (handled by echo_chamber passive already)
+
+    # Arcane Library control passives (Absolute Zero, Mind Fracture, Paranoia)
+    # and Illusion Mastery. These resolve against current enemy/player statuses,
+    # so end of turn is the natural point.
+    _mage_apply_arcane_library_control(state, character, log)
+    _mage_check_illusion_mastery(state, character, log)
+    _mage_apply_spatial_range(state, character, log)
 
     # Save HP for Rewind
     _mage_save_rewind_state(state)
@@ -5094,6 +5572,17 @@ def _priest_get_strike_damage_mult(state: dict, character: dict) -> float:
     if level >= 70 and enemy_hp_ratio <= 0.50:
         return 1.20
     return 1.0
+
+
+def _priest_start_of_turn(state: dict, character: dict, log: list) -> None:
+    """Priest start-of-turn effects: HoT ticks, delayed heals, and Smite.
+
+    This function's `def` line was lost in a past edit, leaving the body
+    stranded as unreachable code after the `return` in
+    _priest_get_strike_damage_mult above. combat_turn called it by name, so every
+    Priest raised NameError on turn 2 of any fight — the mastery was unplayable
+    past the opening turn, and none of its healing-over-time mechanics ever ran.
+    """
     if not _is_priest(character):
         return
 
@@ -5582,6 +6071,17 @@ def _priest_tick_end_of_turn(state: dict, character: dict, log: list) -> None:
         if state["priest_smite_active"] <= 0:
             character["stats"]["insight"] = character["stats"].get("insight", 0) - 10
             log.append({"kind": "priest_smite_end", "text": "Smite fades — Insight returns to normal."})
+
+
+def _priest_check_enemy_heal_lock(state: dict, character: dict) -> bool:
+    """Avatar of Faith (L100): the enemy cannot heal.
+
+    Same story as _priest_start_of_turn — the `def` line was lost, so this
+    one-line body was left as a stray `return` at the tail of
+    _priest_tick_end_of_turn (which is typed `-> None` and whose callers ignore
+    the value). combat_turn called it by name whenever a monster tried to heal,
+    raising NameError.
+    """
     return character.get("level", 1) >= 100
 
 
@@ -5631,10 +6131,11 @@ def _ensure_monster_fields(monster: dict) -> dict:
     """
     m = dict(monster)  # shallow copy
     if "stats" not in m:
-        p = m.get("power", 5)
+        # Every monster in the data now ships explicit stats; this is only a
+        # guard for hand-built or test monsters.
         m["stats"] = {
-            "might": p, "insight": max(1, p // 3), "grace": max(1, p // 2),
-            "durability": max(1, p // 2), "essence": max(1, p // 4), "cognition": max(1, p // 3),
+            "might": 5, "insight": 2, "grace": 3,
+            "durability": 3, "essence": 1, "cognition": 2,
         }
 
     # --- Stat normalization: convert legacy stat names and flat ints to base/growth ---
@@ -5649,7 +6150,7 @@ def _ensure_monster_fields(monster: dict) -> dict:
         # Fold armor into durability (add to existing) since character system uses armor_bonus separately
         stats["durability"] = stats.get("durability", 0) + armor_val
     # Convert flat int stats to {"base": X, "growth": Y} format
-    p = m.get("power", 5)
+    p = compute_monster_threat(m)
     default_growth = max(0.5, p * 0.08)
     for stat_name, val in list(stats.items()):
         if isinstance(val, (int, float)) and not isinstance(val, bool):
@@ -5676,7 +6177,7 @@ def _ensure_monster_fields(monster: dict) -> dict:
             m["creature_tier"] = "legendary"
         elif m.get("is_boss") or m.get("is_heritage_boss"):
             # Heritage bosses with very high power are legendary-tier
-            if m.get("power", 0) >= 80:
+            if compute_monster_threat(m) >= 45:
                 m["creature_tier"] = "legendary"
             else:
                 m["creature_tier"] = "boss"
@@ -5690,7 +6191,7 @@ def _ensure_monster_fields(monster: dict) -> dict:
     # Ensure passive_buff exists (normalized to list of buff dicts)
     if "passive_buff" not in m:
         # Generate a basic passive buff based on highest stat
-        p = m.get("power", 5)
+        p = compute_monster_threat(m)
         stats = m.get("stats", {})
         # Find highest stat
         best_stat = "might"
@@ -5718,12 +6219,12 @@ def _ensure_monster_fields(monster: dict) -> dict:
             profile[cat].append(sk)
         # If no skills at all, generate basic ones from power
         if not flat_skills:
-            p = m.get("power", 5)
+            p = compute_monster_threat(m)
             mid = m.get("id", "monster")
             profile["attack"] = [{
                 "id": f"{mid}_basic_strike", "name": "Basic Strike",
                 "power_type": "strike", "damage_type": "physical",
-                "power": max(3, p // 2), "cost_mp": 0, "cost_stamina": 20,
+                "damage": max(3, p // 2), "cost_mp": 0, "cost_stamina": 20,
                 "cooldown": 1, "trigger": "always",
             }]
             profile["defense"] = [{
@@ -5745,12 +6246,12 @@ def _ensure_monster_fields(monster: dict) -> dict:
     # Ensure signature_fusion exists (normalized to list)
     if "signature_fusion" not in m:
         # Generate a basic signature for legacy monsters
-        p = m.get("power", 5)
+        p = compute_monster_threat(m)
         mid = m.get("id", "monster")
         m["signature_fusion"] = [{
             "id": f"{mid}_signature", "name": "Signature Strike",
             "power_type": "strike", "damage_type": "physical",
-            "power": max(8, p), "cost_mp": 0, "cost_stamina": 50,
+            "damage": max(8, p), "cost_mp": 0, "cost_stamina": 50,
             "cooldown": 4, "hits": 1, "is_signature": True,
         }]
     else:
@@ -5926,7 +6427,7 @@ def attempt_tame(character: dict, state: dict) -> dict:
         state["monster_statuses"] = [s for s in state.get("monster_statuses", []) if s.get("kind") == "buff"]
         state["monster_hp"] = state["monster_max_hp"]
         # Enrage allies (if multiple enemies — for now just boost monster further)
-        state["monster_power"] = int(state.get("monster_power", 5) * 1.3)
+        state["monster_threat"] = int(state.get("monster_threat", 5) * 1.3)
         log.append({"kind": "tame_penalty", "text": f"The {monster['name']} triggers a CATACLYSM! Full heal, cleansed, power surge!"})
 
     state["log"].extend(log)
@@ -6037,9 +6538,9 @@ def _pick_monster_skill(monster: dict, state: dict, hp_ratio: float, enemy_hp_ra
                 continue
             ptype = sk.get("power_type", "strike")
             if ptype == "strike":
-                score = sk.get("power", 5) + (50 if is_ult else 0)
+                score = sk.get("damage", 5) + (50 if is_ult else 0)
             elif ptype == "heal":
-                score = sk.get("power", 10) + 20
+                score = sk.get("damage", 10) + 20
             elif ptype == "buff":
                 score = 15
             elif ptype == "debuff":
@@ -6078,9 +6579,9 @@ def _pick_monster_skill(monster: dict, state: dict, hp_ratio: float, enemy_hp_ra
         if is_ult and not enraged:
             continue
         if ptype == "strike":
-            score = sk.get("power", 5) + (50 if is_ult else 0)
+            score = sk.get("damage", 5) + (50 if is_ult else 0)
         elif ptype == "heal" and hp_ratio < 0.5:
-            score = sk.get("power", 10) + 20
+            score = sk.get("damage", 10) + 20
         elif ptype == "buff" and hp_ratio < 0.5:
             score = 15
         elif ptype == "debuff":
@@ -6224,6 +6725,11 @@ def _roll_loot(monster: dict, character: dict | None = None, critical: bool = Fa
     drops_data = m.get("drops", {})
     drops = []
     rarity = m.get("rarity", "common")
+    # Reward scale now derives from the monster's stats rather than the retired
+    # `power` scalar. Coefficients below were recalibrated against the new threat
+    # distribution (old power median 32 -> new threat median 18) so gold and XP
+    # keep their previous magnitudes.
+    _monster_threat = compute_monster_threat(m, (character or {}).get("level", 1))
 
     # --- Item bonus effects (runes) ---
     _ibe = _aggregate_item_bonus_effects(character) if character else {}
@@ -6293,12 +6799,12 @@ def _roll_loot(monster: dict, character: dict | None = None, critical: bool = Fa
             eff_chance = min(0.95, chance * luck_mult * crit_mult * (1.0 + hunt_bonus))
             if random.random() <= eff_chance:
                 drops.append((drop_id, 1))
-        base_gold = 8 + monster["power"] * 2
+        base_gold = 8 + int(_monster_threat * 3.5)
         rarity_mult = _RARITY_GOLD_MULT.get(rarity, 1.0)
         gold = int(base_gold * rarity_mult * crit_mult * (1.0 + _ibe.get("gold_drop", 0)))
         xp_mult = 1.0
 
-    xp = int((20 + monster["power"] * 4) * xp_mult * (1.0 + _ibe.get("xp_bonus", 0)))
+    xp = int((20 + _monster_threat * 7) * xp_mult * (1.0 + _ibe.get("xp_bonus", 0)))
 
     # --- Procedural gear drop (new item system) ---
     if character:
@@ -6372,7 +6878,7 @@ def start_combat(character: dict, monster_id) -> dict:
         "monster_rarity": monster.get("rarity", "common"),
         "monster_hp": computed_hp,
         "monster_max_hp": computed_hp,
-        "monster_power": monster["power"],
+        "monster_threat": compute_monster_threat(monster, char_level),
         "monster_stats": computed_stats,
         "monster_max_mp": life.get("mp", 0),
         "monster_mp": life.get("mp", 0),
@@ -6392,6 +6898,11 @@ def start_combat(character: dict, monster_id) -> dict:
         "player_statuses": list(character.get("statuses", [])),
         "player_hp": character["hp"],
         "player_max_hp": character["max_hp"],
+        # Stamina meters. `player_max_stamina` was read by the stamina consumable
+        # branch but never initialised anywhere — a phantom state key of exactly the
+        # kind that made the Mage's cooldown passives unreachable.
+        "player_stamina": 100,
+        "player_max_stamina": 100,
         "turn": 0,
         "skill_cooldowns": {},
         "item_cooldowns": {},
@@ -6620,54 +7131,104 @@ def apply_enchantments_to_stats(character: dict) -> dict[str, int]:
         for stat, val in item_stats.items():
             if val:
                 base_stats[stat] = base_stats.get(stat, 0) + val
-        # Apply set bonus stats
-        set_bonuses = _check_set_bonuses(character)
-        for set_id, count in set_bonuses.items():
-            bonus = _SET_BONUSES.get(set_id, {}).get("bonuses", {}).get(count, {})
-            for stat, val in bonus.get("stats", {}).items():
-                base_stats[stat] = base_stats.get(stat, 0) + val
         # Keep enchantment bonuses for backward compat
         ench_bonuses = get_enchantment_bonus(character, item_id)
         for stat, bonus in ench_bonuses.items():
             base_stats[stat] = base_stats.get(stat, 0) + bonus
+
+    # Set bonuses — applied ONCE for the whole character, after the slot loop.
+    #
+    # This used to live inside the loop above, which meant the bonus re-applied
+    # for every equipped item, including items belonging to no set at all. Two
+    # set pieces plus four unrelated items granted six times the intended stats,
+    # so the optimal play was to wear the minimum set count and fill the rest
+    # with junk.
+    #
+    # Tiers are also cumulative rather than exact-match. The old code did
+    # `bonuses.get(count)`, so a set whose 3- and 4-piece tiers grant
+    # bonus_effects/legendary_power instead of plain stats silently dropped the
+    # 2-piece stat bonus once you equipped a third piece — wearing more of a set
+    # made you strictly weaker.
+    for set_id, count in _check_set_bonuses(character).items():
+        tiers = _SET_BONUSES.get(set_id, {}).get("bonuses", {})
+        for threshold in sorted(tiers):
+            if threshold > count:
+                break
+            for stat, val in (tiers[threshold].get("stats") or {}).items():
+                base_stats[stat] = base_stats.get(stat, 0) + val
     return base_stats
 
 
+def skill_unusable_reason(skill_id: str, character: dict, state: dict,
+                          hp_ratio: float, enemy_hp_ratio: float, turn: int) -> str | None:
+    """Why this skill cannot be used right now, or None if it can.
+
+    This is the single gate for skill legality. It exists because the auto-picker
+    and manual selection used to disagree: `skill_id = manual_skill_id or
+    _pick_next_skill(...)` meant a manually chosen skill skipped the picker
+    entirely, so **skill capacity and trigger conditions were never checked for
+    manual picks** — only cooldown and weapon_req were re-tested further down.
+
+    The practical effect was that the two systems creating tactical constraint in a
+    turn were advisory for anyone clicking skills, which is the normal way to play:
+
+      - 107 of 350 skills carry a non-`always` trigger. `legend_of_erchis`
+        ("only usable below 25% HP") was castable at full health; `lions_charge`
+        ("opening move only. There is no second charge") was spammable.
+      - Skill capacity (`2 + Cognition // 2`) was deducted but never enforced, so a
+        cap-3 character could burn 6 skills and the HUD displayed "-3/3".
+    """
+    skill = SKILLS_BY_ID.get(skill_id)
+    if not skill:
+        return "unknown skill"
+
+    if state.get("skill_cooldowns", {}).get(skill_id, 0) > 0:
+        left = state["skill_cooldowns"][skill_id]
+        return f"on cooldown ({left} turn(s) left)"
+
+    weapon_req = SKILL_EXTRAS.get(skill_id, {}).get("weapon_req", "none")
+    if weapon_req and weapon_req != "none" and not _check_weapon_req(character, weapon_req):
+        return f"requires a {weapon_req} — none equipped"
+
+    cap_cost = skill.get("skill_capacity_cost", 1)
+    remaining = state.get("max_skill_capacity", 8) - state.get("skill_capacity_used", 0)
+    if cap_cost > 0 and cap_cost > remaining:
+        return f"not enough skill capacity ({cap_cost} needed, {max(0, remaining)} left)"
+
+    trig = skill.get("trigger", "always")
+    if trig == "low_hp" and hp_ratio > 0.5:
+        return "only usable when wounded (below 50% HP)"
+    if trig == "opponent_wounded" and enemy_hp_ratio > 0.6:
+        return "only usable against a wounded enemy (below 60% HP)"
+    if trig == "opening_move" and turn > 0:
+        return "opening move only — the moment has passed"
+    if trig == "opponent_status" and not state.get("monster_statuses"):
+        return "requires the enemy to be suffering a status effect"
+    if trig == "self_debuff" and not any(
+        s.get("kind") == "debuff" for s in state.get("player_statuses", [])
+    ):
+        return "only usable while you are debuffed"
+    return None
+
+
 def _pick_next_skill(character: dict, state: dict, hp_ratio: float, enemy_hp_ratio: float, turn: int) -> str | None:
-    """Pick the first available skill from the character's skill bar in slot order.
-    Checks cooldown, skill capacity, and trigger conditions."""
-    learned = [s for s in character.get("skill_bar", []) if s]
-    remaining_capacity = state.get("max_skill_capacity", 8) - state.get("skill_capacity_used", 0)
-    for ls in learned:
+    """Pick the first usable skill from the character's skill bar, in slot order."""
+    for ls in [s for s in character.get("skill_bar", []) if s]:
         sid = ls["skill_id"] if isinstance(ls, dict) else ls
-        cd = state["skill_cooldowns"].get(sid, 0)
-        if cd > 0:
-            continue
-        skill = SKILLS_BY_ID.get(sid)
-        if not skill:
-            continue
-        cap_cost = skill.get("skill_capacity_cost", 1)
-        if cap_cost > 0 and cap_cost > remaining_capacity:
-            continue
-        trig = skill.get("trigger", "always")
-        if trig == "low_hp" and hp_ratio > 0.5:
-            continue
-        if trig == "opponent_wounded" and enemy_hp_ratio > 0.6:
-            continue
-        if trig == "opening_move" and turn > 0:
-            continue
-        if trig == "opponent_status" and not state.get("monster_statuses"):
-            continue
-        if trig == "self_debuff" and not any(
-            s.get("kind") == "debuff" for s in state.get("player_statuses", [])
-        ):
-            continue
-        return sid
+        if skill_unusable_reason(sid, character, state, hp_ratio, enemy_hp_ratio, turn) is None:
+            return sid
     return None
 def _use_item(character: dict, state: dict, item_id: str, r_mods: dict, monster: dict, log: list[dict]) -> bool:
     """Use a single item, apply its effects, log it, decrement quantity. Returns True if used."""
     item = ITEMS_BY_ID.get(item_id, {})
     eff = item.get("effect", {})
+    # Guard against the legacy string shape (`"effect": "heal"`). `"heal" in eff`
+    # is a substring test on a string and passes, so the old code then did
+    # eff["heal"] and raised TypeError — every crafted potion crashed on use.
+    # Crafted consumables are normalised to the dict shape now; this keeps any
+    # stragglers from taking the whole combat turn down with them.
+    if not isinstance(eff, dict):
+        return False
     used_msg = ""
     if "heal" in eff:
         heal = compute_healing(character, int(int(eff["heal"]) * r_mods["heal_mult"] * _continental_heal_mult(character)))
@@ -6687,6 +7248,51 @@ def _use_item(character: dict, state: dict, item_id: str, r_mods: dict, monster:
         cured = eff["cure"]
         character["statuses"] = [s for s in character.get("statuses", []) if s.get("id") != cured]
         used_msg = f"{character['name']} uses {item['name']} and cures {cured}."
+    # The effect kinds below exist on 54 crafted consumables (alchemy potions)
+    # that the engine previously had no branch for at all — using one returned
+    # False and silently did nothing.
+    elif "restore_mp" in eff:
+        amount = int(eff["restore_mp"])
+        character["mp"] = min(character.get("max_mp", amount), character.get("mp", 0) + amount)
+        used_msg = f"{character['name']} uses {item['name']} and restores {amount} MP."
+    elif "stamina" in eff:
+        amount = int(eff["stamina"])
+        state["player_stamina"] = min(
+            state.get("player_max_stamina", 100), state.get("player_stamina", 100) + amount
+        )
+        used_msg = f"{character['name']} uses {item['name']} and recovers {amount} stamina."
+    elif "buff_stat" in eff:
+        amount = int(eff["buff_stat"])
+        stat = item.get("stat") or "might"
+        status = make_status("inspired")
+        status["modifiers"] = {stat: amount}
+        _append_status_dedup(state, status, key="player_statuses")
+        character["stats"][stat] = character["stats"].get(stat, 0) + amount
+        used_msg = f"{character['name']} uses {item['name']} — {stat} +{amount}."
+    elif "hp_regen" in eff:
+        status = make_status("blessed")
+        status["magnitude"] = int(eff["hp_regen"])
+        _append_status_dedup(state, status, key="player_statuses")
+        used_msg = f"{character['name']} uses {item['name']} — regenerating {eff['hp_regen']} HP per turn."
+    elif "mp_regen" in eff:
+        status = make_status("focused")
+        status["magnitude"] = int(eff["mp_regen"])
+        _append_status_dedup(state, status, key="player_statuses")
+        used_msg = f"{character['name']} uses {item['name']} — regenerating {eff['mp_regen']} MP per turn."
+    elif "resist" in eff:
+        status = make_status("warded")
+        status["magnitude"] = int(eff["resist"])
+        _append_status_dedup(state, status, key="player_statuses")
+        used_msg = f"{character['name']} uses {item['name']} — warded against harm."
+    elif "xp_buff" in eff:
+        # Out-of-combat economy buff; nothing to resolve mid-turn, but consume it
+        # rather than silently rejecting the click.
+        character["xp_buff_pct"] = int(eff["xp_buff"])
+        used_msg = f"{character['name']} uses {item['name']} — +{eff['xp_buff']}% XP gain."
+    elif "gold" in eff:
+        amount = int(eff["gold"])
+        character["gold"] = character.get("gold", 0) + amount
+        used_msg = f"{character['name']} opens {item['name']} and finds {amount} gold."
     else:
         return False
     log.append({"kind": "item", "text": used_msg, "item_id": item_id})
@@ -6762,86 +7368,27 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
 
     log: list[dict] = []
 
+    # Extracted mastery hooks. Masteries still inline below are unaffected —
+    # `hooks_for` only returns the ones that have been moved out, so extraction
+    # proceeds one mastery at a time with the golden logs verifying each step.
+    from mastery_hooks import TurnContext, hooks_for
+    from mastery.mitigation import run_incoming_pipeline as _run_incoming_pipeline
+    from mastery.skill_effects import apply_skill_effects as _apply_skill_effects
+    from mastery.outgoing import apply_outgoing_riders as _apply_outgoing_riders
+    _hooks = hooks_for(character)
+    _ctx = TurnContext(
+        character=character, state=state, monster=monster, log=log,
+        action_type=action_type, turn=turn,
+    )
+
     # racial combat mods for this turn
     r_mods = racial_combat_mods(character)
     for m in r_mods.get("log_msgs", []):
         log.append({"kind": "racial", "text": m})
 
-    # Knight: apply Oath bonuses at start of turn
-    if _is_knight(character):
-        # Oath Sworn (level 10): start combat with 2 stacks
-        if turn == 0 and character.get("level", 1) >= 10 and state.get("knight_oath") and state.get("knight_oath_stacks", 0) == 0:
-            state["knight_oath_stacks"] = 2
-            log.append({"kind": "knight_passive", "text": "OATH SWORN — starting with 2 Oath stacks!"})
-        _knight_apply_oath_bonuses(state, character)
-        # Re-apply active self stat_mods from skills (Iron Stance, Adrenal Surge, etc.)
-        for entry in state.get("knight_self_stat_mods", []):
-            for stat, val in entry.get("mods", {}).items():
-                character["stats"][stat] = character["stats"].get(stat, 0) + val
-
-    # Paladin: start-of-turn passives
-    if _is_paladin(character):
-        # Divine Shield (level 10): start every combat with warded
-        if turn == 0 and character.get("level", 1) >= 10:
-            _append_status_dedup(state, make_status("warded"), key="player_statuses")
-            log.append({"kind": "paladin_passive", "text": "DIVINE SHIELD — Warded at combat start!"})
-        # Holy Fortitude (level 20): +15% heal amp
-        if turn == 0 and character.get("level", 1) >= 20:
-            state["paladin_holy_fortitude"] = True
-        # Blessed Armor (level 30): +2 permanent armor_bonus and essence
-        if turn == 0 and character.get("level", 1) >= 30 and not state.get("paladin_blessed_armor_applied"):
-            character["stats"]["armor_bonus"] = character["stats"].get("armor_bonus", 0) + 2
-            character["stats"]["essence"] = character["stats"].get("essence", 0) + 2
-            state["paladin_blessed_armor_applied"] = True
-            log.append({"kind": "paladin_passive", "text": "BLESSED ARMOR — +2 Armor, +2 Essence (permanent)!"})
-        # Avatar of Faith (level 100): all low-HP scaling bonuses permanent
-        if turn == 0 and character.get("level", 1) >= 100:
-            state["paladin_avatar_of_faith"] = True
-            log.append({"kind": "paladin_passive", "text": "AVATAR OF FAITH — Faith bar permanently at maximum (Faith Ascendant)!"})
-        # Initialize faith scaling at combat start based on current HP
-        if turn == 0:
-            _paladin_update_scaling(state, character, log)
-        # Re-apply active self stat_mods from skills
-        for entry in state.get("paladin_self_stat_mods", []):
-            for stat, val in entry.get("mods", {}).items():
-                character["stats"][stat] = character["stats"].get(stat, 0) + val
-
-    # Priest: start-of-combat passives
-    if _is_priest(character) and turn == 0:
-        # Divine Fortitude (L30): +10 permanent essence
-        if character.get("level", 1) >= 30:
-            character["stats"]["essence"] = character["stats"].get("essence", 0) + 10
-            log.append({"kind": "priest_passive", "text": "DIVINE FORTITUDE — +10 Essence (permanent)!"})
-        # Sanctified (L10): Sanctity starts at 90% enemy HP
-        if character.get("level", 1) >= 10:
-            log.append({"kind": "priest_passive", "text": "SANCTIFIED — Sanctity activates at 90% enemy HP!"})
-        # Avatar of Faith (L100)
-        if character.get("level", 1) >= 100:
-            log.append({"kind": "priest_passive", "text": "AVATAR OF FAITH — Sanctity doubled, heals shield allies, enemy heal locked!"})
-
-    # Lancer: start-of-turn initiation and overload
-    if _is_lancer(character):
-        # Avatar of Elements (level 100): 2 overload charges
-        if turn == 0 and character.get("level", 1) >= 100:
-            state["lancer_overload_charges"] = 2
-        if turn == 0:
-            _lancer_check_initiation(state, character, log)
-            _lancer_check_overload(state, character, log)
-        # Re-apply active self stat_mods from skills
-        for entry in state.get("lancer_self_stat_mods", []):
-            for stat, val in entry.get("mods", {}).items():
-                character["stats"][stat] = character["stats"].get(stat, 0) + val
-
-    # Assassin: start-of-turn shadow initiation
-    if _is_assassin(character) and turn == 0:
-        # Shadow Born (level 10): start with 10 shadows, night: 20
-        if character.get("level", 1) >= 10:
-            start_shadows = 20 if state.get("is_night") else 10
-            _assassin_gain_shadows(state, character, log, start_shadows, "Shadow Born")
-        # Avatar of Shadow (level 100): night = 75 shadows
-        if character.get("level", 1) >= 100 and state.get("is_night"):
-            state["assassin_shadows"] = 75
-            log.append({"kind": "assassin_passive", "text": "AVATAR OF SHADOW — 75 shadows at night!"})
+    # Extracted masteries run through their hooks. See mastery_hooks.py.
+    for _h in _hooks:
+        _h.on_turn_start(_ctx)
 
     # Hunter: start-of-turn Range initialization + Spirit Touched
     if _is_hunter(character) and turn == 0:
@@ -6910,13 +7457,19 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
             for stat, val in entry.get("mods", {}).items():
                 character["stats"][stat] = character["stats"].get(stat, 0) + val
 
+    # Re-apply generic self stat_mods at the start of the turn.
+    #
+    # combat_turn resets character["stats"] to _orig_stats on the way out, so every
+    # mastery's buffs live in `state` and are re-applied here each turn. The generic
+    # path (Druid/Bard/Priest) needs the same treatment or its stat_mods vanish the
+    # moment the turn ends.
+    for entry in state.get("generic_self_stat_mods", []):
+        for stat, val in entry.get("mods", {}).items():
+            character["stats"][stat] = character["stats"].get(stat, 0) + val
+
     # Bard: performances tick at START of turn (always go first)
     if _is_bard(character) and turn > 0:
         _bard_tick_crescendo(state, character, log)
-
-    # Priest: start-of-turn effects (HoT, delayed heal, Smite, CD reduction)
-    if _is_priest(character) and turn > 0:
-        _priest_start_of_turn(state, character, log)
 
     # Alchemist: pre-combat imbue — auto-load first imbue skill from skill bar
     if _is_alchemist(character) and turn == 0 and not state.get("alchemist_imbue"):
@@ -6924,14 +7477,14 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
         if pre_imbue_id and pre_imbue_id in SKILLS_BY_ID:
             pre_sk = SKILLS_BY_ID[pre_imbue_id]
             if pre_sk.get("power_type") == "imbue":
-                _alch_load_imbue(state, pre_sk, log)
+                _alch_load_imbue(state, pre_sk, log, character)
         else:
             # Auto-load first imbue skill in skill bar
             for sid in (character.get("skill_bar") or []):
                 if sid and sid in SKILLS_BY_ID:
                     sk_check = SKILLS_BY_ID[sid]
                     if sk_check.get("power_type") == "imbue":
-                        _alch_load_imbue(state, sk_check, log)
+                        _alch_load_imbue(state, sk_check, log, character)
                         break
 
     # -------- player turn --------
@@ -7006,20 +7559,18 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
     # But strike/debuff skills are skipped if the innate action doesn't attack
     skill_id = manual_skill_id or _pick_next_skill(character, state, hp_ratio, enemy_hp_ratio, turn)
 
-    # Cooldown check for manually selected skills
+    # Manual picks go through the same gate as the auto-picker.
+    #
+    # Previously only cooldown and weapon_req were re-checked here, so a manually
+    # selected skill bypassed **skill capacity and trigger conditions entirely**.
+    # See skill_unusable_reason() for what that allowed.
     if skill_id and manual_skill_id:
-        _cd = state["skill_cooldowns"].get(skill_id, 0)
-        if _cd > 0:
-            log.append({"kind": "skill_cd", "text": f"{SKILLS_BY_ID.get(skill_id, {}).get('name', skill_id)} is on cooldown ({_cd} turn(s) left). Basic attack instead."})
-            skill_id = None
-
-    # Weapon requirement check: if skill has a weapon_req, validate equipped weapon
-    if skill_id:
-        _sk_extra = SKILL_EXTRAS.get(skill_id, {})
-        _w_req = _sk_extra.get("weapon_req", "none")
-        if _w_req and _w_req != "none" and not _check_weapon_req(character, _w_req):
-            if manual_skill_id:
-                log.append({"kind": "weapon_req", "text": f"Skill requires {_w_req} — none equipped! Falling back to basic attack."})
+        reason = skill_unusable_reason(skill_id, character, state,
+                                      hp_ratio, enemy_hp_ratio, turn)
+        if reason:
+            name = SKILLS_BY_ID.get(skill_id, {}).get("name", skill_id)
+            log.append({"kind": "skill_blocked",
+                        "text": f"{name} — {reason}. Basic attack instead."})
             skill_id = None
 
     # If non-attacking action and auto-picked a strike skill, skip it
@@ -7054,7 +7605,7 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
             if _sa > 0:
                 player_acc += _sa
             m_stats = state.get("monster_stats", {})
-            monster_evas = m_stats.get("grace", state["monster_power"])
+            monster_evas = m_stats.get("grace", state["monster_threat"])
             if state.get("monster_enraged"):
                 monster_evas = int(monster_evas * 1.2)
 
@@ -7086,11 +7637,11 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
             outcome = max(1, outcome - 1)
             log.append({"kind": "weary", "text": f"Weary — outcome reduced to {outcome}!"})
 
-        # Lancer: Critical Imbue (level 40) — +10% crit chance while any imbue active
-        if _is_lancer(character) and character.get("level", 1) >= 40 and outcome < 5:
-            if state.get("lancer_active_imbues") and random.random() < 0.10:
-                outcome = 5
-                log.append({"kind": "lancer_passive", "text": "Critical Imbue — elemental focus grants a critical hit!"})
+        # Extracted masteries may upgrade the roll (e.g. Lancer Critical Imbue).
+        _ctx.outcome = outcome
+        for _h in _hooks:
+            _h.on_action_selected(_ctx)
+        outcome = _ctx.outcome
 
         # Focus bonus: +1 outcome (max 6)
         if state.get("focused"):
@@ -7134,11 +7685,11 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
         sk = SKILLS_BY_ID[skill_id]
         damage_type = sk.get("damage_type", "physical")
         if sk.get("power_type") == "strike":
-            skill_dmg = sk.get("power", 0)
+            skill_dmg = sk.get("damage", 0)
             skill_used_msg = f"{character['name']} unleashes {sk['name']}!"
         elif sk.get("power_type") == "heal":
             if not _is_priest(character):
-                heal = compute_healing(character, int(sk.get("power", 0) * r_mods["heal_mult"] * _continental_heal_mult(character)))
+                heal = compute_healing(character, int(sk.get("damage", 0) * r_mods["heal_mult"] * _continental_heal_mult(character)))
                 # Blessed status: +10% healing received
                 if _has_player_status(character, state, "blessed"):
                     heal = int(heal * 1.10)
@@ -7172,13 +7723,13 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
             else:
                 skill_used_msg = f"{character['name']} raises {sk['name']}."
         elif sk.get("power_type") == "debuff":
-            skill_dmg = sk.get("power", 0)
+            skill_dmg = sk.get("damage", 0)
             skill_used_msg = f"{character['name']} uses {sk['name']}."
         elif sk.get("power_type") == "trap":
-            skill_dmg = sk.get("power", 0)
+            skill_dmg = sk.get("damage", 0)
             skill_used_msg = f"{character['name']} throws {sk['name']}!"
         elif sk.get("power_type") == "spirit":
-            skill_dmg = sk.get("power", 0)
+            skill_dmg = sk.get("damage", 0)
             skill_used_msg = f"{character['name']} channels {sk['name']}!"
         elif sk.get("power_type") == "buff":
             if not _is_priest(character):
@@ -7195,7 +7746,7 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
                     log.append({"kind": "alchemist_imbue", "text": "The katar is cracked — cannot be imbued this turn!"})
                     skill_used_msg = f"The katar cracks — no imbue possible."
                 else:
-                    _alch_load_imbue(state, sk, log)
+                    _alch_load_imbue(state, sk, log, character)
                     # Free re-imbue doesn't cost the turn
                     if state.get("alchemist_free_reimbue", False):
                         state["alchemist_free_reimbue"] = False
@@ -7208,19 +7759,14 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
 
         # Alchemist: apply self stat_mods from cast skills
         if sk.get("stat_mod", {}).get("self") and _is_alchemist(character):
-            self_mods = sk["stat_mod"]["self"]
-            mod_dur = sk.get("mod_duration", 3)
-            state.setdefault("alchemist_self_stat_mods", []).append({"mods": self_mods, "duration": mod_dur})
-            # Apply immediately to character stats
-            for stat, val in self_mods.items():
-                character["stats"][stat] = character["stats"].get(stat, 0) + val
-            log.append({"kind": "alchemist_stat_mod", "text": f"Transmutation: {', '.join(f'{k} {v:+d}' for k,v in self_mods.items())} for {mod_dur} turns."})
+            apply_self_stat_mods(state, character, sk["stat_mod"]["self"],
+                                 sk.get("mod_duration", 3), "alchemist_self_stat_mods",
+                                 log, "alchemist_stat_mod", "Transmutation: ")
 
         # Alchemist: apply enemy stat_mods from cast skills (debuffs like Spike Field)
         if sk.get("stat_mod", {}).get("enemy") and _is_alchemist(character):
-            enemy_mods = sk["stat_mod"]["enemy"]
-            mod_dur = sk.get("mod_duration", 3)
-            state.setdefault("alchemist_enemy_stat_mods", []).append({"mods": enemy_mods, "duration": mod_dur})
+            apply_enemy_stat_mods(state, sk["stat_mod"]["enemy"],
+                                  sk.get("mod_duration", 3), "alchemist_enemy_stat_mods")
 
         # Paladin: apply self stat_mods from buff/defend/heal skills
         if sk.get("stat_mod", {}).get("self") and _is_paladin(character):
@@ -7238,9 +7784,8 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
 
         # Paladin: apply enemy stat_mods from strike/debuff skills
         if sk.get("stat_mod", {}).get("enemy") and _is_paladin(character):
-            enemy_mods = sk["stat_mod"]["enemy"]
-            mod_dur = sk.get("mod_duration", 3)
-            state.setdefault("paladin_enemy_stat_mods", []).append({"mods": enemy_mods, "duration": mod_dur})
+            apply_enemy_stat_mods(state, sk["stat_mod"]["enemy"],
+                                  sk.get("mod_duration", 3), "paladin_enemy_stat_mods")
 
         # Paladin: holy bonus on legendary strikes
         if sk.get("holy_bonus") and _is_paladin(character):
@@ -7248,12 +7793,9 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
 
         # Knight: apply self stat_mods from buff/defend skills
         if sk.get("stat_mod", {}).get("self") and _is_knight(character):
-            self_mods = dict(sk["stat_mod"]["self"])
-            mod_dur = sk.get("mod_duration", 3)
-            state.setdefault("knight_self_stat_mods", []).append({"mods": self_mods, "duration": mod_dur})
-            for stat, val in self_mods.items():
-                character["stats"][stat] = character["stats"].get(stat, 0) + val
-            log.append({"kind": "knight_stat_mod", "text": f"Oath: {', '.join(f'{k} {v:+d}' for k,v in self_mods.items())} for {mod_dur} turns."})
+            apply_self_stat_mods(state, character, sk["stat_mod"]["self"],
+                                 sk.get("mod_duration", 3), "knight_self_stat_mods",
+                                 log, "knight_stat_mod", "Oath: ")
 
         # Knight: apply enemy stat_mods from strike/debuff skills
         if sk.get("stat_mod", {}).get("enemy") and _is_knight(character):
@@ -7273,339 +7815,22 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
         if sk.get("trigger") == "opening_move" and _is_knight(character):
             _knight_gain_stack(state, character, log, "strike_first")
 
-        # Lancer: apply elemental imbue when casting buff with element field
-        if sk.get("element") and _is_lancer(character) and sk.get("power_type") == "buff":
-            _lancer_apply_imbue(state, character, sk, log)
-
-        # Lancer: apply self stat_mods from non-imbue buff/defend skills
-        if sk.get("stat_mod", {}).get("self") and _is_lancer(character) and not sk.get("element"):
-            self_mods = dict(sk["stat_mod"]["self"])
-            mod_dur = sk.get("mod_duration", 3)
-            state.setdefault("lancer_self_stat_mods", []).append({"mods": self_mods, "duration": mod_dur})
-            for stat, val in self_mods.items():
-                character["stats"][stat] = character["stats"].get(stat, 0) + val
-            log.append({"kind": "lancer_stat_mod", "text": f"Focus: {', '.join(f'{k} {v:+d}' for k,v in self_mods.items())} for {mod_dur} turns."})
-
-        # Lancer: apply enemy stat_mods from strike/debuff skills
-        if sk.get("stat_mod", {}).get("enemy") and _is_lancer(character):
-            enemy_mods = sk["stat_mod"]["enemy"]
-            mod_dur = sk.get("mod_duration", 3)
-            state.setdefault("lancer_enemy_stat_mods", []).append({"mods": enemy_mods, "duration": mod_dur})
-            m_stats = state.get("monster_stats", {})
-            for stat, val in enemy_mods.items():
-                m_stats[stat] = m_stats.get(stat, 0) + val
-            log.append({"kind": "lancer_stat_mod", "text": f"Elemental: {', '.join(f'{k} {v:+d}' for k,v in enemy_mods.items())} to enemy for {mod_dur} turns."})
+        # Extracted masteries apply their skill-effect riders here.
+        _ctx.skill = sk
+        for _h in _hooks:
+            if hasattr(_h, "on_skill_used"):
+                _h.on_skill_used(_ctx)
 
         # Assassin: apply self stat_mods from buff skills
-        if sk.get("stat_mod", {}).get("self") and _is_assassin(character):
-            self_mods = dict(sk["stat_mod"]["self"])
-            mod_dur = sk.get("mod_duration", 3)
-            state.setdefault("assassin_self_stat_mods", []).append({"mods": self_mods, "duration": mod_dur})
-            for stat, val in self_mods.items():
-                character["stats"][stat] = character["stats"].get(stat, 0) + val
-            log.append({"kind": "assassin_stat_mod", "text": f"Shadow: {', '.join(f'{k} {v:+d}' for k,v in self_mods.items())} for {mod_dur} turns."})
-
-        # Assassin: apply enemy stat_mods from strike/debuff skills
-        if sk.get("stat_mod", {}).get("enemy") and _is_assassin(character):
-            enemy_mods = sk["stat_mod"]["enemy"]
-            mod_dur = sk.get("mod_duration", 3)
-            state.setdefault("assassin_enemy_stat_mods", []).append({"mods": enemy_mods, "duration": mod_dur})
-
-        # Mage: apply self stat_mods from buff/defend skills
-        if sk.get("stat_mod", {}).get("self") and _is_mage(character):
-            self_mods = dict(sk["stat_mod"]["self"])
-            mod_dur = sk.get("mod_duration", 3)
-            state.setdefault("mage_self_stat_mods", []).append({"mods": self_mods, "duration": mod_dur})
-            for stat, val in self_mods.items():
-                character["stats"][stat] = character["stats"].get(stat, 0) + val
-            log.append({"kind": "mage_stat_mod", "text": f"Arcane: {', '.join(f'{k} {v:+d}' for k,v in self_mods.items())} for {mod_dur} turns."})
-
-        # Mage: apply enemy stat_mods from strike/debuff skills
-        if sk.get("stat_mod", {}).get("enemy") and _is_mage(character):
-            enemy_mods = sk["stat_mod"]["enemy"]
-            mod_dur = sk.get("mod_duration", 3)
-            # Time Dilation passive: debuffs last +1 turn
-            mod_dur += _mage_get_debuff_duration_modifier(character)
-            state.setdefault("mage_enemy_stat_mods", []).append({"mods": enemy_mods, "duration": mod_dur})
-            m_stats = state.get("monster_stats", {})
-            for stat, val in enemy_mods.items():
-                m_stats[stat] = m_stats.get(stat, 0) + val
-            log.append({"kind": "mage_stat_mod", "text": f"Spell: {', '.join(f'{k} {v:+d}' for k,v in enemy_mods.items())} to enemy for {mod_dur} turns."})
-
-        # Mage: Arcane Library passive — status override
-        if _is_mage(character) and sk.get("status_apply"):
-            override_status = _mage_get_status_override(character, sk)
-            if override_status:
-                sk["status_apply"] = override_status
-                log.append({"kind": "mage_passive", "text": f"Status transformed: {override_status}!"})
-            # Extra status from Thunderblood
-            extra_status = _mage_get_extra_status(character, sk)
-            if extra_status:
-                _append_status_dedup(state, make_status(extra_status), key="monster_statuses")
-                log.append({"kind": "mage_passive", "text": f"Thunderblood — also applies {extra_status}!"})
-
-        # Mage: Arcane Library passive — Phobia Implant (first debuff stuns)
-        if _is_mage(character):
-            _mage_check_phobia_implant(state, character, sk, log)
-
-        # Mage: Arcane Library passive — cooldown reduction
-        if _is_mage(character):
-            cd_reduction = _mage_get_cooldown_modifier(character)
-            if cd_reduction > 0:
-                # Apply cooldown reduction after skill use
-                skill_id = sk.get("id", "")
-                current_cd = state.get("cooldowns", {}).get(skill_id, 0)
-                if current_cd > 0:
-                    state["cooldowns"][skill_id] = max(0, current_cd - cd_reduction)
-
-        # Mage: Accelerated Casting — cooldown 5+ becomes 4
-        if _is_mage(character) and _mage_has_passive(character, "accelerated_casting"):
-            skill_id = sk.get("id", "")
-            if sk.get("cooldown", 0) >= 5:
-                current_cd = state.get("cooldowns", {}).get(skill_id, 0)
-                if current_cd > 4:
-                    state["cooldowns"][skill_id] = 4
-
-        # Mage: Mana Vampire — restore MP equal to 10% of damage dealt
-        if _is_mage(character) and _mage_has_passive(character, "mana_vampire") and sk.get("power_type") == "strike":
-            # MP restoration handled after damage calculation in _execute_strike
-            state["mage_mana_vampire_active"] = True
-
-        # Priest: process skill (Sanctity scaling, Miracle, Shield Wall, etc.)
-        if _is_priest(character) and sk.get("type") == "priest":
-            _priest_process_skill(state, character, sk, log)
-            # Divine Wrath (L80): cooldown reduction when enemy <= 25% HP
-            priest_cd_red = _priest_get_cooldown_reduction(state, character)
-            if priest_cd_red > 0:
-                priest_sid = sk.get("id", "")
-                current_cd = state.get("skill_cooldowns", {}).get(priest_sid, 0)
-                if current_cd > 0:
-                    state["skill_cooldowns"][priest_sid] = max(0, current_cd - priest_cd_red)
-                    log.append({"kind": "priest_divine_wrath", "text": "Divine Wrath — cooldown reduced!"})
-
-        # Assassin: stealth break — attacking from hidden generates shadows
-        if _is_assassin(character) and sk.get("power_type") == "strike":
-            was_hidden = any(s.get("name") == "hidden" for s in state.get("player_statuses", []))
-            if was_hidden:
-                # Remove hidden status
-                state["player_statuses"] = [s for s in state.get("player_statuses", []) if s.get("name") != "hidden"]
-                # Stealth break: +15 shadows (or +20 for Shadow Clone, +30 for Umbral Cloak at night)
-                break_shadows = 15
-                if sk.get("id") == "shadow_clone":
-                    break_shadows = 20
-                if sk.get("id") == "umbral_cloak" and state.get("is_night"):
-                    break_shadows = 30
-                _assassin_gain_shadows(state, character, log, break_shadows, "stealth break")
-                # Guaranteed crit from stealth break
-                outcome = max(5, outcome)
-                log.append({"kind": "assassin_stealth_break", "text": "Stealth breaks — guaranteed critical hit!"})
-                # Avatar of Shadow (level 100): 75% evasion for 1 turn after stealth break
-                if character.get("level", 1) >= 100:
-                    state["assassin_shadow_linger"] = 1
-                    log.append({"kind": "assassin_passive", "text": "Shadow lingers — 75% evasion for 1 turn!"})
-
-        # Assassin: deposit fear on strike/debuff skills
-        if _is_assassin(character) and sk.get("power_type") in ("strike", "debuff"):
-            _assassin_deposit_fear(state, character, monster, log, amount=5)
-
-        # Assassin: Shadow Convergence skill surges shadows +25
-        if sk.get("id") == "shadow_convergence" and _is_assassin(character):
-            _assassin_gain_shadows(state, character, log, 25, "Shadow Convergence")
-
-        # Assassin: Eclipse Blade — while active, strikes generate +2 shadows
-        if sk.get("id") == "eclipse_blade" and _is_assassin(character):
-            state["assassin_eclipse_blade_active"] = True
-
-        # Assassin: night_veil — Night: duration extended by +1 turn
-        if sk.get("id") == "night_veil" and _is_assassin(character) and state.get("is_night"):
-            for s in state.get("player_statuses", []):
-                if s.get("name") == "hidden":
-                    s["duration"] = s.get("duration", 2) + 1
-                    break
-            log.append({"kind": "assassin_passive", "text": "Night Veil — night extends stealth duration by 1 turn!"})
-
-        # Assassin: umbral_cloak — Night: stealth duration +2 turns
-        if sk.get("id") == "umbral_cloak" and _is_assassin(character) and state.get("is_night"):
-            for s in state.get("player_statuses", []):
-                if s.get("name") == "hidden":
-                    s["duration"] = s.get("duration", 2) + 2
-                    break
-            log.append({"kind": "assassin_passive", "text": "Umbral Cloak — night extends stealth duration by 2 turns!"})
-
-        # Assassin: shadow_devour — reclaim ALL deposited shadows and convert to bonus damage
-        if sk.get("id") == "shadow_devour" and _is_assassin(character):
-            deposited = state.get("assassin_deposited_shadows", 0)
-            if deposited > 0:
-                bonus_dmg = deposited * 2  # 2 damage per deposited shadow
-                state["assassin_deposited_shadows"] = 0
-                _assassin_gain_shadows(state, character, log, deposited, "Shadow Devour reclaim")
-                log.append({"kind": "assassin_devour", "text": f"Shadow Devour reclaims {deposited} fear — +{bonus_dmg} bonus damage!"})
-
-        # Assassin: reapers_arrival — deposit ALL remaining shadows as fear; night auto-BURST at 75+
-        if sk.get("id") == "reapers_arrival" and _is_assassin(character):
-            all_shadows = state.get("assassin_shadows", 0)
-            if all_shadows > 0:
-                _assassin_deposit_fear(state, character, monster, log, amount=all_shadows)
-                state["assassin_shadows"] = 0
-                log.append({"kind": "assassin_devour", "text": f"Reaper's Arrival — all {all_shadows} shadows deposited as fear!"})
-            # Night: auto-BURST if shadows were at 75+ (before deposit)
-            if state.get("is_night") and all_shadows >= 75:
-                state["assassin_shadows"] = _assassin_get_burst_threshold(character)
-                state["assassin_burst_ready"] = True
-                log.append({"kind": "assassin_passive", "text": "Reaper's Arrival — night auto-triggers BURST!"})
-
-        # Assassin: eclipse_of_shadows — auto-BURST regardless of shadow count; retain 25 after
-        if sk.get("id") == "eclipse_of_shadows" and _is_assassin(character):
-            threshold = _assassin_get_burst_threshold(character)
-            state["assassin_shadows"] = threshold
-            state["assassin_burst_ready"] = True
-            state["assassin_burst_used"] = False  # allow BURST to fire
-            log.append({"kind": "assassin_passive", "text": "Eclipse of Shadows — BURST is unleashed regardless of shadow count!"})
-
-        # Hunter: apply self stat_mods from buff skills
-        if sk.get("stat_mod", {}).get("self") and _is_hunter(character):
-            self_mods = dict(sk["stat_mod"]["self"])
-            mod_dur = sk.get("mod_duration", 3)
-            state.setdefault("hunter_self_stat_mods", []).append({"mods": self_mods, "duration": mod_dur})
-            for stat, val in self_mods.items():
-                character["stats"][stat] = character["stats"].get(stat, 0) + val
-            log.append({"kind": "hunter_stat_mod", "text": f"Hunter: {', '.join(f'{k} {v:+d}' for k,v in self_mods.items())} for {mod_dur} turns."})
-
-        # Hunter: apply enemy stat_mods from strike/debuff/trap skills
-        if sk.get("stat_mod", {}).get("enemy") and _is_hunter(character):
-            enemy_mods = sk["stat_mod"]["enemy"]
-            mod_dur = sk.get("mod_duration", 3)
-            state.setdefault("hunter_enemy_stat_mods", []).append({"mods": enemy_mods, "duration": mod_dur})
-
-        # Rogue: apply self stat_mods from buff/defend skills
-        if sk.get("stat_mod", {}).get("self") and _is_rogue(character):
-            self_mods = dict(sk["stat_mod"]["self"])
-            mod_dur = sk.get("mod_duration", 3)
-            state.setdefault("rogue_self_stat_mods", []).append({"mods": self_mods, "duration": mod_dur})
-            for stat, val in self_mods.items():
-                character["stats"][stat] = character["stats"].get(stat, 0) + val
-            log.append({"kind": "rogue_stat_mod", "text": f"Rogue: {', '.join(f'{k} {v:+d}' for k,v in self_mods.items())} for {mod_dur} turns."})
-
-        # Rogue: apply enemy stat_mods from strike/debuff skills
-        if sk.get("stat_mod", {}).get("enemy") and _is_rogue(character):
-            enemy_mods = sk["stat_mod"]["enemy"]
-            mod_dur = sk.get("mod_duration", 3)
-            # Con Artist: extend debuff stat_mod duration
-            con_bonus = _rogue_get_con_artist_bonus(state)
-            mod_dur += con_bonus
-            state.setdefault("rogue_enemy_stat_mods", []).append({"mods": enemy_mods, "duration": mod_dur})
-            # Apply immediately to monster stats
-            m_stats = state.setdefault("monster_stats", {})
-            for stat, val in enemy_mods.items():
-                m_stats[stat] = m_stats.get(stat, 0) + val
-
-        # Bard: process performance skills
-        if sk.get("power_type") == "performance" and _is_bard(character):
-            _bard_process_performance(state, character, sk, log)
-            skill_used_msg = f"{character['name']} performs {sk['name']}!"
-
-        # Bard: apply all_allies stat_mods from buff/defend/heal skills
-        if sk.get("stat_mod", {}).get("all_allies") and _is_bard(character):
-            _bard_apply_all_allies_stat_mod(character, sk["stat_mod"], log)
-            allies_mods = sk["stat_mod"]["all_allies"]
-            mod_dur = sk.get("mod_duration", 3)
-            state.setdefault("bard_ally_stat_mods", []).append({"mods": allies_mods, "duration": mod_dur})
-            for stat, val in allies_mods.items():
-                character["stats"][stat] = character["stats"].get(stat, 0) + val
-
-        # Bard: apply enemy stat_mods from strike/debuff skills
-        if sk.get("stat_mod", {}).get("enemy") and _is_bard(character):
-            enemy_mods = sk["stat_mod"]["enemy"]
-            mod_dur = sk.get("mod_duration", 3)
-            state.setdefault("bard_enemy_stat_mods", []).append({"mods": enemy_mods, "duration": mod_dur})
-            m_stats = state.setdefault("monster_stats", {})
-            for stat, val in enemy_mods.items():
-                m_stats[stat] = m_stats.get(stat, 0) + val
-
-        # Bard: heal_percent on non-performance skills (buff/defend/heal)
-        if sk.get("heal_percent") and _is_bard(character) and sk.get("power_type") != "performance":
-            heal_amt = int(character.get("max_hp", 100) * sk["heal_percent"])
-            character["hp"] = min(character.get("max_hp", 999), character["hp"] + heal_amt)
-            log.append({"kind": "bard_heal", "text": f"The performance heals {heal_amt} HP!"})
-
-        # Bard: defend skills apply self_status
-        if sk.get("power_type") == "defend" and _is_bard(character) and sk.get("self_status"):
-            _append_status_dedup(character, make_status(sk["self_status"]))
-
-        # Bard: buff skills apply self_status
-        if sk.get("power_type") == "buff" and _is_bard(character) and sk.get("self_status"):
-            _append_status_dedup(character, make_status(sk["self_status"]))
-
-        # Bard: heal skills apply self_status
-        if sk.get("power_type") == "heal" and _is_bard(character) and sk.get("self_status"):
-            _append_status_dedup(character, make_status(sk["self_status"]))
-
-        # Bard: sunrise_chorus — cleanse debuffs on self_debuff trigger
-        if sk.get("id") == "sunrise_chorus" and _is_bard(character):
-            cleansed = []
-            for s in list(character.get("statuses", [])):
-                if s.get("kind") == "debuff":
-                    cleansed.append(s.get("name", s.get("id", "unknown")))
-                    character["statuses"].remove(s)
-            if cleansed:
-                log.append({"kind": "bard_cleanse", "text": f"Sunrise Chorus cleanses: {', '.join(cleansed)}!"})
-
-        # Hunter: apply Range modifiers
-        if _is_hunter(character) and sk.get("range_modifier", 0) > 0:
-            _hunter_apply_range_modifier(state, character, sk, log)
-
-        # Hunter: check ambush on first strike from stealth
-        if _is_hunter(character) and sk.get("power_type") == "strike":
-            _hunter_check_ambush(state, character, log)
-
-        # Hunter: Trap Master (level 40) — traps affect all enemies (+50% damage in 1v1)
-        if _is_hunter(character) and sk.get("power_type") == "trap" and character.get("level", 1) >= 40:
-            # Trap Master communion: +1 Spirit Guidance per enemy hit
-            if state.get("hunter_spirit_communion"):
-                _hunter_gain_guidance(state, character, log, 1)
-                log.append({"kind": "hunter_trap_master", "text": "Trap Master — +1 Spirit Guidance from trap!"})
-
-        # Rogue: on strike — apply Trap Master and Dirty Fighter innates
-        if _is_rogue(character) and sk.get("power_type") == "strike":
-            _rogue_on_strike(state, character, log)
-
-        # Hunter: Eagle Eye / Hawk Vision — set guaranteed crits
-        if sk.get("id") in ("eagle_eye", "hawk_vision") and _is_hunter(character):
-            crits = 3
-            if state.get("hunter_spirit_communion"):
-                crits = 3  # already 3 from communion
-            state["hunter_guaranteed_crits"] = max(state.get("hunter_guaranteed_crits", 0), crits)
-            log.append({"kind": "hunter_passive", "text": f"Next {crits} hits are guaranteed crits!"})
-
-        # Hunter: Alpha Command — spirit bow charges
-        if sk.get("id") == "alpha_command" and _is_hunter(character):
-            state["hunter_spirit_bow_charges"] = 3
-            log.append({"kind": "hunter_passive", "text": "Spirit Bow — next 3 strikes deal true damage!"})
-
-        # Hunter: Ghost Step (level 60) communion — Spirit Walk grants intangible 2 turns without communion
-        if sk.get("id") == "spirit_walk" and _is_hunter(character) and character.get("level", 1) >= 60:
-            if not state.get("hunter_spirit_communion"):
-                state["hunter_intangible_turns"] = max(state.get("hunter_intangible_turns", 0), 2)
-                log.append({"kind": "hunter_ghost_step", "text": "Ghost Step — Spirit Walk grants intangibility for 2 turns!"})
-
-        # Hunter: heal skills
-        if sk.get("heal_percent") and _is_hunter(character) and sk.get("power_type") in ("heal", "defend"):
-            heal_amt = int(character.get("max_hp", 100) * sk["heal_percent"])
-            character["hp"] = min(character.get("max_hp", 999), character["hp"] + heal_amt)
-            log.append({"kind": "hunter_heal", "text": f"Nature heals — {heal_amt} HP recovered."})
-
-        # Alchemist: legendary rules
-        if sk.get("legendary_rule") and _is_alchemist(character):
-            lr = sk["legendary_rule"]
-            if lr == "infinite_charges_max_mini_rules":
-                state["alchemist_infinite_charges"] = sk.get("mod_duration", 4)
-                state["alchemist_max_mini_rules"] = True
-                # Re-imbue current imbue with infinite charges if one is loaded
-                if state.get("alchemist_imbue"):
-                    state["alchemist_imbue_charges"] = 999
-                log.append({"kind": "alchemist_legendary", "text": "PHILOSOPHER'S TRANSMUTATION — infinite imbue charges, all mini-rules at max effect!"})
-            elif lr == "auto_adapt_katar":
-                log.append({"kind": "alchemist_legendary", "text": "LEGEND OF ALCHEMY — the katar reads the enemy and adapts. 8 hits of true damage unleashed!"})
+        # Mastery skill-effect application (353 lines, 45 guards) moved verbatim to
+        # mastery/skill_effects.py. Order is observable — several steps consume RNG
+        # and read state an earlier step wrote — so the run was moved intact.
+        _ctx.skill = sk
+        _ctx.outcome = outcome
+        _ctx.skill_used_msg = skill_used_msg
+        _apply_skill_effects(_ctx)
+        outcome = _ctx.outcome
+        skill_used_msg = _ctx.skill_used_msg
 
         # Assassin: Avatar of Shadow (level 100) — stealth skill cooldowns reduced by 50%
         _cd = sk.get("cooldown", 2)
@@ -7750,7 +7975,7 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
                 _alch_apply_imbue_rider(state, character, monster, log, hit_count=1)
 
             # Gain Combo Flow
-            _alch_gain_cf(state, alch_sk, log)
+            _alch_gain_cf(state, alch_sk, log, character)
 
             # Apply self_status and heal_percent on strike skills (e.g. Legend of Alchemy)
             if alch_sk.get("self_status"):
@@ -7772,200 +7997,14 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
                 log.append({"kind": "paladin_holy", "text": f"Holy power burns the unholy! +50% damage vs {monster['name']}!"})
             state["paladin_holy_bonus_active"] = False
 
-        # Paladin: Divine Retribution (level 50) — x1.5 on ALL strikes vs undead/devils
-        if _is_paladin(character) and character.get("level", 1) >= 50 and total_dmg > 0:
-            monster_category = _monster_category(monster)
-            monster_tags = monster.get("tags", [])
-            if monster_category in ("undead", "devil") or "undead" in monster_tags or "devil" in monster_tags:
-                if not state.get("paladin_holy_bonus_active"):
-                    total_dmg = int(total_dmg * 1.5)
-                    log.append({"kind": "paladin_holy", "text": f"DIVINE RETRIBUTION — +50% damage vs {monster['name']}!"})
-
-        # Priest: Sanctity scaling + holy damage bonus on strikes
-        if _is_priest(character) and total_dmg > 0 and sk and sk.get("power_type") == "strike":
-            sanctity = _priest_get_sanctity_mult(state, character)
-            holy_mult = _priest_get_holy_bonus_mult(state, character, monster)
-            judgment_mult = _priest_get_strike_damage_mult(state, character)
-            total_mult = sanctity * holy_mult * judgment_mult
-            if total_mult > 1.0:
-                old_dmg = total_dmg
-                total_dmg = int(total_dmg * total_mult)
-                bonus = total_dmg - old_dmg
-                if bonus > 0:
-                    parts = []
-                    if sanctity > 1.0:
-                        parts.append(f"Sanctity x{sanctity:.2f}")
-                    if holy_mult > 1.0:
-                        parts.append(f"Holy x{holy_mult:.2f}")
-                    if judgment_mult > 1.0:
-                        parts.append(f"Judgment x{judgment_mult:.2f}")
-                    log.append({"kind": "priest_strike_bonus", "text": f"{' + '.join(parts)} — +{bonus} damage!"})
-
-        # Knight: Oath milestone strike damage bonus (Oath of Wrath 5-stack: +20%)
-        if _is_knight(character) and total_dmg > 0:
-            knight_mods = _knight_check_milestones(state, character, monster, log)
-            if knight_mods.get("strike_damage_mult"):
-                total_dmg = int(total_dmg * knight_mods["strike_damage_mult"])
-                log.append({"kind": "knight_oath", "text": f"Oath of Wrath empowers the strike — +{int((knight_mods['strike_damage_mult']-1)*100)}% damage!"})
-            # Oath of Wrath: gain stack when dealing damage (2 stacks on roll 5+)
-            if state.get("knight_oath") == "wrath" and total_dmg > 0:
-                _knight_gain_stack(state, character, log, "deal_damage")
-                if outcome >= 5:
-                    _knight_gain_stack(state, character, log, "deal_damage")
-            # Oath of Vanguard: gain stack when striking before enemy acts
-            if state.get("knight_oath") == "vanguard" and turn == 0:
-                _knight_gain_stack(state, character, log, "strike_first")
-            # Oath of Wrath 10-stack: all strikes apply bleeding
-            if knight_mods.get("strikes_bleed") and outcome >= 3:
-                _append_status_dedup(state, make_status("bleeding"), key="monster_statuses")
-                log.append({"kind": "knight_oath", "text": "Oath of Wrath — the hammer draws blood!"})
-
-        # Lancer: elemental strike riders — damage multiplier and status application
-        if _is_lancer(character) and total_dmg > 0:
-            riders = _lancer_get_strike_riders(state, character)
-            if riders.get("damage_mult", 1.0) > 1.0:
-                old_dmg = total_dmg
-                total_dmg = int(total_dmg * riders["damage_mult"])
-                bonus = total_dmg - old_dmg
-                if bonus > 0:
-                    elem_count = _lancer_get_element_count(state)
-                    log.append({"kind": "lancer_rider", "text": f"Elemental riders — +{bonus} damage ({elem_count} elements active)!"})
-            # Apply elemental statuses from active imbues
-            for status in riders.get("statuses", []):
-                if outcome >= 3:
-                    _append_status_dedup(state, make_status(status), key="monster_statuses")
-            if riders.get("statuses"):
-                log.append({"kind": "lancer_rider", "text": f"Elemental effects: {', '.join(riders['statuses'])}!"})
-
-        # Mage: Arcane Library passive damage modifiers
-        if _is_mage(character) and total_dmg > 0:
-            total_dmg = _mage_apply_passive_modifiers(state, character, sk, total_dmg, log)
-            # Mana Vampire: restore MP equal to 10% of damage dealt
-            if state.get("mage_mana_vampire_active"):
-                mp_restore = int(total_dmg * 0.10)
-                if mp_restore > 0:
-                    character["mp"] = min(character.get("max_mp", 0), character.get("mp", 0) + mp_restore)
-                    log.append({"kind": "mage_passive", "text": f"Mana Vampire — restored {mp_restore} MP!"})
-                state["mage_mana_vampire_active"] = False
-
-        # Assassin: shadow threshold damage bonuses and BURST
-        if _is_assassin(character) and total_dmg > 0:
-            # eclipse_burst: force BURST if at threshold, otherwise bonus damage proportional to shadows
-            if sk.get("id") == "eclipse_burst":
-                burst_mods = _assassin_check_burst(state, character, log)
-                if burst_mods.get("burst_mult"):
-                    total_dmg = int(total_dmg * burst_mods["burst_mult"])
-                    if burst_mods.get("guaranteed_crit"):
-                        outcome = max(5, outcome)
-                    log.append({"kind": "assassin_burst", "text": f"ECLIPSE BURST — {burst_mods['burst_mult']}x damage! Shadows consumed!"})
-                else:
-                    # Bonus damage proportional to current shadow count
-                    shadows = state.get("assassin_shadows", 0)
-                    if character.get("level", 1) >= 100 and shadows < 50:
-                        shadows = 50
-                    shadow_bonus = int(total_dmg * (shadows / 100.0))
-                    total_dmg += shadow_bonus
-                    total_dmg, outcome = _assassin_apply_threshold_bonuses(state, character, total_dmg, outcome)
-                    log.append({"kind": "assassin_burst", "text": f"Eclipse Burst — +{shadow_bonus} shadow damage ({shadows} shadows)!"})
-            else:
-                # Check for BURST
-                burst_mods = _assassin_check_burst(state, character, log)
-                if burst_mods.get("burst_mult"):
-                    total_dmg = int(total_dmg * burst_mods["burst_mult"])
-                    if burst_mods.get("guaranteed_crit"):
-                        outcome = max(5, outcome)
-                    log.append({"kind": "assassin_burst", "text": f"BURST strikes — {burst_mods['burst_mult']}x damage!"})
-                else:
-                    # Apply shadow threshold bonuses
-                    total_dmg, outcome = _assassin_apply_threshold_bonuses(state, character, total_dmg, outcome)
-
-            # Shadow Convergence (level 80): 75+ shadows = all strikes apply shaken
-            shadows = state.get("assassin_shadows", 0)
-            if character.get("level", 1) >= 100 and shadows < 50:
-                shadows = 50
-            if character.get("level", 1) >= 80 and shadows >= 75 and outcome >= 3:
-                _append_status_dedup(state, make_status("shaken"), key="monster_statuses")
-
-            # Generate shadows on critical hit
-            if outcome >= 5:
-                _assassin_gain_shadows(state, character, log, 5, "critical hit")
-
-            # Eclipse Blade active: +2 shadows per hit
-            if state.get("assassin_eclipse_blade_active"):
-                blade_bonus = 4 if state.get("is_night") else 2
-                _assassin_gain_shadows(state, character, log, blade_bonus, "Eclipse Blade")
-
-        # Hunter: Spirit Guidance crit, communion effects, multi-hit
-        if _is_hunter(character) and total_dmg > 0 and sk and sk.get("power_type") in ("strike", "trap", "spirit"):
-            # Tracking Instinct communion: enemy can't evade
-            if state.get("hunter_tracking_instinct_active"):
-                outcome = max(4, outcome)  # can't be evaded = guaranteed hit
-            # Hunter's Mark communion: all allies gain crit vs target
-            if state.get("hunter_marked_target"):
-                outcome = max(5, outcome)  # guaranteed crit vs marked target
-                crit_mult = _hunter_get_crit_damage_mult(state, character)
-                total_dmg = int(total_dmg * crit_mult)
-                log.append({"kind": "hunter_mark_crit", "text": f"Spirit Mark crit — {total_dmg} damage!"})
-            # Apply Spirit Bow (Alpha Command): true damage
-            if state.get("hunter_spirit_bow_charges", 0) > 0:
-                total_dmg = int(total_dmg * 1.5)  # true damage bonus
-                state["hunter_spirit_bow_charges"] -= 1
-                log.append({"kind": "hunter_spirit_bow", "text": "Spirit Bow — true damage!"})
-
-            # Apply guaranteed crits (Eagle Eye, Hawk Vision, Ambush)
-            if state.get("hunter_guaranteed_crits", 0) > 0:
-                outcome = max(5, outcome)
-                crit_mult = _hunter_get_crit_damage_mult(state, character)
-                total_dmg = int(total_dmg * crit_mult)
-                state["hunter_guaranteed_crits"] -= 1
-                log.append({"kind": "hunter_guaranteed_crit", "text": f"Guaranteed crit — {total_dmg} damage! (x{crit_mult:.1f})"})
-            else:
-                # Spirit Guidance crit chance
-                crit_chance = _hunter_get_crit_chance(state, character)
-                import random as _rng
-                if _rng.random() < crit_chance:
-                    outcome = max(5, outcome)
-                    crit_mult = _hunter_get_crit_damage_mult(state, character)
-                    total_dmg = int(total_dmg * crit_mult)
-                    log.append({"kind": "hunter_crit", "text": f"Spirit Guidance crit — {total_dmg} damage! (x{crit_mult:.1f})"})
-
-            # Apply communion effects
-            total_dmg, outcome = _hunter_apply_communion_effects(state, character, sk, log, total_dmg, outcome)
-
-        # Hunter: Gain Spirit Guidance per hit (basic attacks and skills)
-        if _is_hunter(character) and total_dmg > 0:
-            if sk and sk.get("power_type") in ("strike", "trap", "spirit"):
-                hits = _hunter_get_hit_count(state, character, sk)
-                guidance_per_hit = 2 if (state.get("hunter_spirit_communion") and "spirit_guidance_gains_2_per_hit" in sk.get("spirit_communion", "")) else 1
-            else:
-                # Basic attack — 1 hit, 1 guidance
-                hits = 1
-                guidance_per_hit = 1
-            for _h in range(hits):
-                _hunter_gain_guidance(state, character, log, guidance_per_hit)
-
-        # Rogue: Opportunist — bonus damage vs debuffed enemies
-        if _is_rogue(character) and total_dmg > 0:
-            opp_mult = _rogue_get_opportunist_bonus(state)
-            if opp_mult > 1.0:
-                total_dmg = int(total_dmg * opp_mult)
-                log.append({"kind": "rogue_opportunist", "text": f"Opportunist — +{int((opp_mult - 1) * 100)}% damage vs debuffed enemy!"})
-
-        # Druid: Pack Synergy — druid_stat_mult boosts player damage
-        if _is_druid(character) and total_dmg > 0:
-            synergy = state.get("druid_pack_synergy")
-            if synergy and synergy.get("druid_stat_mult", 1.0) > 1.0:
-                total_dmg = int(total_dmg * synergy["druid_stat_mult"])
-
-        # Druid: Fusion attack rider — fused summon's attack skill adds bonus damage
-        if _is_druid(character) and total_dmg > 0 and state.get("druid_fusion_active"):
-            total_dmg = _druid_apply_fusion_attack_rider(state, character, log, total_dmg)
-
-        # Druid: Fusion signature — fused summon's signature ability fires on cooldown
-        if _is_druid(character) and state.get("druid_fusion_active"):
-            sig_dmg = _druid_apply_fusion_signature(state, character, log)
-            if sig_dmg > 0:
-                total_dmg += sig_dmg
+        # Outgoing-damage riders (192 lines, 12 guards) moved verbatim to
+        # mastery/outgoing.py. Order is observable, so the run was kept intact.
+        _ctx.outgoing = total_dmg
+        _ctx.outcome = outcome
+        _ctx.skill = sk
+        _apply_outgoing_riders(_ctx)
+        total_dmg = _ctx.outgoing
+        outcome = _ctx.outcome
 
         # Item bonus: skill_damage — boost damage when using a skill
         if total_dmg > 0 and sk:
@@ -8118,14 +8157,32 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
 
     # -------- monster turn --------
     # Check monster statuses for bind/stun/blind/ensnared (Priest + Rogue + general)
+    # Extracted masteries get a shot at the enemy's turn before it resolves —
+    # control effects, turn theft. A hook may set ctx.enemy_turn_consumed.
+    _ctx.enemy_turn_consumed = False
+    for _h in _hooks:
+        _h.on_enemy_turn_start(_ctx)
+
     _monster_bound = any(s.get("id") == "bind" for s in state.get("monster_statuses", []))
     _monster_stunned_status = any(s.get("id") == "stunned" for s in state.get("monster_statuses", []))
     _monster_blind = any(s.get("id") in ("blind", "blinded") for s in state.get("monster_statuses", []))
     _monster_ensnared = any(s.get("id") == "ensnared" for s in state.get("monster_statuses", []))
 
+    # Mage: Mind Control / Time Loop can consume the enemy's turn outright.
+    _mage_steals_turn = _mage_check_enemy_turn_skip(state, character, log)
+    # Mage: Delirium redirects the enemy's attack onto itself.
+    _mage_enemy_self_attack = _mage_check_enemy_self_attack(state, character, log)
+    # Mage: Hallucination decoys can eat the incoming attack entirely.
+    _mage_decoy_chance = _mage_get_decoy_miss_chance(state, character)
+    if _mage_decoy_chance > 0 and random.random() < _mage_decoy_chance:
+        log.append({"kind": "mage_passive",
+                    "text": "HALLUCINATION — the attack tears through a decoy and finds nothing!"})
+        _mage_steals_turn = True
+
     # Alchemist: enemy launched (Rising Strike) — skip monster turn entirely
-    if state.get("alchemist_enemy_launched"):
-        log.append({"kind": "alchemist_control", "text": f"The {monster['name']} is airborne — can't act this turn!"})
+    if state.get("alchemist_enemy_launched") or _mage_steals_turn:
+        if not _mage_steals_turn:
+            log.append({"kind": "alchemist_control", "text": f"The {monster['name']} is airborne — can't act this turn!"})
         c_base = 0
         c_out = 0
         m_skill = None
@@ -8161,7 +8218,7 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
 
         # Monster accuracy: use grace stat if available, else power
         m_stats = state.get("monster_stats", {})
-        monster_acc = m_stats.get("grace", state["monster_power"])
+        monster_acc = m_stats.get("grace", state["monster_threat"])
         if state.get("monster_enraged"):
             monster_acc = int(monster_acc * 1.3)
         player_evas = compute_evasion(character)
@@ -8224,7 +8281,7 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
             m_skill = None
 
         monster_dmg_type = "physical"
-        c_base = 0 if _monster_mesmerized else (3 + (state["monster_power"] // 2))
+        c_base = 0 if _monster_mesmerized else (3 + (state["monster_threat"] // 2))
         # Alchemist: enemy immobilized — 50% damage reduction
         if _alch_immobilized:
             c_base = c_base // 2
@@ -8237,15 +8294,15 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
             if ptype == "strike":
                 # Scale skill power by monster stat (might for physical, insight for magical)
                 if monster_dmg_type == "physical":
-                    c_base = m_skill["power"] + int(m_stats.get("might", 0) * 0.5)
+                    c_base = m_skill["damage"] + int(m_stats.get("might", 0) * 0.5)
                 elif monster_dmg_type == "magical":
-                    c_base = m_skill["power"] + int(m_stats.get("insight", 0) * 0.5)
+                    c_base = m_skill["damage"] + int(m_stats.get("insight", 0) * 0.5)
                 else:
-                    c_base = m_skill["power"]
+                    c_base = m_skill["damage"]
                 skill_name = m_skill["name"]
                 m_skill_status = m_skill.get("status_apply")
             elif ptype == "heal":
-                heal_amt = m_skill.get("power", 10)
+                heal_amt = m_skill.get("damage", 10)
                 # Priest: Avatar of Faith (L100) — enemy cannot heal above current HP
                 if _is_priest(character) and _priest_check_enemy_heal_lock(state, character):
                     heal_amt = 0
@@ -8268,6 +8325,12 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
                 # Alchemist: ward_block prevents monster from gaining warded
                 if buff_status == "warded" and state.get("alchemist_ward_block", 0) > 0:
                     log.append({"kind": "alchemist_control", "text": f"Guard Break — the {monster['name']} can't ward!"})
+                # Mage: Paranoia (Mental) — a shaken target trusts nothing and
+                # cannot benefit from buffs. Set by _mage_apply_arcane_library_control.
+                elif state.get("mage_paranoia_active") and any(
+                        s.get("id") == "shaken" for s in state.get("monster_statuses", [])):
+                    log.append({"kind": "mage_passive",
+                                "text": f"PARANOIA — the {monster['name']} refuses its own aid!"})
                 # Knight: Bulwark 5-stack — enemy can't gain buffs
                 elif _is_knight(character):
                     knight_ms = _knight_check_milestones(state, character, monster, log)
@@ -8284,7 +8347,7 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
                 state["monster_stamina"] = max(0, state.get("monster_stamina", 100) - m_skill.get("cost_stamina", 0))
                 c_base = 0
             elif ptype == "debuff":
-                c_base = m_skill.get("power", 3)
+                c_base = m_skill.get("damage", 3)
                 skill_name = m_skill["name"]
                 m_skill_status = m_skill.get("status_apply")
             # Set cooldown and consume resources for strike/debuff
@@ -8297,7 +8360,12 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
         if _alch_immobilized:
             c_base = c_base // 2
 
-    c_mult = {1: 0.0, 2: 0.4, 3: 0.7, 4: 1.0, 5: 1.2, 6: 1.6}[c_out]
+    # c_out is 0 when the monster never acted — airborne (Alchemist Rising
+    # Strike), bound (Priest), stunned, or ensnared (Lancer imbues, Mage). The
+    # d6 table has no 0 key, so a bare lookup raised KeyError and crashed the
+    # whole fight the moment any mastery landed its control effect. 0 damage
+    # multiplier is the correct answer for "no attack happened".
+    c_mult = {0: 0.0, 1: 0.0, 2: 0.4, 3: 0.7, 4: 1.0, 5: 1.2, 6: 1.6}.get(c_out, 0.0)
 
     # Rogue: Counter Strike innate — triggers on low enemy roll
     if _is_rogue(character) and c_out > 0:
@@ -8326,6 +8394,13 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
     else:  # true damage
         c_dmg = raw_c_dmg
 
+    # Mage: Delirium — the addled enemy lands its blow on itself instead.
+    if _mage_enemy_self_attack and c_dmg > 0:
+        state["monster_hp"] = max(0, state.get("monster_hp", 0) - c_dmg)
+        log.append({"kind": "mage_passive",
+                    "text": f"The {monster['name']} rakes itself for {c_dmg} damage!"})
+        c_dmg = 0
+
     # -------- Innate action defenses --------
     monster_attacked = c_base > 0  # monster used a strike/debuff (not heal/buff)
 
@@ -8341,166 +8416,15 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
         log.append({"kind": "innate_action", "text": f"You sidestep the {monster['name']}'s attack — no damage!"})
         state["evading"] = False
 
-    # Knight: Oath milestone damage reduction
-    if _is_knight(character) and monster_attacked and c_dmg > 0:
-        knight_mods = _knight_check_milestones(state, character, monster, log)
-        # Oath of Endurance 10-stack: -15% incoming damage
-        if knight_mods.get("incoming_damage_mult"):
-            c_dmg = int(c_dmg * knight_mods["incoming_damage_mult"])
-        # Fortress (level 70 passive): 10+ stacks = -25% incoming damage
-        if character.get("level", 1) >= 70 and state.get("knight_oath_stacks", 0) >= 10:
-            c_dmg = int(c_dmg * 0.75)
-        # Unbreakable (level 80 passive): below 25% HP = -30% incoming damage
-        hp_ratio_now = character["hp"] / max(1, character["max_hp"])
-        if character.get("level", 1) >= 80 and hp_ratio_now < 0.25:
-            c_dmg = int(c_dmg * 0.70)
-            log.append({"kind": "knight_passive", "text": "UNBREAKABLE — damage reduced by 30%!"})
-
-    # Knight: Oath of Iron gains stack when hit
-    if _is_knight(character) and monster_attacked and c_dmg > 0:
-        _knight_gain_stack(state, character, log, "hit_or_defend")
-
-    # Knight: Oath of Bulwark gains stack when enemy attacks (hit or miss)
-    if _is_knight(character) and monster_attacked:
-        _knight_gain_stack(state, character, log, "enemy_attacks")
-
-    # Knight: Oath of Iron 10-stack: reflect 10% damage
-    if _is_knight(character) and monster_attacked and c_dmg > 0:
-        knight_mods = _knight_check_milestones(state, character, monster, log)
-        if knight_mods.get("reflect_10pct"):
-            reflect_dmg = max(1, int(c_dmg * 0.10))
-            state["monster_hp"] = max(0, state["monster_hp"] - reflect_dmg)
-            log.append({"kind": "knight_oath", "text": f"Oath of Iron reflects {reflect_dmg} damage back!"})
-
-    # Assassin: shadow linger — 75% evasion after stealth break (level 100)
-    if _is_assassin(character) and monster_attacked and state.get("assassin_shadow_linger", 0) > 0:
-        import random as _rng
-        if _rng.random() < 0.75:
-            c_dmg = 0
-            log.append({"kind": "assassin_passive", "text": "Shadow linger — the attack passes through shadow!"})
-
-    # Assassin: hidden = 100% evasion
-    if _is_assassin(character) and monster_attacked:
-        is_hidden = any(s.get("name") == "hidden" for s in state.get("player_statuses", []))
-        if is_hidden:
-            c_dmg = 0
-            log.append({"kind": "assassin_hidden", "text": "The Assassin is hidden — the attack hits nothing!"})
-
-    # Unified range system: range_gap > 0 = enemy can't reach player
-    if monster_attacked and state.get("range_gap", 0) > 0:
-        c_dmg = 0
-        log.append({"kind": "range_gap", "text": f"Range {state['range_gap']} — the enemy can't close the distance!"})
-
-    # Hunter: Range 0 = bonus melee damage taken (no melee weapon to defend with)
-    if _is_hunter(character) and monster_attacked and c_dmg > 0 and state.get("range_gap", 0) <= 0 and state.get("player_range", 0) <= 0:
-        c_dmg = int(c_dmg * 1.25)
-        log.append({"kind": "hunter_range", "text": "Range 0 — melee vulnerability! +25% damage taken!"})
-
-    # Hunter: intangible (Spirit Walk communion) = can't be hit at all
-    if _is_hunter(character) and monster_attacked and c_dmg > 0 and state.get("hunter_intangible_turns", 0) > 0:
-        c_dmg = 0
-        log.append({"kind": "hunter_intangible", "text": "You phase through the spirit world — the attack hits nothing!"})
-
-    # Hunter: immune (Survival Instinct communion) = no damage, no CC, no debuffs
-    if _is_hunter(character) and monster_attacked and c_dmg > 0 and state.get("hunter_immune_turns", 0) > 0:
-        c_dmg = 0
-        log.append({"kind": "hunter_immune", "text": "Ancestor spirits shield you — the attack is absorbed!"})
-
-    # Hunter: spirit copy absorbs next hit (Backflip/Survival Instinct/Camouflage communion)
-    if _is_hunter(character) and monster_attacked and c_dmg > 0 and state.get("hunter_spirit_copy_absorb"):
-        c_dmg = 0
-        state["hunter_spirit_copy_absorb"] = False
-        log.append({"kind": "hunter_spirit_copy", "text": "The spirit copy absorbs the blow and dissolves!"})
-
-    # Hunter: evasive = dodge
-    if _is_hunter(character) and monster_attacked and c_dmg > 0:
-        is_evasive = any(s.get("name") == "evasive" for s in state.get("player_statuses", []))
-        if is_evasive:
-            import random as _rng
-            if _rng.random() < 0.75:
-                c_dmg = 0
-                log.append({"kind": "hunter_evasive", "text": "The Hunter dodges — the attack misses!"})
-
-    # Rogue: evasive = dodge (signature defense)
-    if _is_rogue(character) and monster_attacked and c_dmg > 0:
-        is_evasive = any(s.get("id") == "evasive" or s.get("name") == "evasive" for s in state.get("player_statuses", []))
-        if is_evasive:
-            import random as _rng
-            dodge_chance = 0.75 if state.get("rogue_master_of_tricks") else 0.50
-            if _rng.random() < dodge_chance:
-                c_dmg = 0
-                log.append({"kind": "rogue_evasive", "text": "The Rogue dodges — the attack misses!"})
-
-    # Rogue: Lucky Dodger evasion bonus
-    if _is_rogue(character) and monster_attacked and c_dmg > 0:
-        evasion_bonus = _rogue_get_evasion_bonus(state)
-        if evasion_bonus > 0:
-            import random as _rng
-            if _rng.random() < (evasion_bonus / 100.0):
-                c_dmg = 0
-                log.append({"kind": "rogue_lucky_dodger", "text": f"Lucky Dodger — {evasion_bonus}% evasion kicks in! Attack misses!"})
-
-    # Rogue: hidden = 100% evasion (same as Assassin)
-    if _is_rogue(character) and monster_attacked:
-        is_hidden = any(s.get("name") == "hidden" for s in state.get("player_statuses", []))
-        if is_hidden:
-            c_dmg = 0
-            log.append({"kind": "rogue_hidden", "text": "The Rogue is hidden — the attack hits nothing!"})
-
-    # Rogue: Lucky Dodger stack tracking
-    if _is_rogue(character) and monster_attacked:
-        _rogue_check_lucky_dodger(state, log, enemy_missed=(c_dmg == 0))
-
-    # Confused status: 50% chance monster hits itself
-    _monster_confused = any(s.get("id") == "confused" for s in state.get("monster_statuses", []))
-    if _monster_confused and monster_attacked and c_dmg > 0:
-        if random.random() < 0.50:
-            state["monster_hp"] = max(0, state["monster_hp"] - c_dmg)
-            log.append({"kind": "confused", "text": f"The {monster['name']} is confused — it strikes itself for {c_dmg} damage!"})
-            c_dmg = 0
-
-    # Bard: friendly_fire — chance scales with Crescendo
-    if _is_bard(character) and monster_attacked and c_dmg > 0 and state.get("bard_friendly_fire"):
-        ff_chance = state.get("bard_friendly_fire_chance", 0.10)
-        if random.random() < ff_chance:
-            state["monster_hp"] = max(0, state["monster_hp"] - c_dmg)
-            log.append({"kind": "bard_friendly_fire", "text": f"Dance of Freedom — the {monster['name']} attacks itself for {c_dmg} damage!"})
-            c_dmg = 0
-
-    # Bard: confuse — chance scales with Crescendo
-    if _is_bard(character) and monster_attacked and c_dmg > 0 and state.get("bard_confuse"):
-        conf_chance = state.get("bard_confuse_chance", 0.10)
-        if random.random() < conf_chance:
-            state["monster_hp"] = max(0, state["monster_hp"] - c_dmg)
-            log.append({"kind": "bard_confuse", "text": f"Dance of Confusion — the {monster['name']} strikes itself for {c_dmg} damage!"})
-            c_dmg = 0
-
-    # Bard: death save check
-    if _is_bard(character) and c_dmg > 0:
-        c_dmg = _bard_check_death_save(state, character, c_dmg, log)
-
-    # Mage: Glass Cannon — take +50% damage while casting
-    if _is_mage(character) and state.get("mage_glass_cannon_active") and c_dmg > 0:
-        c_dmg = int(c_dmg * 1.50)
-        log.append({"kind": "mage_passive", "text": "Glass Cannon — +50% damage taken!"})
-
-    # Druid: Fusion defense passive — reduce incoming damage from fused summon's defense skill
-    if _is_druid(character) and c_dmg > 0 and state.get("druid_fusion_active"):
-        c_dmg = _druid_apply_fusion_defense(state, character, log, c_dmg)
-
-    # Paladin: Aura of Warding (level 70) — -10% incoming damage when warded
-    if _is_paladin(character) and character.get("level", 1) >= 70 and c_dmg > 0:
-        if _has_player_status(character, state, "warded"):
-            c_dmg = int(c_dmg * 0.90)
-            log.append({"kind": "paladin_passive", "text": "AURA OF WARDING — -10% damage taken while Warded!"})
-
-    # Priest: Shield Wall absorbs damage before HP
-    if _is_priest(character) and c_dmg > 0 and state.get("priest_shield_wall_hp", 0) > 0:
-        c_dmg = _priest_absorb_damage(state, character, c_dmg, log)
-
-    # Legendary powers — when_hit triggers (full block, decoy)
-    if c_dmg > 0:
-        c_dmg = _apply_legendary_powers_when_hit(state, character, log, c_dmg)
+    # Incoming-damage pipeline. This was 22 interleaved mastery guards mutating
+    # c_dmg in sequence, with two universal steps (range gap, confused self-hit)
+    # sitting between masteries. Order is observable — several steps consume RNG —
+    # so it is declared as data in mastery/mitigation.py rather than as a loop.
+    _ctx.incoming = c_dmg
+    _ctx.enemy_outcome = c_out
+    state["_monster_attacked"] = monster_attacked
+    _run_incoming_pipeline(_ctx)
+    c_dmg = int(_ctx.incoming)
 
     character["hp"] = max(0, character["hp"] - c_dmg)
     _clamp_and_sync_combat_hp(character, state, log)
@@ -8619,121 +8543,27 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
         s["duration"] = max(0, int(s.get("duration", 0)) - 1)
     state["player_statuses"] = [s for s in state.get("player_statuses", []) if s.get("duration", 0) > 0]
 
-    # Alchemist: tick state at end of turn
-    if _is_alchemist(character):
-        _alch_tick_alchemist_state(state, log)
-        # Revert self stat_mods that expired
-        self_mods_list = state.get("alchemist_self_stat_mods", [])
-        active_self = []
-        for entry in self_mods_list:
-            if entry["duration"] > 0:
-                active_self.append(entry)
-            else:
-                # Revert mods
-                for stat, val in entry["mods"].items():
-                    character["stats"][stat] = character["stats"].get(stat, 0) - val
-        state["alchemist_self_stat_mods"] = active_self
-        # Decrement self stat mod durations
-        for entry in state.get("alchemist_self_stat_mods", []):
-            entry["duration"] -= 1
+    # Extracted masteries tick their own state.
+    for _h in _hooks:
+        _h.on_turn_end(_ctx)
 
-    # Paladin: tick state at end of turn
-    if _is_paladin(character):
-        # Tick Paladin self stat_mods
-        pal_self_mods = state.get("paladin_self_stat_mods", [])
-        active_pal = []
-        for entry in pal_self_mods:
+    # Tick the generic self stat_mods (masteries with no bespoke branch — Druid,
+    # Bard, Priest). Mirrors the per-mastery tick blocks below.
+    _generic_mods = state.get("generic_self_stat_mods", [])
+    if _generic_mods:
+        _still_active = []
+        for entry in _generic_mods:
             if entry["duration"] > 0:
-                active_pal.append(entry)
+                _still_active.append(entry)
             else:
                 for stat, val in entry["mods"].items():
                     character["stats"][stat] = character["stats"].get(stat, 0) - val
-        state["paladin_self_stat_mods"] = active_pal
-        for entry in state.get("paladin_self_stat_mods", []):
+                if entry.get("form"):
+                    state.pop("druid_active_form", None)
+                    log.append({"kind": "druid_form", "text": "The borrowed shape fades."})
+        state["generic_self_stat_mods"] = _still_active
+        for entry in state["generic_self_stat_mods"]:
             entry["duration"] -= 1
-        # Tick Paladin enemy stat_mods
-        pal_enemy_mods = state.get("paladin_enemy_stat_mods", [])
-        active_pal_enemy = []
-        for entry in pal_enemy_mods:
-            if entry["duration"] > 0:
-                active_pal_enemy.append(entry)
-        state["paladin_enemy_stat_mods"] = active_pal_enemy
-        for entry in state.get("paladin_enemy_stat_mods", []):
-            entry["duration"] -= 1
-        # Faith scaling is now updated in real-time via _clamp_and_sync_combat_hp
-        # Check Avatar of Faith (level 100 passive)
-        if character.get("level", 1) >= 100 and not state.get("paladin_avatar_of_faith"):
-            state["paladin_avatar_of_faith"] = True
-
-    # Knight: tick state at end of turn
-    if _is_knight(character):
-        _knight_tick_end_of_turn(state, character, log)
-
-    # Lancer: tick state at end of turn
-    if _is_lancer(character):
-        _lancer_tick_end_of_turn(state, character, log)
-        # Tick Lancer self stat_mods
-        lancer_mods = state.get("lancer_self_stat_mods", [])
-        active_lancer = []
-        for entry in lancer_mods:
-            if entry["duration"] > 0:
-                active_lancer.append(entry)
-            else:
-                for stat, val in entry["mods"].items():
-                    character["stats"][stat] = character["stats"].get(stat, 0) - val
-        state["lancer_self_stat_mods"] = active_lancer
-        for entry in state.get("lancer_self_stat_mods", []):
-            entry["duration"] -= 1
-        # Tick Lancer enemy stat_mods
-        lancer_enemy = state.get("lancer_enemy_stat_mods", [])
-        active_lancer_enemy = []
-        for entry in lancer_enemy:
-            if entry["duration"] > 0:
-                active_lancer_enemy.append(entry)
-            else:
-                m_stats = state.get("monster_stats", {})
-                for stat, val in entry["mods"].items():
-                    m_stats[stat] = m_stats.get(stat, 0) - val
-        state["lancer_enemy_stat_mods"] = active_lancer_enemy
-        for entry in state.get("lancer_enemy_stat_mods", []):
-            entry["duration"] -= 1
-
-    # Mage: tick state at end of turn
-    if _is_mage(character):
-        _mage_tick_end_of_turn(state, character, log)
-        # Tick Mage self stat_mods
-        mage_mods = state.get("mage_self_stat_mods", [])
-        active_mage = []
-        for entry in mage_mods:
-            if entry["duration"] > 0:
-                active_mage.append(entry)
-            else:
-                for stat, val in entry["mods"].items():
-                    character["stats"][stat] = character["stats"].get(stat, 0) - val
-        state["mage_self_stat_mods"] = active_mage
-        for entry in state.get("mage_self_stat_mods", []):
-            entry["duration"] -= 1
-        # Tick Mage enemy stat_mods
-        mage_enemy = state.get("mage_enemy_stat_mods", [])
-        active_mage_enemy = []
-        for entry in mage_enemy:
-            if entry["duration"] > 0:
-                active_mage_enemy.append(entry)
-            else:
-                m_stats = state.get("monster_stats", {})
-                for stat, val in entry["mods"].items():
-                    m_stats[stat] = m_stats.get(stat, 0) - val
-        state["mage_enemy_stat_mods"] = active_mage_enemy
-        for entry in state.get("mage_enemy_stat_mods", []):
-            entry["duration"] -= 1
-
-    # Assassin: tick state at end of turn
-    if _is_assassin(character):
-        _assassin_tick_end_of_turn(state, character, log)
-
-    # Hunter: tick state at end of turn
-    if _is_hunter(character):
-        _hunter_tick_end_of_turn(state, character, log)
 
     # Unified range system: range_gap moves toward 0 by 1 each turn
     # Positive gap: enemy closes distance. Negative gap: player closes distance.
@@ -8767,47 +8597,15 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
 
     # Druid: tick enemy stat mods from summon skills
     if _is_druid(character):
-        druid_enemy = state.get("druid_summon_enemy_stat_mods", [])
-        active_druid_enemy = []
-        for entry in druid_enemy:
-            if entry["duration"] > 0:
-                active_druid_enemy.append(entry)
-            else:
-                m_stats = state.get("monster_stats", {})
-                for stat, val in entry["mods"].items():
-                    m_stats[stat] = m_stats.get(stat, 0) - val
-        state["druid_summon_enemy_stat_mods"] = active_druid_enemy
-        for entry in state.get("druid_summon_enemy_stat_mods", []):
-            entry["duration"] -= 1
+        tick_stat_mods(state, "druid_summon_enemy_stat_mods", state.setdefault("monster_stats", {}))
 
     # Priest: tick state at end of turn
     if _is_priest(character):
         _priest_tick_end_of_turn(state, character, log)
         # Apply/remove self stat_mods that expired
-        priest_mods = state.get("priest_self_stat_mods", [])
-        active_priest = []
-        for entry in priest_mods:
-            if entry["duration"] > 0:
-                active_priest.append(entry)
-            else:
-                for stat, val in entry["mods"].items():
-                    character["stats"][stat] = character["stats"].get(stat, 0) - val
-        state["priest_self_stat_mods"] = active_priest
-        for entry in state.get("priest_self_stat_mods", []):
-            entry["duration"] -= 1
+        tick_stat_mods(state, "priest_self_stat_mods", character["stats"])
         # Apply/remove enemy stat_mods that expired
-        priest_enemy = state.get("priest_enemy_stat_mods", [])
-        active_priest_enemy = []
-        for entry in priest_enemy:
-            if entry["duration"] > 0:
-                active_priest_enemy.append(entry)
-            else:
-                m_stats = state.get("monster_stats", {})
-                for stat, val in entry["mods"].items():
-                    m_stats[stat] = m_stats.get(stat, 0) - val
-        state["priest_enemy_stat_mods"] = active_priest_enemy
-        for entry in state.get("priest_enemy_stat_mods", []):
-            entry["duration"] -= 1
+        tick_stat_mods(state, "priest_enemy_stat_mods", state.setdefault("monster_stats", {}))
 
     # tick cooldowns (player + monster)
     for sid in list(state["skill_cooldowns"].keys()):

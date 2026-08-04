@@ -203,6 +203,15 @@ def rank_from_xp(xp: int) -> str:
     points = xp  # In new system, xp field stores points directly
     tier_idx = min(points // POINTS_PER_TIER, len(PROFESSION_RANKS) - 1)
     return PROFESSION_RANKS[tier_idx]
+
+
+def points_to_next_rank(points: int) -> int:
+    """Points still needed to reach the next rank; 0 at grandmaster.
+
+    This body existed but sat *after* the `return` in `rank_from_xp` with its
+    `def` line lost, so it was unreachable dead code and the name was never
+    exported — `GET /game/professions/mine` raised ImportError on every call.
+    """
     current_tier = min(points // POINTS_PER_TIER, len(PROFESSION_RANKS) - 1)
     if current_tier >= len(PROFESSION_RANKS) - 1:
         return 0  # max rank

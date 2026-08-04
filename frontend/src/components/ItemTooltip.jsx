@@ -45,8 +45,10 @@ const WEAPON_TYPE_LABEL = {
 const STAT_LABELS = {
     might: "Might", grace: "Grace", cognition: "Cognition",
     insight: "Insight", essence: "Essence", durability: "Durability",
-    vitality: "Vitality", armor: "Armor", armor_bonus: "Armor Bonus",
-    magic_resistance: "Magic Resistance", accuracy: "Accuracy", evasion: "Evasion",
+    vitality: "Vitality", resilience: "Resilience",
+    armor: "Armor", armor_bonus: "Armor",
+    magic_resist: "Magic Resist", magic_resistance: "Magic Resistance",
+    accuracy: "Accuracy", evasion: "Evasion",
 };
 
 function isInstance(item) {
@@ -123,7 +125,6 @@ function autoDesc(item) {
 
     if (kind === "weapon") {
         const statParts = [];
-        if (item.power) statParts.push(`Power ${item.power}`);
         if (item.stats) {
             for (const [k, v] of Object.entries(item.stats)) {
                 if (v) statParts.push(`${k.charAt(0).toUpperCase() + k.slice(1)} +${v}`);
@@ -133,7 +134,6 @@ function autoDesc(item) {
     }
     if (kind === "armor") {
         const statParts = [];
-        if (item.power) statParts.push(`Defense ${item.power}`);
         if (item.stats) {
             for (const [k, v] of Object.entries(item.stats)) {
                 if (v) statParts.push(`${k.charAt(0).toUpperCase() + k.slice(1)} +${v}`);
@@ -142,14 +142,21 @@ function autoDesc(item) {
         return `A ${rarity} piece of armor. ${statParts.join(". ")}.`;
     }
     if (kind === "consumable") {
-        if (item.effect && item.effect.heal) return `Restores ${item.effect.heal} HP when consumed.`;
-        if (item.effect && item.effect.gold) return `Open to receive ${item.effect.gold} gold.`;
-        if (item.effect && item.effect.cure) return `Cures ${item.effect.cure}.`;
-        if (item.effect && item.effect.damage) return `Deals ${item.effect.damage} damage when thrown.`;
-        if (item.effect === "heal") return `Restores ${item.power || ""} HP when consumed.`;
-        if (item.effect === "restore_mp") return `Restores ${item.power || ""} MP when consumed.`;
-        if (item.effect === "buff_stat") return `Grants +${item.power || ""} ${item.stat || ""} for a time.`;
-        if (item.effect === "resist") return `Grants +${item.power || ""} resistance for a time.`;
+        // `effect` is always a dict of {kind: magnitude}. Crafted potions used to
+        // ship a string effect plus a separate `power` scalar, which the backend
+        // could not read at all — every crafted potion raised a TypeError on use.
+        const eff = item.effect || {};
+        if (eff.heal) return `Restores ${eff.heal} HP when consumed.`;
+        if (eff.gold) return `Open to receive ${eff.gold} gold.`;
+        if (eff.cure) return `Cures ${eff.cure}.`;
+        if (eff.damage) return `Deals ${eff.damage} damage when thrown.`;
+        if (eff.restore_mp) return `Restores ${eff.restore_mp} MP when consumed.`;
+        if (eff.buff_stat) return `Grants +${eff.buff_stat} ${item.stat || ""} for a time.`;
+        if (eff.resist) return `Grants +${eff.resist} resistance for a time.`;
+        if (eff.hp_regen) return `Regenerates ${eff.hp_regen} HP per turn.`;
+        if (eff.mp_regen) return `Regenerates ${eff.mp_regen} MP per turn.`;
+        if (eff.stamina) return `Recovers ${eff.stamina} stamina.`;
+        if (eff.xp_buff) return `Grants +${eff.xp_buff}% XP gain.`;
         return `A ${rarity} consumable.`;
     }
     if (kind === "skillbook") {
@@ -178,7 +185,6 @@ function autoDesc(item) {
 
 function statLine(item) {
     const parts = [];
-    if (item.power) parts.push(`PWR ${item.power}`);
     if (item.accuracy) parts.push(`ACC +${item.accuracy}`);
     if (item.evasion) parts.push(`EVA +${item.evasion}`);
     if (item.stats) {
@@ -260,17 +266,26 @@ export default function ItemTooltip({ item, side = "bottom", sideOffset = 4, chi
                     {item.effect && item.effect.damage && (
                         <div className="text-destructive">Deals {item.effect.damage} damage</div>
                     )}
-                    {item.effect === "heal" && item.power && (
-                        <div className="text-green-400">Heals {item.power} HP</div>
+                    {item.effect?.restore_mp && (
+                        <div className="text-blue-400">Restores {item.effect.restore_mp} MP</div>
                     )}
-                    {item.effect === "restore_mp" && item.power && (
-                        <div className="text-blue-400">Restores {item.power} MP</div>
+                    {item.effect?.buff_stat && (
+                        <div className="text-purple-400">+{item.effect.buff_stat} {item.stat || ""} (temporary)</div>
                     )}
-                    {item.effect === "buff_stat" && item.power && (
-                        <div className="text-purple-400">+{item.power} {item.stat || ""} (temporary)</div>
+                    {item.effect?.resist && (
+                        <div className="text-cyan-400">+{item.effect.resist} resistance (temporary)</div>
                     )}
-                    {item.effect === "resist" && item.power && (
-                        <div className="text-cyan-400">+{item.power} resistance (temporary)</div>
+                    {item.effect?.hp_regen && (
+                        <div className="text-green-400">+{item.effect.hp_regen} HP per turn</div>
+                    )}
+                    {item.effect?.mp_regen && (
+                        <div className="text-blue-400">+{item.effect.mp_regen} MP per turn</div>
+                    )}
+                    {item.effect?.stamina && (
+                        <div className="text-amber-400">+{item.effect.stamina} stamina</div>
+                    )}
+                    {item.effect?.xp_buff && (
+                        <div className="text-primary">+{item.effect.xp_buff}% XP gain</div>
                     )}
                     {item.teaches && (
                         <div className="text-purple-400">Teaches: {item.teaches.replace(/_/g, " ")}</div>

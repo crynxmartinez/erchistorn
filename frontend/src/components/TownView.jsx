@@ -1080,7 +1080,7 @@ export default function TownView({ townId, character, onCharacterUpdate, onLeave
                                 <h3 className="font-pixel text-xl uppercase text-primary">{heritageData.bossInfo?.boss?.name || "Unknown Boss"}</h3>
                             </div>
                             <div className="grid grid-cols-3 gap-2 stat-label">
-                                <div>Power: <span className="text-primary">{heritageData.bossInfo?.boss?.power ?? "?"}</span></div>
+                                <div>Threat: <span className="text-primary">{heritageData.bossInfo?.boss?.threat ?? "?"}</span></div>
                                 <div>HP: <span className="text-primary">{heritageData.bossInfo?.boss?.hp ?? "?"}</span></div>
                                 <div>Tokens: <span className="text-primary">{heritageData.bossInfo?.boss?.token_reward ?? 0}</span></div>
                             </div>

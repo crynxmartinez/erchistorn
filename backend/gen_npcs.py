@@ -86,7 +86,7 @@ def _build_monster_index():
         if not bid:
             continue
         idx.setdefault(bid, []).append((
-            m["id"], m["name"], m.get("rarity", "common"), m.get("power", 1),
+            m["id"], m["name"], m.get("rarity", "common"), 0,
         ))
     return idx
 
@@ -318,43 +318,43 @@ TIER_LEVEL: dict[str, int] = {
 UNIQUE_ITEMS: dict[str, dict[str, dict]] = {
     "veteran": {
         "friend": {"id": "veteran_blade_{town}", "name": "{Town} Veteran's Blade",
-                   "rarity": "rare", "kind": "weapon", "power": 12, "slot": "right_hand"},
+                   "rarity": "rare", "kind": "weapon", "slot": "right_hand"},
         "trusted": {"id": "veteran_greatblade_{town}", "name": "{Town} Master's Greatblade",
-                    "rarity": "epic", "kind": "weapon", "power": 20, "slot": "right_hand"},
+                    "rarity": "epic", "kind": "weapon", "slot": "right_hand"},
         "bonded": {"id": "veteran_legendary_{town}", "name": "Legend of {Town}",
-                   "rarity": "legendary", "kind": "weapon", "power": 30, "slot": "right_hand"},
+                   "rarity": "legendary", "kind": "weapon", "slot": "right_hand"},
     },
     "gatherer": {
         "friend": {"id": "gatherer_satchel_{town}", "name": "{Town} Gatherer's Satchel",
-                   "rarity": "rare", "kind": "relic", "power": 0},
+                   "rarity": "rare", "kind": "relic"},
         "trusted": {"id": "gatherer_tools_{town}", "name": "Master's Gathering Tools of {Town}",
-                    "rarity": "epic", "kind": "relic", "power": 0},
+                    "rarity": "epic", "kind": "relic"},
         "bonded": {"id": "gatherer_crown_{town}", "name": "Wildcrafter's Crown of {Town}",
-                   "rarity": "legendary", "kind": "relic", "power": 0},
+                   "rarity": "legendary", "kind": "relic"},
     },
     "merchant": {
         "friend": {"id": "merchant_ring_{town}", "name": "{Town} Broker's Ring",
-                   "rarity": "rare", "kind": "relic", "power": 0},
+                   "rarity": "rare", "kind": "relic"},
         "trusted": {"id": "merchant_amulet_{town}", "name": "Trade Amulet of {Town}",
-                    "rarity": "epic", "kind": "relic", "power": 0},
+                    "rarity": "epic", "kind": "relic"},
         "bonded": {"id": "merchant_scepter_{town}", "name": "Golden Scepter of {Town}",
-                   "rarity": "legendary", "kind": "relic", "power": 0},
+                   "rarity": "legendary", "kind": "relic"},
     },
     "mystic": {
         "friend": {"id": "mystic_charm_{town}", "name": "{Town} Mystic's Charm",
-                   "rarity": "rare", "kind": "relic", "power": 0},
+                   "rarity": "rare", "kind": "relic"},
         "trusted": {"id": "mystic_staff_{town}", "name": "Arcane Staff of {Town}",
-                    "rarity": "epic", "kind": "weapon", "power": 18, "slot": "right_hand"},
+                    "rarity": "epic", "kind": "weapon", "slot": "right_hand"},
         "bonded": {"id": "mystic_orb_{town}", "name": "Oracle's Orb of {Town}",
-                   "rarity": "legendary", "kind": "relic", "power": 0},
+                   "rarity": "legendary", "kind": "relic"},
     },
     "guard": {
         "friend": {"id": "guard_shield_{town}", "name": "{Town} Sentinel's Shield",
-                   "rarity": "rare", "kind": "armor", "power": 10, "slot": "left_hand"},
+                   "rarity": "rare", "kind": "armor", "slot": "left_hand"},
         "trusted": {"id": "guard_armor_{town}", "name": "Captain's Plate of {Town}",
-                    "rarity": "epic", "kind": "armor", "power": 18, "slot": "body"},
+                    "rarity": "epic", "kind": "armor", "slot": "body"},
         "bonded": {"id": "guard_helm_{town}", "name": "Warden's Helm of {Town}",
-                   "rarity": "legendary", "kind": "armor", "power": 25, "slot": "head"},
+                   "rarity": "legendary", "kind": "armor", "slot": "head"},
     },
 }
 

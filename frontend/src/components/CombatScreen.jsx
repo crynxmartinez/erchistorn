@@ -205,6 +205,19 @@ export default function CombatScreen({ combatStart, character, itemsById, skills
         }
     };
 
+    // Leaving the screen must also end the fight server-side. Previously this
+    // only closed the panel locally, which left an active combat document behind
+    // forever — the game has no flee mechanic, so nothing ever cleaned it up.
+    const abandonFight = async () => {
+        try {
+            await api.post("/game/combat/abandon");
+        } catch {
+            // Non-fatal: the server auto-forfeits any stale fight on the next
+            // /combat/start, so a failed call here cannot strand the player.
+        }
+        onEnd?.(ch);
+    };
+
     const monsterHpPct = Math.round((state.monster_hp / Math.max(1, state.monster_max_hp)) * 100);
     const monsterShield = state.monster_shield || 0;
     const monsterMaxShield = state.monster_max_shield || 0;
@@ -368,11 +381,13 @@ export default function CombatScreen({ combatStart, character, itemsById, skills
                     <h2 className={`font-pixel text-2xl uppercase ${RARITY_CLASS[monsterRarity] || "text-primary"}`}>{monsterName}</h2>
                 </div>
                 <button
-                    onClick={() => onEnd?.(ch)}
+                    onClick={abandonFight}
+                    disabled={rolling}
                     data-testid="combat-back-btn"
-                    className="press-btn flex items-center gap-1 stat-label px-3 py-1.5 border border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                    title="Walk away from this fight. Damage already taken is not restored."
+                    className="press-btn flex items-center gap-1 stat-label px-3 py-1.5 border border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors disabled:opacity-40"
                 >
-                    <ArrowLeft size={14} /> Back
+                    <ArrowLeft size={14} /> Withdraw
                 </button>
             </div>
 

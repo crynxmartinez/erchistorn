@@ -26,17 +26,66 @@ WEAPON_TYPES: dict[str, dict] = {
 # Armor Types
 # ============================================================
 ARMOR_TYPES: dict[str, dict] = {
-    "light":   {"label": "Light",   "desc": "Cloth and robes. Favors casters — high grace and insight."},
-    "leather": {"label": "Leather", "desc": "Hide and scale. Balanced — vitality and might."},
-    "heavy":   {"label": "Heavy",   "desc": "Plate and iron. Tank — high vitality and durability."},
+    "light":   {"label": "Light",   "desc": "Cloth and robes. Favors casters — high grace and insight, and the best magic resistance."},
+    "leather": {"label": "Leather", "desc": "Hide and scale. Balanced — vitality and might, with even defenses."},
+    "heavy":   {"label": "Heavy",   "desc": "Plate and iron. Tank — high vitality and durability, and the best armor."},
 }
+
+# ============================================================
+# Defensive Values by Armor Type + Tier
+# ============================================================
+# Armor pieces grant `armor_bonus` (reduces physical damage) and `magic_resist`
+# (reduces magical damage). The two scale in opposite directions across armor
+# types, so the choice of armor_type is a real defensive trade-off rather than a
+# stat-stick preference:
+#
+#   heavy   -> best armor,          worst magic resistance
+#   leather -> balanced
+#   light   -> worst armor,         best magic resistance
+#
+# Values are for a body piece; other slots scale by ARMOR_SLOT_MULT below.
+#
+# NOTE: before this table existed, `compute_armor` summed a `power` field that
+# item instances never carry, and no base item or affix granted `armor_bonus` at
+# all — so every character in the game had exactly 0 armor and took full
+# physical damage in full plate. These tables are the fix.
+ARMOR_BONUS_BY_TYPE_TIER: dict[tuple[str, int], int] = {
+    ("light", 1): 4,   ("light", 2): 8,    ("light", 3): 14,
+    ("leather", 1): 7, ("leather", 2): 13, ("leather", 3): 22,
+    ("heavy", 1): 11,  ("heavy", 2): 20,   ("heavy", 3): 34,
+}
+
+MAGIC_RESIST_BY_TYPE_TIER: dict[tuple[str, int], int] = {
+    ("light", 1): 6,   ("light", 2): 11,  ("light", 3): 18,
+    ("leather", 1): 4, ("leather", 2): 7, ("leather", 3): 12,
+    ("heavy", 1): 2,   ("heavy", 2): 4,   ("heavy", 3): 7,
+}
+
+# How much of a body piece's defense each slot carries.
+ARMOR_SLOT_MULT: dict[str, float] = {
+    "body": 1.0,
+    "legs": 0.7,
+    "head": 0.6,
+    "feet": 0.45,
+    "back": 0.45,
+    "hands": 0.4,
+}
+
+# Shields are the archetypal armor source and are weapon-slot items, so they
+# are keyed by tier directly rather than by armor_type.
+SHIELD_ARMOR_BY_TIER: dict[int, int] = {1: 10, 2: 18, 3: 30}
+
+# Each point of Resilience contributes this much armor. Resilience is granted by
+# the Guardian role ("+2 Resilience, +1 defence rolls") and by level-up for
+# defensive masteries. Before this, no formula in the game read the stat at all.
+ARMOR_PER_RESILIENCE = 2
 
 # ============================================================
 # Equipment Slots
 # ============================================================
 EQUIP_SLOTS: list[str] = [
     "head", "body", "left_hand", "right_hand",
-    "legs", "feet", "earring_l", "earring_r",
+    "legs", "feet", "hands", "earring_l", "earring_r",
     "ring_l", "ring_r", "neck", "back",
 ]
 

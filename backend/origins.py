@@ -224,14 +224,32 @@ def compute_final_stats(race_life_stats: dict, role_id: str, mastery_id: str, or
         "might":               0,
         "grace":               0,
         "insight":             0,
+        # `resilience` feeds armor (game_data.compute_armor) and `magic_resist`
+        # carries gear MR. Neither key existed here, so the Guardian role's
+        # declared "+2 Resilience" had nowhere to land and was silently dropped.
+        "resilience":          0,
+        "magic_resist":        0,
         "armor_bonus":         0,
         "evasion_mod":         0,
         "attack_success_mod":  0,
     }
-    # Role
+    # Role — main-stat allocation (might/grace/insight)
     role_stats = ROLE_MAIN_STATS.get(role_id, {})
     for k, v in role_stats.items():
         stats[k] += v
+
+    # Role — the flat `bonus` declared on ROLES.
+    #
+    # This was never read by anything. All five roles advertise a stat bonus in
+    # their own description ("Front-line combatant. +2 Vitality", "Defender and
+    # protector. +2 Resilience", ...) and not one of them was granted:
+    #   fighter +2 vitality · guardian +2 resilience · scout +2 grace
+    #   scholar +2 cognition · healer +2 essence
+    from game_data import ROLES as _ROLES
+    role_def = next((r for r in _ROLES if r["id"] == role_id), None)
+    role_bonus = dict((role_def or {}).get("bonus") or {})
+    for k, v in role_bonus.items():
+        stats[k] = stats.get(k, 0) + v
     # Mastery
     mastery_stats = MASTERY_MAIN_STATS.get(mastery_id, {})
     for k, v in mastery_stats.items():
@@ -239,7 +257,7 @@ def compute_final_stats(race_life_stats: dict, role_id: str, mastery_id: str, or
     # Origin
     breakdown = {
         "race": dict(race_life_stats),
-        "role": role_stats,
+        "role": {**role_stats, **role_bonus},
         "mastery": mastery_stats,
         "origin_bonus": {},
         "origin_drawback": {},

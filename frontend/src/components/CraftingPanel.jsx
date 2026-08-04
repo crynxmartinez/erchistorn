@@ -259,11 +259,8 @@ export default function CraftingPanel({ character, itemsById, onCharacterUpdate,
                         ))}
                     </div>
                 )}
-                {output?.power > 0 && (
-                    <div className="stat-label text-xs text-muted-foreground mb-3">
-                        Power {output.power}
-                    </div>
-                )}
+                {/* The crafted-output "Power" line is gone — items no longer carry a
+                    scalar power rating. Their stats are shown in the tooltip instead. */}
                 <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
                     <span className="flex items-center gap-1"><Clock size={12} /> {fmtDuration(r.duration_seconds)}</span>
                     <span className="flex items-center gap-1"><Package size={12} /> {r.rarity}</span>

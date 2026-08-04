@@ -5,6 +5,7 @@ import logging
 import os
 import random
 import sys
+from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -40,10 +41,13 @@ from game_data import (  # noqa: E402
     HUNTER_PASSIVES,
     ITEMS,
     ITEMS_BY_ID,
+    ALCHEMIST_PASSIVES,
     KNIGHT_PASSIVES,
     LANCER_PASSIVES,
     MAGE_PASSIVES,
     PALADIN_PASSIVES,
+    PRIEST_PASSIVES,
+    RECIPES_BY_ID,
     LOGIN_REWARDS,
     MASTERIES,
     MONSTERS,
@@ -59,13 +63,22 @@ from game_data import (  # noqa: E402
     STARTER_GEAR_BY_MASTERY,
     TEACHERS,
     TEACHERS_BY_ID,
+    apply_armor,
+    apply_magic_resistance,
     build_item_instance,
+    compute_accuracy,
+    compute_armor,
+    compute_evasion,
+    compute_magic_resistance,
+    compute_monster_threat,
+    compute_skill_capacity,
     compute_starting_hp,
     get_mastery,
     get_race,
     get_role,
 )
 from game_engine import combat_turn, resolve_action, start_combat, start_craft, finish_craft, start_enchant, skin_monster, generate_telegraph, _alch_spend_cf, attempt_tame, _is_druid, _druid_summon_creature, _druid_unsummon_creature, _druid_fuse, _druid_end_fusion, _druid_get_max_summons, _get_weapon_range_for_combat  # noqa: E402
+from progression import apply_level_ups, max_hp_for, xp_for_next  # noqa: E402
 from game_data_p2 import (  # noqa: E402
     BEAST_ASPECTS,
     EVENTS,
@@ -114,6 +127,9 @@ from world_travel import (  # noqa: E402
 from professions import (  # noqa: E402
     PROFESSIONS,
     PROFESSIONS_BY_ID,
+    # Was imported locally inside one function but read by two others, so
+    # /game/professions/catalog raised NameError on every request.
+    PROFESSION_RANKS,
     learn_profession,
     abandon_profession,
     gain_profession_xp,
@@ -277,6 +293,23 @@ async def _get_character_or_404(user_id: str) -> dict:
         ch["rogue_innate_equipped"] = [s["id"] for s in ROGUE_INNATE_SKILLS[:5]]
     # Compute effective stats = base_stats + equipment stats + enchantments
     _recompute_stats(ch)
+    # Expose derived combat stats so the client can show the player what their
+    # gear is actually doing. Armor in particular was invisible for a long time
+    # because it was always zero — there was nothing worth displaying.
+    ch["derived"] = {
+        "armor": compute_armor(ch),
+        "magic_resistance": compute_magic_resistance(ch),
+        "accuracy": compute_accuracy(ch),
+        "evasion": compute_evasion(ch),
+        "skill_capacity": compute_skill_capacity(ch),
+        "physical_reduction_pct": round(
+            100 * (1 - apply_armor(1000, compute_armor(ch)) / 1000), 1
+        ),
+        "magical_reduction_pct": round(
+            100 * (1 - apply_magic_resistance(1000, compute_magic_resistance(ch)) / 1000), 1
+        ),
+        "xp_for_next": _xp_for_next(ch.get("level", 1)),
+    }
     return ch
 
 
@@ -324,7 +357,9 @@ def _today_str() -> str:
 
 
 def _xp_for_next(level: int) -> int:
-    return 100 + (level - 1) * 40
+    """Delegates to progression.xp_for_next — kept as a thin alias because
+    several routes and the character payload reference it by this name."""
+    return xp_for_next(level)
 
 
 def _apply_rewards_to_character(character: dict, rewards: dict, reduce: bool = True) -> None:
@@ -381,15 +416,19 @@ def _is_biome_unlocked(character: dict, continent: dict, biome_id: str) -> tuple
     prev_pct = _biome_exploration_pct(character, prev["id"])
     return prev_pct >= NEXT_BIOME_THRESHOLD, NEXT_BIOME_THRESHOLD, prev["id"]
 def _level_up_if_needed(character: dict, rewards: dict) -> None:
-    base = character.setdefault("base_stats", dict(character.get("stats", {})))
-    while character["xp"] >= _xp_for_next(character["level"]):
-        character["xp"] -= _xp_for_next(character["level"])
-        character["level"] += 1
-        stat_keys = ["vitality", "cognition", "essence", "durability"]
-        pick = random.choice(stat_keys)
-        base[pick] = base.get(pick, 0) + 1
-        character["max_hp"] = compute_starting_hp(base) + (character["level"] - 1) * 4
-    character["base_stats"] = base
+    """Spend banked XP into levels, then refresh effective stats.
+
+    The actual growth rules live in progression.py so they are testable without
+    Mongo. They are fully deterministic — this used to pick a random stat from
+    the four primaries only, which meant Might, Grace, Insight and Resilience
+    never grew and the tier-2/tier-3 gear tree was permanently unequippable.
+
+    Records the per-level stat gains on `rewards` so callers can show the player
+    what they earned instead of silently mutating their sheet.
+    """
+    events = apply_level_ups(character)
+    if events:
+        rewards["level_ups"] = events
     _recompute_stats(character)
 
 
@@ -693,7 +732,9 @@ async def biome_actions(biome_id: str, user: dict = Depends(_get_current_user)):
                     "id": m["id"],
                     "name": m["name"],
                     "rarity": m.get("rarity", "common"),
-                    "power": m.get("power", 5),
+                    # Level-aware threat, derived from the monster's stats.
+                    # The old static "power" understated scaling monsters by 6-9x.
+                    "threat": compute_monster_threat(m, ch.get("level", 1)),
                     "stock": stock,
                     "max_stock": get_stock_max("monster", biome_id, m["id"]),
                 })
@@ -857,6 +898,10 @@ async def get_mastery_passives_data(user: dict = Depends(_get_current_user)):
         "lancer": LANCER_PASSIVES,
         "mage": MAGE_PASSIVES,
         "paladin": PALADIN_PASSIVES,
+        # priest and alchemist were both absent from this aggregate, so the
+        # client never received their passive tables.
+        "priest": PRIEST_PASSIVES,
+        "alchemist": ALCHEMIST_PASSIVES,
     }
 
 
@@ -921,18 +966,26 @@ async def create_character(payload: CreateCharacterPayload, user: dict = Depends
     starting_skills += list(role.get("starting_skills", []))
     skills = [{"skill_id": sid, "cooldown_remaining": 0} for sid in starting_skills]
 
+    # Seed the action bar with the skills we just granted.
+    #
+    # `_pick_next_skill` iterates `skill_bar` and nothing else, so an all-None bar
+    # meant a new character never used a skill in combat — the 2-3 starting skills
+    # were granted but unreachable, and every mastery resource that builds on skill
+    # use (Combo Flow, Crescendo, Oath stacks, elemental imbue) stayed at zero. The
+    # skills are already the player's; this only puts them where the engine and the
+    # HUD can see them. Players can rearrange the bar afterwards as before.
+    starting_bar: list = [None] * 10
+    for _slot, _sid in enumerate(starting_skills[:10]):
+        starting_bar[_slot] = _sid
+
     # Generate proper item instances for starting equipment (mastery-based)
     _gear_def = STARTER_GEAR_BY_MASTERY.get(payload.mastery, {})
     _starter_instances = []
     _starter_inv = []
-    _starter_equipped = {
-        "head": None, "body": None,
-        "left_hand": None, "right_hand": None,
-        "legs": None, "feet": None,
-        "earring_l": None, "earring_r": None,
-        "ring_l": None, "ring_r": None,
-        "neck": None, "back": None,
-    }
+    # Derived from EQUIP_SLOTS rather than hardcoded, so adding a slot (as
+    # "hands" was — gloves and gauntlets existed as items but the slot was
+    # missing entirely, making them unequippable) cannot leave this out of sync.
+    _starter_equipped = {slot: None for slot in EQUIP_SLOTS}
     # Build list of (base_item_id, equip_slot) pairs from mastery gear definition
     _gear_pairs = []
     _weapon_id = _gear_def.get("weapon")
@@ -987,7 +1040,7 @@ async def create_character(payload: CreateCharacterPayload, user: dict = Depends
         "equipped": _starter_equipped,
         "weapon_range": _starter_weapon_range,
         "skills": skills,
-        "skill_bar": [None] * 10,
+        "skill_bar": starting_bar,
         "item_bar": [None] * 5,
         "masteries": [payload.mastery],
         "training_skill_id": None,
@@ -1000,6 +1053,9 @@ async def create_character(payload: CreateCharacterPayload, user: dict = Depends
             default_home_continent_for_race(payload.race),
             [c["id"] for c in CONTINENTS if not c.get("locked")],
         ),
+        # New characters are born current — no migration needs to touch them.
+        "schema_version": CHARACTER_SCHEMA_VERSION,
+        "item_system_migrated": True,
         "tutorial_step": 0,
         "tutorial_complete": False,
         "current_continent": default_home_continent_for_race(payload.race),
@@ -1551,15 +1607,52 @@ async def combat_start(payload: CombatStartPayload, user: dict = Depends(_get_cu
         raise HTTPException(status_code=403, detail="You have not discovered that creature yet.")
     if get_stock("monster", biome, payload.monster_id) <= 0:
         raise HTTPException(status_code=403, detail="There are no more of that creature in this area.")
+    # One fight at a time. Without this, a client could open unlimited
+    # concurrent combats, each holding its own snapshot of the character and
+    # each writing HP/XP/loot back from that snapshot — a last-write-wins
+    # desync and the natural shape of a loot dupe.
+    #
+    # Stale fights are auto-forfeited rather than rejected. There is no flee
+    # mechanic in the game, so refusing the new fight would permanently lock
+    # combat for anyone who closed the tab mid-encounter. Abandoning is not
+    # free: HP lost is persisted every turn, so the damage already taken stands.
+    abandoned = await db.combats.find_one_and_delete(
+        {"user_id": user["_id"], "state.active": True}
+    )
     state = start_combat(ch, payload.monster_id)
     state["biome_id"] = biome
     if "error" in state:
         raise HTTPException(status_code=400, detail=state["error"])
     combat_doc = {"user_id": user["_id"], "character_id": ch["id"], "state": state,
-                  "created_at": datetime.now(timezone.utc).isoformat()}
+                  "created_at": datetime.now(timezone.utc)}
     r = await db.combats.insert_one(combat_doc)
     state["combat_id"] = str(r.inserted_id)
-    return {"state": state, "character": ch}
+    resp = {"state": state, "character": ch}
+    if abandoned:
+        resp["abandoned_combat"] = {
+            "monster_name": (abandoned.get("state") or {}).get("monster_name", "a previous foe"),
+        }
+    return resp
+
+
+@api.post("/game/combat/abandon")
+async def combat_abandon(user: dict = Depends(_get_current_user)):
+    """Walk away from the current fight.
+
+    The game has no flee mechanic, so before this existed an interrupted
+    encounter left an orphaned active combat document behind forever. HP already
+    lost is persisted per turn and is not refunded — abandoning costs you
+    whatever the fight already took out of you.
+    """
+    result = await db.combats.find_one_and_delete(
+        {"user_id": user["_id"], "state.active": True}
+    )
+    if not result:
+        return {"abandoned": False}
+    return {
+        "abandoned": True,
+        "monster_name": (result.get("state") or {}).get("monster_name", "a foe"),
+    }
 
 
 @api.post("/game/combat/turn")
@@ -1704,7 +1797,13 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
         ch.pop("knight_self_stat_mods", None)
 
     await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": updates})
-    await db.combats.update_one({"_id": ObjectId(payload.combat_id)}, {"$set": {"state": state}})
+    if state.get("active"):
+        await db.combats.update_one({"_id": ObjectId(payload.combat_id)}, {"$set": {"state": state}})
+    else:
+        # The fight is over — drop the doc. It was never deleted before, so the
+        # collection grew without bound and the active-combat guard on
+        # /combat/start had nothing reliable to check against.
+        await db.combats.delete_one({"_id": ObjectId(payload.combat_id), "user_id": user["_id"]})
 
     return {"result": result, "character": ch, "combat_id": payload.combat_id}
 
@@ -1812,7 +1911,7 @@ async def combat_tame_monster(payload: TamePayload, user: dict = Depends(_get_cu
             "id": monster["id"],
             "name": monster["name"],
             "creature_tier": monster.get("creature_tier", "normal"),
-            "power": monster.get("power", 5),
+            "threat": compute_monster_threat(monster, ch.get("level", 1)),
             "stats": monster.get("stats", {}),
             "passive_buff": monster.get("passive_buff", []),
             "profile_skills": monster.get("profile_skills", {}),
@@ -2468,6 +2567,31 @@ async def knight_select_oath(request: Request, user: dict = Depends(_get_current
     return {"state": state, "oath": oath_id}
 
 
+@api.get("/game/druid/passives")
+async def get_druid_passives(user: dict = Depends(_get_current_user)):
+    """Get Druid passives list.
+
+    Druid and Rogue were the only two masteries without a per-mastery passives
+    route, so `/game/druid/passives` and `/game/rogue/passives` 404'd while the
+    other nine answered. The aggregate `/game/data/mastery-passives` did carry
+    all eleven, so the shipped client was unaffected — this closes the gap for
+    any caller using the uniform per-mastery path.
+    """
+    await _get_character_or_404(user["_id"])
+    return {
+        "passives": DRUID_PASSIVES,
+    }
+
+
+@api.get("/game/rogue/passives")
+async def get_rogue_passives(user: dict = Depends(_get_current_user)):
+    """Get Rogue passives list."""
+    await _get_character_or_404(user["_id"])
+    return {
+        "passives": ROGUE_PASSIVES,
+    }
+
+
 @api.get("/game/knight/passives")
 async def get_knight_passives(user: dict = Depends(_get_current_user)):
     """Get Knight passives list."""
@@ -2551,6 +2675,15 @@ async def mage_equip_passive(request: Request, user: dict = Depends(_get_current
     passive_ids = {p["id"] for p in MAGE_PASSIVES}
     if passive_id not in passive_ids:
         raise HTTPException(status_code=400, detail="Invalid passive ID")
+    # Passives flagged `planned` need portals, terrain or allies — none of which
+    # combat represents. They used to be equippable and silently did nothing, so
+    # a player could spend research on a permanent no-op.
+    _planned = {p["id"] for p in MAGE_PASSIVES if p.get("planned")}
+    if passive_id in _planned:
+        raise HTTPException(
+            status_code=400,
+            detail="That technique is still theoretical — the Library has no working form of it yet.",
+        )
     # Check research
     researched = ch.get("mage_researched_passives", [])
     if passive_id not in researched:
@@ -2566,7 +2699,7 @@ async def mage_equip_passive(request: Request, user: dict = Depends(_get_current
             raise HTTPException(status_code=400, detail="Passive already equipped in another slot")
     equipped[slot] = passive_id
     update = {f"mage_equipped_passives": equipped}
-    await db.characters.update_one({"_id": ch["_id"]}, {"$set": update})
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": update})
     return {"equipped": equipped, "message": f"Equipped {passive_id} to slot {slot}"}
 
 
@@ -2584,7 +2717,7 @@ async def mage_unequip_passive(request: Request, user: dict = Depends(_get_curre
     while len(equipped) < 5:
         equipped.append(None)
     equipped[slot] = None
-    await db.characters.update_one({"_id": ch["_id"]}, {"$set": {"mage_equipped_passives": equipped}})
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {"mage_equipped_passives": equipped}})
     return {"equipped": equipped, "message": f"Unequipped slot {slot}"}
 
 
@@ -2602,7 +2735,7 @@ async def mage_research_passive(request: Request, user: dict = Depends(_get_curr
     researched = ch.get("mage_researched_passives", [])
     if passive_id not in researched:
         researched.append(passive_id)
-        await db.characters.update_one({"_id": ch["_id"]}, {"$set": {"mage_researched_passives": researched}})
+        await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {"mage_researched_passives": researched}})
     return {"researched": researched, "message": f"Researched {passive_id}"}
 
 
@@ -2650,7 +2783,7 @@ async def mage_save_loadout(request: Request, user: dict = Depends(_get_current_
     loadouts = ch.get("mage_loadouts", {})
     equipped = ch.get("mage_equipped_passives", [])
     loadouts[name] = list(equipped)
-    await db.characters.update_one({"_id": ch["_id"]}, {"$set": {"mage_loadouts": loadouts}})
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {"mage_loadouts": loadouts}})
     return {"loadouts": loadouts, "message": f"Loadout '{name}' saved"}
 
 
@@ -2666,7 +2799,7 @@ async def mage_load_loadout(request: Request, user: dict = Depends(_get_current_
     if name not in loadouts:
         raise HTTPException(status_code=404, detail="Loadout not found")
     equipped = loadouts[name]
-    await db.characters.update_one({"_id": ch["_id"]}, {"$set": {"mage_equipped_passives": equipped}})
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {"mage_equipped_passives": equipped}})
     return {"equipped": equipped, "message": f"Loadout '{name}' loaded"}
 
 
@@ -2685,6 +2818,26 @@ async def get_paladin_passives(user: dict = Depends(_get_current_user)):
     return {
         "passives": PALADIN_PASSIVES,
     }
+
+
+# ---------------- ALCHEMIST ----------------
+@api.get("/game/alchemist/passives")
+async def get_alchemist_passives(user: dict = Depends(_get_current_user)):
+    """Get Alchemist passives list.
+
+    The Alchemist had no passive table at all, so it also had no route — the only
+    mastery missing both.
+    """
+    await _get_character_or_404(user["_id"])
+    return {"passives": ALCHEMIST_PASSIVES}
+
+
+# ---------------- PRIEST ----------------
+@api.get("/game/priest/passives")
+async def get_priest_passives(user: dict = Depends(_get_current_user)):
+    """Get Priest passives list."""
+    await _get_character_or_404(user["_id"])
+    return {"passives": PRIEST_PASSIVES}
 
 
 # ---------------- ASSASSIN ----------------
@@ -2810,7 +2963,6 @@ async def equip(request: Request, user: dict = Depends(_get_current_user)):
     # Validate item can go in requested slot
     item_slot = item.get("slot")
     is_shield = item.get("is_shield", False) or item.get("weapon_type") == "shield"
-    is_two_handed = item.get("two_handed", False) or item.get("two_handed", False)
     # Rings and earrings can go in either left or right slot
     if item_slot in ("ring_l",):
         if slot not in ("ring_l", "ring_r"):
@@ -4017,7 +4169,8 @@ async def discoveries_state(user: dict = Depends(_get_current_user)):
             for m in monsters_for_biome(bid):
                 if m["id"] in disc_mons:
                     monsters_out.append({
-                        "id": m["id"], "name": m["name"], "power": m.get("power", 1),
+                        "id": m["id"], "name": m["name"],
+                        "threat": compute_monster_threat(m, ch.get("level", 1)),
                         "hp": m.get("hp", 10), "rarity": m.get("rarity", "common"),
                         "discovered": True,
                     })
@@ -5081,6 +5234,10 @@ async def _heritage_check_master(character_id: str, year: int) -> bool:
 @api.get("/game/heritage/current")
 async def heritage_current(user: dict = Depends(_get_current_user)):
     """Get current heritage month info + active bonuses."""
+    # The boss threat is level-aware, so the character has to be loaded. A blanket
+    # power->threat replacement introduced `ch.get("level")` here without it,
+    # which made this route NameError on every call.
+    ch = await _get_character_or_404(user["_id"])
     hm = get_active_heritage_month()
     if not hm:
         return {"active": False, "message": "No heritage month active. September is a break month."}
@@ -5100,7 +5257,7 @@ async def heritage_current(user: dict = Depends(_get_current_user)):
             "id": boss["id"],
             "name": boss["name"],
             "biome": boss["biome"],
-            "power": boss["power"],
+            "threat": compute_monster_threat(boss, ch.get("level", 1)),
             "hp": boss["hp"],
             "mechanic": boss["mechanic"],
         } if boss else None,
@@ -5269,7 +5426,7 @@ async def heritage_boss_info(user: dict = Depends(_get_current_user)):
             "name": boss["name"],
             "biome": boss["biome"],
             "continent": boss["continent"],
-            "power": boss["power"],
+            "threat": compute_monster_threat(boss, ch.get("level", 1)),
             "hp": boss["hp"],
             "mechanic": boss["mechanic"],
             "token_reward": boss.get("heritage_token_count", 5),
@@ -5305,7 +5462,9 @@ async def heritage_boss_start(user: dict = Depends(_get_current_user)):
         "id": boss["id"],
         "name": boss["name"],
         "biome": boss["biome"],
-        "power": boss["power"],
+        # Heritage bosses now carry explicit stats (see heritage_system.py) so
+        # combat scales them properly instead of relying on a scalar rating.
+        "stats": boss.get("stats", {}),
         "hp": boss["hp"],
         "max_hp": boss["hp"],
         "is_boss": True,
@@ -5621,14 +5780,38 @@ app.add_middleware(
 app.include_router(api)
 
 
-@app.on_event("startup")
-async def startup():
+# ============================================================
+# STARTUP / SHUTDOWN
+# ============================================================
+# Schema version for character documents. Migrations below are gated on this so
+# they run once per character instead of full-scanning the entire collection on
+# every single boot, forever.
+#
+#   1 — canon v2 continent/biome/town ID rename, reputation + waystone +
+#       NPC-relationship seeding, item_instances field, compensation gems
+#   2 — main-stat backfill: grant the might/grace/insight/resilience growth that
+#       the old random level-up never awarded
+CHARACTER_SCHEMA_VERSION = 2
+
+
+async def _ensure_indexes() -> None:
     await db.users.create_index("email", unique=True)
     await db.characters.create_index("user_id", unique=True)
+    await db.characters.create_index("schema_version")
     await db.world_events.create_index("created_at")
-    # One-time migration: rename any legacy "exhausted" debuff → "weary" (the
-    # numeric racial `exhaustion` meter kept the old name, this only touches
-    # the status badge that read "EXHAUSTED" and confused players).
+    # Combat documents are looked up by _id but deleted and guarded by user_id.
+    await db.combats.create_index("user_id")
+    # Safety net for combats abandoned without hitting /combat/abandon — expire
+    # after 24h so the collection cannot grow without bound.
+    await db.combats.create_index("created_at", expireAfterSeconds=86400)
+
+
+async def _migrate_statuses() -> None:
+    """Rename the legacy "exhausted" debuff → "weary".
+
+    Cheap and indexed by the array filter, so it stays outside the
+    schema_version gate.
+    """
     mig = await db.characters.update_many(
         {"statuses.id": "exhausted"},
         {"$set": {"statuses.$[el].id": "weary", "statuses.$[el].name": "Weary"}},
@@ -5636,99 +5819,154 @@ async def startup():
     )
     if mig.modified_count:
         logger.info("Renamed legacy 'exhausted' status on %d characters.", mig.modified_count)
-    # Canon v2 migration: rewrite legacy continent/biome/town IDs on every
-    # existing character record. Idempotent — safe to run every boot.
-    from world_data import CONTINENT_ID_MAP, BIOME_ID_MAP, TOWN_ID_MAP  # noqa: E402
-    total_updated = 0
-    async for ch_doc in db.characters.find({}):
-        updates = {}
-        # continent
-        cc = ch_doc.get("current_continent")
-        if cc in CONTINENT_ID_MAP:
-            updates["current_continent"] = CONTINENT_ID_MAP[cc]
-        # biome
-        cb = ch_doc.get("current_biome")
-        if cb in BIOME_ID_MAP:
-            updates["current_biome"] = BIOME_ID_MAP[cb]
-        # town
-        ct = ch_doc.get("current_town")
-        if ct in TOWN_ID_MAP:
-            updates["current_town"] = TOWN_ID_MAP[ct]
-        # home_town
-        ht = ch_doc.get("home_town")
-        if ht in TOWN_ID_MAP:
-            updates["home_town"] = TOWN_ID_MAP[ht]
-        # visited_towns
-        vt = ch_doc.get("visited_towns") or []
-        new_vt = [TOWN_ID_MAP.get(t, t) for t in vt]
-        if new_vt != vt:
-            updates["visited_towns"] = new_vt
-        # Phase-B seed: reputation dict for existing characters that never had one
-        rep = ch_doc.get("reputation") or {}
-        if not rep:
-            from world_travel import initial_reputation_for_race
-            from game_data_p2 import default_home_continent_for_race
-            new_cc = updates.get("current_continent") or ch_doc.get("current_continent")
-            race = ch_doc.get("race", "human")
-            updates["reputation"] = initial_reputation_for_race(
-                race,
-                default_home_continent_for_race(race),
-                [c["id"] for c in CONTINENTS if not c.get("locked")],
-            )
-        # Phase-B seed: known_waystones / active_waystones fields (default empty)
-        if "known_waystones" not in ch_doc:
-            updates["known_waystones"] = []
-        if "active_waystones" not in ch_doc:
-            updates["active_waystones"] = []
-        # Phase-F seed: NPC relationships + quest state (default empty for existing chars)
-        if "npc_relationships" not in ch_doc:
-            updates["npc_relationships"] = initial_npc_relationships()
-        if "active_npc_quests" not in ch_doc:
-            updates["active_npc_quests"] = []
-        if "completed_npc_quests" not in ch_doc:
-            updates["completed_npc_quests"] = []
-        if "npc_quest_progress" not in ch_doc:
-            updates["npc_quest_progress"] = {}
-        if updates:
-            await db.characters.update_one({"_id": ch_doc["_id"]}, {"$set": updates})
-            total_updated += 1
-    if total_updated:
-        logger.info("Canon v2 rename applied on %d character(s).", total_updated)
 
-    # Item system migration: ensure item_instances field exists on all characters
-    item_mig = await db.characters.update_many(
-        {"item_instances": {"$exists": False}},
-        {"$set": {"item_instances": []}},
-    )
-    if item_mig.modified_count:
-        logger.info("Added item_instances field to %d character(s).", item_mig.modified_count)
 
-    # Item system migration: give compensation gems to existing characters who
-    # don't have any gems in their inventory yet (one-time)
-    from game_data import GEMS  # noqa: E402
-    _compensation_gem_ids = [g["id"] for g in GEMS[:3]]  # first 3 gems as compensation
-    async for ch_doc in db.characters.find({"item_system_migrated": {"$ne": True}}):
-        ch_inv = ch_doc.get("inventory") or []
-        _has_gems = any(
-            (slot.get("item_id", "") in _compensation_gem_ids)
-            for slot in ch_inv
+def _migrate_v1_canon(ch_doc: dict, updates: dict) -> None:
+    """Canon v2 IDs, reputation, waystones, NPC state, item_instances."""
+    from world_data import CONTINENT_ID_MAP, BIOME_ID_MAP, TOWN_ID_MAP
+    from world_travel import initial_reputation_for_race
+    from game_data_p2 import default_home_continent_for_race
+
+    cc = ch_doc.get("current_continent")
+    if cc in CONTINENT_ID_MAP:
+        updates["current_continent"] = CONTINENT_ID_MAP[cc]
+    cb = ch_doc.get("current_biome")
+    if cb in BIOME_ID_MAP:
+        updates["current_biome"] = BIOME_ID_MAP[cb]
+    ct = ch_doc.get("current_town")
+    if ct in TOWN_ID_MAP:
+        updates["current_town"] = TOWN_ID_MAP[ct]
+    ht = ch_doc.get("home_town")
+    if ht in TOWN_ID_MAP:
+        updates["home_town"] = TOWN_ID_MAP[ht]
+
+    vt = ch_doc.get("visited_towns") or []
+    new_vt = [TOWN_ID_MAP.get(t, t) for t in vt]
+    if new_vt != vt:
+        updates["visited_towns"] = new_vt
+
+    if not (ch_doc.get("reputation") or {}):
+        race = ch_doc.get("race", "human")
+        updates["reputation"] = initial_reputation_for_race(
+            race,
+            default_home_continent_for_race(race),
+            [c["id"] for c in CONTINENTS if not c.get("locked")],
         )
-        _updates = {}
-        if not _has_gems:
-            for gid in _compensation_gem_ids:
-                _existing = next((s for s in ch_inv if s.get("item_id") == gid), None)
-                if _existing:
-                    _existing["quantity"] = _existing.get("quantity", 0) + 1
+
+    for field, default in (
+        ("known_waystones", []),
+        ("active_waystones", []),
+        ("active_npc_quests", []),
+        ("completed_npc_quests", []),
+        ("npc_quest_progress", {}),
+        ("item_instances", []),
+    ):
+        if field not in ch_doc:
+            updates[field] = default
+    if "npc_relationships" not in ch_doc:
+        updates["npc_relationships"] = initial_npc_relationships()
+
+    # One-time goodwill: seed a few gems for characters that predate the
+    # socketing system and have none.
+    from game_data import GEMS
+    if not ch_doc.get("item_system_migrated"):
+        gem_ids = [g["id"] for g in GEMS[:3]]
+        inv = ch_doc.get("inventory") or []
+        if not any(slot.get("item_id") in gem_ids for slot in inv):
+            for gid in gem_ids:
+                existing = next((s for s in inv if s.get("item_id") == gid), None)
+                if existing:
+                    existing["quantity"] = existing.get("quantity", 0) + 1
                 else:
-                    ch_inv.append({"item_id": gid, "quantity": 1, "favorite": False})
-            _updates["inventory"] = ch_inv
-        _updates["item_system_migrated"] = True
-        await db.characters.update_one({"_id": ch_doc["_id"]}, {"$set": _updates})
-    logger.info("Item system migration complete.")
+                    inv.append({"item_id": gid, "quantity": 1, "favorite": False})
+            updates["inventory"] = inv
+        updates["item_system_migrated"] = True
 
+
+def _migrate_v2_main_stats(ch_doc: dict, updates: dict) -> None:
+    """Backfill main-stat growth the old level-up never granted.
+
+    Level-up used to pick randomly from the four primary stats only, so
+    might/grace/insight/resilience never grew. Existing characters therefore have
+    roughly the right primaries (~1 point per level, randomly assigned) but zero
+    main-stat growth, which left the tier-2/tier-3 gear tree unequippable.
+
+    Grant exactly the main-stat portion of what the deterministic curve would
+    have awarded for their current level. Primaries are left alone — they were
+    already awarded at the same rate the new system uses.
+    """
+    from progression import MAIN_STATS, stat_gains_for_levels, max_hp_for
+
+    level = int(ch_doc.get("level") or 1)
+    if level <= 1:
+        return
+
+    base = dict(ch_doc.get("base_stats") or ch_doc.get("stats") or {})
+    if not base:
+        return
+
+    owed = stat_gains_for_levels(ch_doc.get("mastery") or "", 1, level)
+    changed = False
+    for stat in MAIN_STATS:
+        amount = owed.get(stat, 0)
+        if amount:
+            base[stat] = base.get(stat, 0) + amount
+            changed = True
+
+    if changed:
+        updates["base_stats"] = base
+        new_max = max_hp_for(base, level)
+        updates["max_hp"] = new_max
+        # Recomputing max_hp can *lower* it (the old formula was ad hoc), which
+        # would leave current hp above the new ceiling — a state nothing else in
+        # the game can produce and that the HP bar renders as over-full.
+        if int(ch_doc.get("hp") or 0) > new_max:
+            updates["hp"] = new_max
+
+
+async def _migrate_characters() -> None:
+    """Run version-gated per-character migrations."""
+    migrations = [
+        (1, _migrate_v1_canon),
+        (2, _migrate_v2_main_stats),
+    ]
+    migrated = 0
+    # A missing field does NOT match `{"$lt": n}` in MongoDB — the comparison
+    # simply fails rather than treating absent as zero. Every pre-existing
+    # character has no `schema_version` by definition, so the bare `$lt` query
+    # matched *nothing* and the migration was inert for exactly the documents it
+    # was written for: no canon continent/town rename, no main-stat backfill, no
+    # item_instances seeding. Verified against real data: `{"$lt": 2}` matched 0 of
+    # 2 legacy characters, the `$or` below matched both.
+    async for ch_doc in db.characters.find({"$or": [
+        {"schema_version": {"$exists": False}},
+        {"schema_version": None},
+        {"schema_version": {"$lt": CHARACTER_SCHEMA_VERSION}},
+    ]}):
+        current = int(ch_doc.get("schema_version") or 0)
+        updates: dict = {}
+        for version, fn in migrations:
+            if current < version:
+                fn(ch_doc, updates)
+        updates["schema_version"] = CHARACTER_SCHEMA_VERSION
+        await db.characters.update_one({"_id": ch_doc["_id"]}, {"$set": updates})
+        migrated += 1
+    if migrated:
+        logger.info(
+            "Migrated %d character(s) to schema version %d.",
+            migrated, CHARACTER_SCHEMA_VERSION,
+        )
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Replaces the deprecated @app.on_event("startup"/"shutdown") pair."""
+    await _ensure_indexes()
+    await _migrate_statuses()
+    await _migrate_characters()
     logger.info("Erchis server up. Allowed origins: %s", origins)
-
-
-@app.on_event("shutdown")
-async def shutdown():
+    yield
     client.close()
+
+
+app.router.lifespan_context = lifespan

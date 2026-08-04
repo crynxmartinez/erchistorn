@@ -1,0 +1,6338 @@
+{
+"alchemist|L100|Crownwood Hare|aim|s101": [
+14,
+"606b205c12fc412117142f1f53ce0f89"
+],
+"alchemist|L100|Crownwood Hare|aim|s7": [
+14,
+"db4cf6e78d4d325a4f5f56117a91095e"
+],
+"alchemist|L100|Crownwood Hare|counter|s101": [
+14,
+"eec86f897ed20e775c1fa4eddce74c59"
+],
+"alchemist|L100|Crownwood Hare|counter|s7": [
+14,
+"9704f0c8dd89bad3c940a4811ef4b6e1"
+],
+"alchemist|L100|Crownwood Hare|defend|s101": [
+14,
+"7707cc718fc0e088979bb5bb8ba71d78"
+],
+"alchemist|L100|Crownwood Hare|defend|s7": [
+14,
+"48657fde88a62695fda9fca38b1cf0f5"
+],
+"alchemist|L100|Crownwood Hare|evade|s101": [
+14,
+"936caee702a27e7748a87df1a6c82909"
+],
+"alchemist|L100|Crownwood Hare|evade|s7": [
+14,
+"9ddc827aa1c9615135f5f16677d66124"
+],
+"alchemist|L100|Crownwood Hare|focus|s101": [
+14,
+"b52bb726917fd4fe9b9f5125f83f4e9f"
+],
+"alchemist|L100|Crownwood Hare|focus|s7": [
+14,
+"6165f3bc302c5efed2bd47df9bf50db9"
+],
+"alchemist|L100|Crownwood Hare|strike|s101": [
+14,
+"ebcf3427297052ec2edc5c00150c97f0"
+],
+"alchemist|L100|Crownwood Hare|strike|s7": [
+14,
+"35aed270f7b268049efb39f240c8fd0c"
+],
+"alchemist|L100|Highway Bandit|aim|s101": [
+7,
+"66456674df670e3bad7cddd828b001c2"
+],
+"alchemist|L100|Highway Bandit|aim|s7": [
+9,
+"07a88d68e08d19cacdff809d71b8eea5"
+],
+"alchemist|L100|Highway Bandit|counter|s101": [
+7,
+"d810f7841baa54cca9aea38294d9adac"
+],
+"alchemist|L100|Highway Bandit|counter|s7": [
+8,
+"db49372f85542ec8a9573da2b0a106fe"
+],
+"alchemist|L100|Highway Bandit|defend|s101": [
+14,
+"25960f90de6b8b13c1fa9488504f4023"
+],
+"alchemist|L100|Highway Bandit|defend|s7": [
+14,
+"171881b234eb789f8eb9c73f9ac935a5"
+],
+"alchemist|L100|Highway Bandit|evade|s101": [
+14,
+"9d72dad69022193325969b6571c7f38a"
+],
+"alchemist|L100|Highway Bandit|evade|s7": [
+11,
+"bc5b46789205f7a9aed3efe843715063"
+],
+"alchemist|L100|Highway Bandit|focus|s101": [
+7,
+"30be6f24a2744c3af0a156a4c746a3d7"
+],
+"alchemist|L100|Highway Bandit|focus|s7": [
+8,
+"8f3ee10163391e2db0fbdc8e4d1dc196"
+],
+"alchemist|L100|Highway Bandit|strike|s101": [
+7,
+"5c9c8dacd0466f494e92c62854e06e5a"
+],
+"alchemist|L100|Highway Bandit|strike|s7": [
+9,
+"001cc492835f6235bb2bcdbede315281"
+],
+"alchemist|L100|River Otter|aim|s101": [
+14,
+"481b456b543f087716b88e1c8cd06e41"
+],
+"alchemist|L100|River Otter|aim|s7": [
+14,
+"cbe9f38d221c33de8f00d572220755e3"
+],
+"alchemist|L100|River Otter|counter|s101": [
+14,
+"2fc4e12609a3a51951c7cd0837ecb137"
+],
+"alchemist|L100|River Otter|counter|s7": [
+14,
+"ce7e0c10a7befdffc9097332866554ed"
+],
+"alchemist|L100|River Otter|defend|s101": [
+14,
+"ab8d8a2f9b4718223aaad2857a2697c3"
+],
+"alchemist|L100|River Otter|defend|s7": [
+14,
+"5caecf2d8cb35f8faf828d68e8191b7b"
+],
+"alchemist|L100|River Otter|evade|s101": [
+14,
+"b7848e69088a4296307b493ec89c2b9b"
+],
+"alchemist|L100|River Otter|evade|s7": [
+14,
+"5431638d8e2843451dd6b931e32814fe"
+],
+"alchemist|L100|River Otter|focus|s101": [
+14,
+"030bc54aa156a25408980700d193f72d"
+],
+"alchemist|L100|River Otter|focus|s7": [
+14,
+"61593f73b3ea515c625a2817de9a42ac"
+],
+"alchemist|L100|River Otter|strike|s101": [
+14,
+"488d01f241773d6f735ca99a3b508b50"
+],
+"alchemist|L100|River Otter|strike|s7": [
+14,
+"5add73494ceb8f7649c9a51c07771d10"
+],
+"alchemist|L1|Crownwood Hare|aim|s101": [
+11,
+"d5e7fdc300cbb2106a2abbf851dd0c5b"
+],
+"alchemist|L1|Crownwood Hare|aim|s7": [
+13,
+"3782c004bc2751047ce43e448479bafc"
+],
+"alchemist|L1|Crownwood Hare|counter|s101": [
+11,
+"edb05f911201a932399e31bdcce8aae1"
+],
+"alchemist|L1|Crownwood Hare|counter|s7": [
+11,
+"2f63455559d4b196671b8e7d91da99b3"
+],
+"alchemist|L1|Crownwood Hare|defend|s101": [
+14,
+"f3be5d9d9fcdca33ade142e6ff6d43f8"
+],
+"alchemist|L1|Crownwood Hare|defend|s7": [
+14,
+"d76a9bd025b51f4b17269833cbd1e2ca"
+],
+"alchemist|L1|Crownwood Hare|evade|s101": [
+14,
+"458f4b9913bc181e8d41fe50cad2b6b7"
+],
+"alchemist|L1|Crownwood Hare|evade|s7": [
+14,
+"fdb9bc67e686f02f7d7807ab99de7660"
+],
+"alchemist|L1|Crownwood Hare|focus|s101": [
+12,
+"5ecfaa5b73c7919adeabb2c38d9ec0d0"
+],
+"alchemist|L1|Crownwood Hare|focus|s7": [
+14,
+"670f950e2cb379915d5ddace460d839b"
+],
+"alchemist|L1|Crownwood Hare|strike|s101": [
+14,
+"43ccef93238fedbdebe2d55122abf72e"
+],
+"alchemist|L1|Crownwood Hare|strike|s7": [
+10,
+"875e0ca6100cbebee8d9abd37ea1fb5d"
+],
+"alchemist|L1|Highway Bandit|aim|s101": [
+8,
+"1e45cbe5a3280da2303e18b25e218e08"
+],
+"alchemist|L1|Highway Bandit|aim|s7": [
+14,
+"a9cfcdf345e48a111446acf1d0663edc"
+],
+"alchemist|L1|Highway Bandit|counter|s101": [
+8,
+"5e50f675caed36b3f66ceff415ea8632"
+],
+"alchemist|L1|Highway Bandit|counter|s7": [
+9,
+"38ed2db94a4a724e1ee80681bc142dc4"
+],
+"alchemist|L1|Highway Bandit|defend|s101": [
+14,
+"7af3d90cc38b0fc6b801c60a87bce280"
+],
+"alchemist|L1|Highway Bandit|defend|s7": [
+14,
+"fd0081f8e3e074e81aa94678188b94bd"
+],
+"alchemist|L1|Highway Bandit|evade|s101": [
+14,
+"152404f63295279e02697816da67a76b"
+],
+"alchemist|L1|Highway Bandit|evade|s7": [
+11,
+"538e26a65a0876306aed5b94bc0d17c2"
+],
+"alchemist|L1|Highway Bandit|focus|s101": [
+7,
+"83517845e9a5a72640c3d34e7dab0726"
+],
+"alchemist|L1|Highway Bandit|focus|s7": [
+12,
+"6422222ba3d827a55a197cf63cccbf84"
+],
+"alchemist|L1|Highway Bandit|strike|s101": [
+7,
+"a1f92d597713332cfb3886f18f519129"
+],
+"alchemist|L1|Highway Bandit|strike|s7": [
+11,
+"717b329493f8c542268cda2da8d6b931"
+],
+"alchemist|L1|River Otter|aim|s101": [
+14,
+"9fd404362bfb3c58f719db8be7598eaa"
+],
+"alchemist|L1|River Otter|aim|s7": [
+14,
+"26a5df359368ae09bf2d192f9f7bfffe"
+],
+"alchemist|L1|River Otter|counter|s101": [
+14,
+"ffca48fe96459fbc16ac48f2e9e5623a"
+],
+"alchemist|L1|River Otter|counter|s7": [
+14,
+"81d272590716c245aa4cfbbe472d3ac0"
+],
+"alchemist|L1|River Otter|defend|s101": [
+14,
+"e4f016460e92ab7e0ed3bc684812ce53"
+],
+"alchemist|L1|River Otter|defend|s7": [
+14,
+"4c2ceb8762c37dd4daf56a8a506a386e"
+],
+"alchemist|L1|River Otter|evade|s101": [
+14,
+"1c5f111bbca2d573d89b1094a0614d5a"
+],
+"alchemist|L1|River Otter|evade|s7": [
+14,
+"9cd32f2257d79deab069ba47ab7fe7e8"
+],
+"alchemist|L1|River Otter|focus|s101": [
+14,
+"0ee7cf6795135030f129b03154ede9db"
+],
+"alchemist|L1|River Otter|focus|s7": [
+14,
+"d4d20180a34fd0e6f2cbc47bf0c034cb"
+],
+"alchemist|L1|River Otter|strike|s101": [
+14,
+"8ae112bba2cc578de709c707cf792585"
+],
+"alchemist|L1|River Otter|strike|s7": [
+14,
+"2a96dad8ed26379ae94ae7a01d5b371f"
+],
+"alchemist|L20|Crownwood Hare|aim|s101": [
+14,
+"bd60f15c9d9a988bbfd8bf95c7f2d990"
+],
+"alchemist|L20|Crownwood Hare|aim|s7": [
+14,
+"880f1d91d0ec7808e6b6cf7333308b67"
+],
+"alchemist|L20|Crownwood Hare|counter|s101": [
+14,
+"6eef50aba53b7e4562685a1ae39f46fa"
+],
+"alchemist|L20|Crownwood Hare|counter|s7": [
+14,
+"9dba735a8fd4710e898fda473b0ac21e"
+],
+"alchemist|L20|Crownwood Hare|defend|s101": [
+14,
+"6d51f9c8b41bd2ab28d31b11059326f6"
+],
+"alchemist|L20|Crownwood Hare|defend|s7": [
+14,
+"b38e4afea9adc6ca335c075382ce1fb8"
+],
+"alchemist|L20|Crownwood Hare|evade|s101": [
+14,
+"b304a4187716cdcceb71d90ebe1b50c5"
+],
+"alchemist|L20|Crownwood Hare|evade|s7": [
+14,
+"225fc7b6c47cbf651a148722df3657ca"
+],
+"alchemist|L20|Crownwood Hare|focus|s101": [
+14,
+"85a307854acafcfa539444c0f7022f9f"
+],
+"alchemist|L20|Crownwood Hare|focus|s7": [
+14,
+"ec11bdbba5675adf8250c0d62bae7afa"
+],
+"alchemist|L20|Crownwood Hare|strike|s101": [
+14,
+"3265fd1bbee1196855bffd76b0497429"
+],
+"alchemist|L20|Crownwood Hare|strike|s7": [
+14,
+"c4125302d097bc117c9b7a7a6dc1b558"
+],
+"alchemist|L20|Highway Bandit|aim|s101": [
+7,
+"155feae0fe0f84f6d34a69570d9011da"
+],
+"alchemist|L20|Highway Bandit|aim|s7": [
+9,
+"906afe14d5fbcf606373d093fa53a28d"
+],
+"alchemist|L20|Highway Bandit|counter|s101": [
+7,
+"c8bfb3cea5789824194f3f227f1c253c"
+],
+"alchemist|L20|Highway Bandit|counter|s7": [
+9,
+"3de84b0b05cc756885a9e64de3856eea"
+],
+"alchemist|L20|Highway Bandit|defend|s101": [
+14,
+"3581659bfa901d5f8f129d97d1199977"
+],
+"alchemist|L20|Highway Bandit|defend|s7": [
+14,
+"c9377344e94c1167d9a3e45bddae9654"
+],
+"alchemist|L20|Highway Bandit|evade|s101": [
+14,
+"aea4c68d2e626056dc5c0e146e225358"
+],
+"alchemist|L20|Highway Bandit|evade|s7": [
+11,
+"7dc117d3c036cb64dbafe50a54eea180"
+],
+"alchemist|L20|Highway Bandit|focus|s101": [
+7,
+"3d89890a5640f5f4d733ecaddd2930af"
+],
+"alchemist|L20|Highway Bandit|focus|s7": [
+9,
+"aae5dcf5ad8b3f70d9de624bff08bdba"
+],
+"alchemist|L20|Highway Bandit|strike|s101": [
+7,
+"e03ad0cd72062c5b9c57bfa5849060f9"
+],
+"alchemist|L20|Highway Bandit|strike|s7": [
+9,
+"4d0e2d9d1aa7b5a4cac32a8732e82d51"
+],
+"alchemist|L20|River Otter|aim|s101": [
+14,
+"7720c292f35cf204af6967f7e1b39832"
+],
+"alchemist|L20|River Otter|aim|s7": [
+14,
+"6ce9094bab5123954454e36d6ae4fef6"
+],
+"alchemist|L20|River Otter|counter|s101": [
+14,
+"b10c46be7f5b613072ea35b05c2b38c1"
+],
+"alchemist|L20|River Otter|counter|s7": [
+14,
+"2cb9eb41d0a51335de873abc129a968c"
+],
+"alchemist|L20|River Otter|defend|s101": [
+14,
+"287256b8e42403f5eb819ea61adc6f4f"
+],
+"alchemist|L20|River Otter|defend|s7": [
+14,
+"e63c19bda858b96181da1c900712c2cc"
+],
+"alchemist|L20|River Otter|evade|s101": [
+14,
+"4a9d7aba2ae1c1ebc7596f8462ea4d5c"
+],
+"alchemist|L20|River Otter|evade|s7": [
+14,
+"9b27346ba13eaabfc9e749515705b8f3"
+],
+"alchemist|L20|River Otter|focus|s101": [
+14,
+"ebab14634bd4f049f3fbab6092c59d08"
+],
+"alchemist|L20|River Otter|focus|s7": [
+14,
+"d5e55652c35f86b2ea12f4acdb0f330f"
+],
+"alchemist|L20|River Otter|strike|s101": [
+14,
+"3c5229e834bbef73e0b2497adadf332f"
+],
+"alchemist|L20|River Otter|strike|s7": [
+14,
+"ca4030555314328144e6c48d18704391"
+],
+"alchemist|L60|Crownwood Hare|aim|s101": [
+14,
+"56aef8b8b96811c0028b553034a4b2ca"
+],
+"alchemist|L60|Crownwood Hare|aim|s7": [
+14,
+"edd6d36f3114f2c1461175649259c98f"
+],
+"alchemist|L60|Crownwood Hare|counter|s101": [
+14,
+"09792050379085f4292e680f7833ff4c"
+],
+"alchemist|L60|Crownwood Hare|counter|s7": [
+14,
+"b4f7ae9d9761072506ad3ea5ec54f962"
+],
+"alchemist|L60|Crownwood Hare|defend|s101": [
+14,
+"8899d8495d1b2b156e3c30cfc67a1fa0"
+],
+"alchemist|L60|Crownwood Hare|defend|s7": [
+14,
+"4f068175c103cd41f59a251bac50baa7"
+],
+"alchemist|L60|Crownwood Hare|evade|s101": [
+14,
+"cf34b868368e93a675bd79c73ce2f28a"
+],
+"alchemist|L60|Crownwood Hare|evade|s7": [
+14,
+"715407a1fa2929a59e1c375616157824"
+],
+"alchemist|L60|Crownwood Hare|focus|s101": [
+14,
+"ad0ff16a0bdfe1a140c795ac4f2fd8a0"
+],
+"alchemist|L60|Crownwood Hare|focus|s7": [
+14,
+"ddbfd131dbfd3162803943c1d526bc24"
+],
+"alchemist|L60|Crownwood Hare|strike|s101": [
+14,
+"ce1f01c15259bddcc8c1b2857cd6d05a"
+],
+"alchemist|L60|Crownwood Hare|strike|s7": [
+14,
+"2ce4a697737237f7de650ca6a51c9f28"
+],
+"alchemist|L60|Highway Bandit|aim|s101": [
+7,
+"022f2339bf0ceb28921226f66ab9dc46"
+],
+"alchemist|L60|Highway Bandit|aim|s7": [
+9,
+"116badf3d9883165c54d55c4dcef4599"
+],
+"alchemist|L60|Highway Bandit|counter|s101": [
+7,
+"d8a137715cde739905356e58920beaf6"
+],
+"alchemist|L60|Highway Bandit|counter|s7": [
+9,
+"496e7aa830e5d703068ebf56b0fe8f9b"
+],
+"alchemist|L60|Highway Bandit|defend|s101": [
+14,
+"b9cad8cecd9a645bbdd37801388abfde"
+],
+"alchemist|L60|Highway Bandit|defend|s7": [
+14,
+"3e42969f93b0875744b492f34796b28c"
+],
+"alchemist|L60|Highway Bandit|evade|s101": [
+14,
+"e2cfd2a166f248c0d81bdb39b1d69152"
+],
+"alchemist|L60|Highway Bandit|evade|s7": [
+11,
+"a08a506c355a3717ae49147775f7b656"
+],
+"alchemist|L60|Highway Bandit|focus|s101": [
+7,
+"aaebc90a665018abcdb25dfdf69c998b"
+],
+"alchemist|L60|Highway Bandit|focus|s7": [
+9,
+"a46e1741c4f9af3d6ba7d5472d447317"
+],
+"alchemist|L60|Highway Bandit|strike|s101": [
+7,
+"c53297c52306aadf2f52389ff1873ca2"
+],
+"alchemist|L60|Highway Bandit|strike|s7": [
+9,
+"81fb53c73bc037ccc44891897923e750"
+],
+"alchemist|L60|River Otter|aim|s101": [
+14,
+"33b05b77a6fb436e20bdd4b8a8e8c2de"
+],
+"alchemist|L60|River Otter|aim|s7": [
+14,
+"c6da107b3fc747de710e412d60d806bc"
+],
+"alchemist|L60|River Otter|counter|s101": [
+14,
+"db56d5cc7f29a08250eb9a1d5336c831"
+],
+"alchemist|L60|River Otter|counter|s7": [
+14,
+"667daf195f85b222755ff2e6762da27a"
+],
+"alchemist|L60|River Otter|defend|s101": [
+14,
+"60a4462616e1ce4762b8c968a18f83b8"
+],
+"alchemist|L60|River Otter|defend|s7": [
+14,
+"7ddd41db5e320444e6fe162a73aecb8f"
+],
+"alchemist|L60|River Otter|evade|s101": [
+14,
+"5cb112c53efb91527b081294d2525c2b"
+],
+"alchemist|L60|River Otter|evade|s7": [
+14,
+"fa4098f6fc9615831c6b8400ce1c4ebb"
+],
+"alchemist|L60|River Otter|focus|s101": [
+14,
+"22c132514312ba60329db6e8267d2b51"
+],
+"alchemist|L60|River Otter|focus|s7": [
+14,
+"816763171de945df4d721ae4fb0ea216"
+],
+"alchemist|L60|River Otter|strike|s101": [
+14,
+"acae356176031c3c70bbd5b7a25356f5"
+],
+"alchemist|L60|River Otter|strike|s7": [
+14,
+"3140a8cabb85cedc55ec865ba34e5082"
+],
+"assassin|L100|Crownwood Hare|aim|s101": [
+14,
+"0f29a89c6bf2501d4af26985dfaaa9c5"
+],
+"assassin|L100|Crownwood Hare|aim|s7": [
+14,
+"1aca3ef735102b5c28440361086d3d83"
+],
+"assassin|L100|Crownwood Hare|counter|s101": [
+14,
+"86b155011ad2a7f614b4de1b02bb4d5b"
+],
+"assassin|L100|Crownwood Hare|counter|s7": [
+14,
+"c35bb20a87939e6aea9912d767c09c25"
+],
+"assassin|L100|Crownwood Hare|defend|s101": [
+14,
+"225e88e5e7c5063ff82f66895f2f4b26"
+],
+"assassin|L100|Crownwood Hare|defend|s7": [
+14,
+"a3c3d9249a23229b56be9f0e1eeb5d24"
+],
+"assassin|L100|Crownwood Hare|evade|s101": [
+14,
+"176ab741cea3a1f7a3fea1915a418cd3"
+],
+"assassin|L100|Crownwood Hare|evade|s7": [
+14,
+"8793867825b0eb026ab24a04c5511536"
+],
+"assassin|L100|Crownwood Hare|focus|s101": [
+14,
+"a61b37efb7b43ec7ddab8a86f898e6d1"
+],
+"assassin|L100|Crownwood Hare|focus|s7": [
+14,
+"fe4947de17e383db39b365b433d0de3f"
+],
+"assassin|L100|Crownwood Hare|strike|s101": [
+14,
+"af9042b2738a711c455488294b3ebc8c"
+],
+"assassin|L100|Crownwood Hare|strike|s7": [
+14,
+"ce9ee354a5b6b04de379872ed2398bb9"
+],
+"assassin|L100|Highway Bandit|aim|s101": [
+10,
+"85a6dda63e8c8034a5c92c739ed320bd"
+],
+"assassin|L100|Highway Bandit|aim|s7": [
+13,
+"34fb813f94188f2a5245848134bdd0c3"
+],
+"assassin|L100|Highway Bandit|counter|s101": [
+7,
+"7a726ebb2718e7c6a8197410f5def63f"
+],
+"assassin|L100|Highway Bandit|counter|s7": [
+8,
+"7470ad94a3f5416d98248ead3520f6cc"
+],
+"assassin|L100|Highway Bandit|defend|s101": [
+14,
+"8a3407d081c65c7b321476581d5bc56d"
+],
+"assassin|L100|Highway Bandit|defend|s7": [
+14,
+"e3de1104a87454f23af591ff225f152b"
+],
+"assassin|L100|Highway Bandit|evade|s101": [
+14,
+"074ea2f0b9f715904ce8b68fa741bb6b"
+],
+"assassin|L100|Highway Bandit|evade|s7": [
+11,
+"86a5a5d12ab9587cf308d06e77cab664"
+],
+"assassin|L100|Highway Bandit|focus|s101": [
+7,
+"79cc230d4d34ce8942771a714d2dbdad"
+],
+"assassin|L100|Highway Bandit|focus|s7": [
+8,
+"22a4483874f8aa42efc8106c4aac738f"
+],
+"assassin|L100|Highway Bandit|strike|s101": [
+11,
+"f2dfffe8a26b1ac668851be89118b321"
+],
+"assassin|L100|Highway Bandit|strike|s7": [
+14,
+"fab1d557bd2dfcf15a985376382c574c"
+],
+"assassin|L100|River Otter|aim|s101": [
+14,
+"61fa216b908e7ab18a29927ab4b87cce"
+],
+"assassin|L100|River Otter|aim|s7": [
+14,
+"42e815c84f456799e6fa577bc9382d45"
+],
+"assassin|L100|River Otter|counter|s101": [
+14,
+"78e306fd8ea1390668ac741d56f37db1"
+],
+"assassin|L100|River Otter|counter|s7": [
+14,
+"68b9c60c14aad2d4dfa4e774177d6088"
+],
+"assassin|L100|River Otter|defend|s101": [
+14,
+"0312e048537ca46e2c61f61425925a37"
+],
+"assassin|L100|River Otter|defend|s7": [
+14,
+"bc4c7966cfe8898e3c585a718986ed4e"
+],
+"assassin|L100|River Otter|evade|s101": [
+14,
+"a1d259316be5c1463adeffc02d890d9a"
+],
+"assassin|L100|River Otter|evade|s7": [
+14,
+"916f6e5ba208d9359345079d2e1541dc"
+],
+"assassin|L100|River Otter|focus|s101": [
+14,
+"1efb39bf9d097e5df4c3d3322fade76b"
+],
+"assassin|L100|River Otter|focus|s7": [
+14,
+"038366f2b1c163e7945567971af6e571"
+],
+"assassin|L100|River Otter|strike|s101": [
+14,
+"49634c9e5bf3012fc5faf7af7f3ca53a"
+],
+"assassin|L100|River Otter|strike|s7": [
+14,
+"099a60072d5cccbb5cec20d86335a7fd"
+],
+"assassin|L1|Crownwood Hare|aim|s101": [
+4,
+"97f9f0e2ae859eb0dbeb0c131ba193ea"
+],
+"assassin|L1|Crownwood Hare|aim|s7": [
+13,
+"050bb4fde4ff00e45e6c985e42dfd4c4"
+],
+"assassin|L1|Crownwood Hare|counter|s101": [
+11,
+"9bd6035842b052c813e056e45cf56c7b"
+],
+"assassin|L1|Crownwood Hare|counter|s7": [
+11,
+"94c60bfe2835ac074c450c326e80d78b"
+],
+"assassin|L1|Crownwood Hare|defend|s101": [
+14,
+"0cd3e0c56e6d3c7066c5ca070326294a"
+],
+"assassin|L1|Crownwood Hare|defend|s7": [
+14,
+"5613c729a233cd63a9dbcf59eee2723e"
+],
+"assassin|L1|Crownwood Hare|evade|s101": [
+14,
+"aafb75dee22ae1307c5010e59e095ad3"
+],
+"assassin|L1|Crownwood Hare|evade|s7": [
+14,
+"fc97c00a49496c5e5907649b1a9234e8"
+],
+"assassin|L1|Crownwood Hare|focus|s101": [
+12,
+"ebd0689497646df23a4abe75aa3163df"
+],
+"assassin|L1|Crownwood Hare|focus|s7": [
+14,
+"629adb2438326f4fa51e20e9cb764c52"
+],
+"assassin|L1|Crownwood Hare|strike|s101": [
+4,
+"d4c739ddbae4c10656d4beb225b0ad84"
+],
+"assassin|L1|Crownwood Hare|strike|s7": [
+10,
+"6a119253178d94026433f511dd5e39d5"
+],
+"assassin|L1|Highway Bandit|aim|s101": [
+6,
+"143e5111113ba9a92b7aa534f657fa70"
+],
+"assassin|L1|Highway Bandit|aim|s7": [
+14,
+"a546c0b3107f89d70e0315900edc6cd2"
+],
+"assassin|L1|Highway Bandit|counter|s101": [
+8,
+"ae237d0844d94d868bb569d8e214e413"
+],
+"assassin|L1|Highway Bandit|counter|s7": [
+9,
+"02a255dedfb10dc0d74fc7882fdd61da"
+],
+"assassin|L1|Highway Bandit|defend|s101": [
+14,
+"00de6aed97e12fcd92af85eeccd53608"
+],
+"assassin|L1|Highway Bandit|defend|s7": [
+14,
+"55fee094a759b57e64f8a3bbbfe76605"
+],
+"assassin|L1|Highway Bandit|evade|s101": [
+14,
+"2b208aa20789fd3e47579842f056ecca"
+],
+"assassin|L1|Highway Bandit|evade|s7": [
+11,
+"49927bedc3ca37ddb839b3382207ff50"
+],
+"assassin|L1|Highway Bandit|focus|s101": [
+7,
+"21daae05b1c457452cee3721c2eb1327"
+],
+"assassin|L1|Highway Bandit|focus|s7": [
+12,
+"da0de5754174462bcaf03149fba1a030"
+],
+"assassin|L1|Highway Bandit|strike|s101": [
+14,
+"ddbd02eb283d7881c9ec97ce3e678c26"
+],
+"assassin|L1|Highway Bandit|strike|s7": [
+14,
+"e06cf460023028272361612d4e5a8902"
+],
+"assassin|L1|River Otter|aim|s101": [
+13,
+"6af52863e0a8b71ad152baa66e9ec4d5"
+],
+"assassin|L1|River Otter|aim|s7": [
+14,
+"c72c544cd1e45e21f40f3467d33d3b4d"
+],
+"assassin|L1|River Otter|counter|s101": [
+14,
+"3d8bb850de1ad3c781870f6acc88dfc8"
+],
+"assassin|L1|River Otter|counter|s7": [
+14,
+"e5e3d4fde306c87f3be87e94fcbc9e86"
+],
+"assassin|L1|River Otter|defend|s101": [
+14,
+"abd0a48ea00985d65834047564a0fb95"
+],
+"assassin|L1|River Otter|defend|s7": [
+14,
+"99e16e19debbe6ead15cbae9bb29fa34"
+],
+"assassin|L1|River Otter|evade|s101": [
+14,
+"263b50253d27a5981ca8b8d271769c22"
+],
+"assassin|L1|River Otter|evade|s7": [
+14,
+"ba40188e1c35553eaa72088245ec6341"
+],
+"assassin|L1|River Otter|focus|s101": [
+14,
+"327c813389c606a7cb761eb62e690f40"
+],
+"assassin|L1|River Otter|focus|s7": [
+14,
+"ae59a3653ef5b6348627573cea08c2d1"
+],
+"assassin|L1|River Otter|strike|s101": [
+14,
+"d2d700a66b13dcad1e9e1548135b06f8"
+],
+"assassin|L1|River Otter|strike|s7": [
+14,
+"cbe9fd6d16974705e3e22fc92936aa4b"
+],
+"assassin|L20|Crownwood Hare|aim|s101": [
+14,
+"c8a2918c4fdb88dc5cbc7b34a74f4751"
+],
+"assassin|L20|Crownwood Hare|aim|s7": [
+14,
+"664cb75e634311baf9a8937e2b520d82"
+],
+"assassin|L20|Crownwood Hare|counter|s101": [
+14,
+"0d96fbc66d6a6ba17aa071e8bbaee637"
+],
+"assassin|L20|Crownwood Hare|counter|s7": [
+14,
+"fa160956e5c27ccc8b8b8af7eec7f523"
+],
+"assassin|L20|Crownwood Hare|defend|s101": [
+14,
+"34642d46742d345596ad9f83743cd8c5"
+],
+"assassin|L20|Crownwood Hare|defend|s7": [
+14,
+"4fd41c7a27f52e964fbb0fbef89ac286"
+],
+"assassin|L20|Crownwood Hare|evade|s101": [
+14,
+"7f93e6baa2244afe457adb818eec0ab8"
+],
+"assassin|L20|Crownwood Hare|evade|s7": [
+14,
+"f84c060a27a39b72777d26d2e1992c03"
+],
+"assassin|L20|Crownwood Hare|focus|s101": [
+14,
+"f96a95c01cd6647bcfc69753b20fb6ad"
+],
+"assassin|L20|Crownwood Hare|focus|s7": [
+14,
+"84beed93f3b42b87bb2e8eb452585923"
+],
+"assassin|L20|Crownwood Hare|strike|s101": [
+14,
+"ae16e84f5605251af5e42c283945ffec"
+],
+"assassin|L20|Crownwood Hare|strike|s7": [
+14,
+"b51d7a57db53e51e7a0d20e849223751"
+],
+"assassin|L20|Highway Bandit|aim|s101": [
+14,
+"bb2d7ef719fdbed98dd618c26a04aaf1"
+],
+"assassin|L20|Highway Bandit|aim|s7": [
+14,
+"01cd12cfba06edd92b58e6001fa42112"
+],
+"assassin|L20|Highway Bandit|counter|s101": [
+7,
+"a03d4caa512ecedeae96247af69aa900"
+],
+"assassin|L20|Highway Bandit|counter|s7": [
+9,
+"1fce4dfaaf58e28450bd80a7357b0c55"
+],
+"assassin|L20|Highway Bandit|defend|s101": [
+14,
+"028e9843acc3e116baa0be094d16da37"
+],
+"assassin|L20|Highway Bandit|defend|s7": [
+14,
+"3fc052baa62a51a0c0346c109cb01371"
+],
+"assassin|L20|Highway Bandit|evade|s101": [
+14,
+"1ca2af6a849719f846a7e6b7058dfc93"
+],
+"assassin|L20|Highway Bandit|evade|s7": [
+11,
+"651e5cda46cdaa6a2fec2b2bc32c9734"
+],
+"assassin|L20|Highway Bandit|focus|s101": [
+7,
+"30dc1f6b603f3c6020b3f5a74dd46a95"
+],
+"assassin|L20|Highway Bandit|focus|s7": [
+9,
+"836823d423e4bac2c4e0314beed583d1"
+],
+"assassin|L20|Highway Bandit|strike|s101": [
+14,
+"e54e45681237530a443e912d51329b82"
+],
+"assassin|L20|Highway Bandit|strike|s7": [
+14,
+"f70b8bd96c58759f9667d0be88d03be7"
+],
+"assassin|L20|River Otter|aim|s101": [
+14,
+"cb3ba105d0e4d776bdf93c94664cabf7"
+],
+"assassin|L20|River Otter|aim|s7": [
+14,
+"798d586835184f470c5718e8d4262ae0"
+],
+"assassin|L20|River Otter|counter|s101": [
+14,
+"f44b1ca1c9aa231d4c428d09553b887d"
+],
+"assassin|L20|River Otter|counter|s7": [
+14,
+"4d1689e49865e89c912740ee6cbcccac"
+],
+"assassin|L20|River Otter|defend|s101": [
+14,
+"f5015696ef036de947e3d5103d4f14a8"
+],
+"assassin|L20|River Otter|defend|s7": [
+14,
+"364a795b925253990c38944682612535"
+],
+"assassin|L20|River Otter|evade|s101": [
+14,
+"964ebc43bad7a126fdc8660a8a31836d"
+],
+"assassin|L20|River Otter|evade|s7": [
+14,
+"9b7bd19ea70a4783d4ea2577b96b7db0"
+],
+"assassin|L20|River Otter|focus|s101": [
+14,
+"883729d5a4bde75429ffffa9f34cbf61"
+],
+"assassin|L20|River Otter|focus|s7": [
+14,
+"510f7fd5b192cc706bf96aa2abae9880"
+],
+"assassin|L20|River Otter|strike|s101": [
+14,
+"718e9338873e41fd3dabd3dc39e51e0b"
+],
+"assassin|L20|River Otter|strike|s7": [
+14,
+"c4fc1f04f8e45362b9f65593462c66a4"
+],
+"assassin|L60|Crownwood Hare|aim|s101": [
+14,
+"4de34f7f427339b07b48c401caa75fab"
+],
+"assassin|L60|Crownwood Hare|aim|s7": [
+14,
+"fdac5363cdec0eb8499a9a71aec28c4d"
+],
+"assassin|L60|Crownwood Hare|counter|s101": [
+14,
+"19a9bb64455b6ab92a6c334a2b4306e2"
+],
+"assassin|L60|Crownwood Hare|counter|s7": [
+14,
+"3b99f7c7dd1d6ac848f5f203a1a061cc"
+],
+"assassin|L60|Crownwood Hare|defend|s101": [
+14,
+"a11a85ea7bb6cb65523ff01ec999ce2f"
+],
+"assassin|L60|Crownwood Hare|defend|s7": [
+14,
+"c1583a32bb39a3c9ea81d37c3e8b583b"
+],
+"assassin|L60|Crownwood Hare|evade|s101": [
+14,
+"030e742f6036ced42d0585be15baedfb"
+],
+"assassin|L60|Crownwood Hare|evade|s7": [
+14,
+"ddf341d73d277281b21b5b93c0ae7b6a"
+],
+"assassin|L60|Crownwood Hare|focus|s101": [
+14,
+"5258ca2f3788d50c8e57518aef1d00b2"
+],
+"assassin|L60|Crownwood Hare|focus|s7": [
+14,
+"16d54d3c2b85a7f8373a9966478439b0"
+],
+"assassin|L60|Crownwood Hare|strike|s101": [
+14,
+"c79102e7b9bf112f379c767cba618109"
+],
+"assassin|L60|Crownwood Hare|strike|s7": [
+14,
+"9073ca114bcdfb1ce404a143191fd6ff"
+],
+"assassin|L60|Highway Bandit|aim|s101": [
+14,
+"efc2692b3b170921f5c2498c856989a5"
+],
+"assassin|L60|Highway Bandit|aim|s7": [
+14,
+"7c2a3ed11132f32b9812a882851ea7c6"
+],
+"assassin|L60|Highway Bandit|counter|s101": [
+7,
+"8bc949e69dbce4d5039ed27e7414c972"
+],
+"assassin|L60|Highway Bandit|counter|s7": [
+9,
+"6df7c2d0ac786ffcf1d1b86f3e36aa99"
+],
+"assassin|L60|Highway Bandit|defend|s101": [
+14,
+"881e2d9c66382d0d935c53c0ddd84104"
+],
+"assassin|L60|Highway Bandit|defend|s7": [
+14,
+"40048e368617ac5ad7bb53a837a9ce87"
+],
+"assassin|L60|Highway Bandit|evade|s101": [
+14,
+"d49c0a29be0f3e209ce8821d6e6e9f2d"
+],
+"assassin|L60|Highway Bandit|evade|s7": [
+11,
+"dd68c39bee7aef0b3e9ef81ab38a37b1"
+],
+"assassin|L60|Highway Bandit|focus|s101": [
+7,
+"1b9f7f44c88058ecf09ae9a05a102462"
+],
+"assassin|L60|Highway Bandit|focus|s7": [
+9,
+"435bd5d88009c274f83dde834ba9b743"
+],
+"assassin|L60|Highway Bandit|strike|s101": [
+14,
+"2ac3ecbfd95986a9b44f090251739ef7"
+],
+"assassin|L60|Highway Bandit|strike|s7": [
+14,
+"b78da1787c4d62ec39c04c79cea03400"
+],
+"assassin|L60|River Otter|aim|s101": [
+14,
+"d211ded18e865243b1841d148489a2a5"
+],
+"assassin|L60|River Otter|aim|s7": [
+14,
+"ecdb0a2a266e2b7d9fc0924bb3bc2370"
+],
+"assassin|L60|River Otter|counter|s101": [
+14,
+"a622bced95fca6ab12ec2ccfadec8780"
+],
+"assassin|L60|River Otter|counter|s7": [
+14,
+"6c927d9ba5d5e3d1415e12b914fb02fd"
+],
+"assassin|L60|River Otter|defend|s101": [
+14,
+"8fabd55bb74b2eea2a1be3b3c8d2473f"
+],
+"assassin|L60|River Otter|defend|s7": [
+14,
+"b61fde909bc9a00407b6e790c6daaa23"
+],
+"assassin|L60|River Otter|evade|s101": [
+14,
+"874301b4d6cde9bf159b835a61701f10"
+],
+"assassin|L60|River Otter|evade|s7": [
+14,
+"11f0ea683970098add3ff0cfbe1ce39b"
+],
+"assassin|L60|River Otter|focus|s101": [
+14,
+"53817c4db12d70491a19023d66331093"
+],
+"assassin|L60|River Otter|focus|s7": [
+14,
+"6a6e0f5280c5c01f9e1bfb2553608629"
+],
+"assassin|L60|River Otter|strike|s101": [
+14,
+"44cbcf6f00944273f14d3a44b20ac456"
+],
+"assassin|L60|River Otter|strike|s7": [
+14,
+"1c98815ba6495a02781ba368a0e63803"
+],
+"bard|L100|Crownwood Hare|aim|s101": [
+14,
+"d827570fdb395098066aebf3c85b4488"
+],
+"bard|L100|Crownwood Hare|aim|s7": [
+14,
+"ff341a8156d9ef88548fb89d8f4945f0"
+],
+"bard|L100|Crownwood Hare|counter|s101": [
+14,
+"57b457fb31517cb0ed812ea496d431f7"
+],
+"bard|L100|Crownwood Hare|counter|s7": [
+14,
+"015082ad2d467786797d6c07aaef2eb9"
+],
+"bard|L100|Crownwood Hare|defend|s101": [
+14,
+"faeb47f76c9c9c5ecc35bfdc0f304083"
+],
+"bard|L100|Crownwood Hare|defend|s7": [
+14,
+"82aae7e66081588636718804bd3870fd"
+],
+"bard|L100|Crownwood Hare|evade|s101": [
+14,
+"5118a635cbd8152063cbe2348fe9c86e"
+],
+"bard|L100|Crownwood Hare|evade|s7": [
+14,
+"965a860852d11f118fa3587c368c5cb9"
+],
+"bard|L100|Crownwood Hare|focus|s101": [
+14,
+"06b538de97fc5ec1aa78c47226033508"
+],
+"bard|L100|Crownwood Hare|focus|s7": [
+14,
+"ed7468c129be3385796a68d15480f690"
+],
+"bard|L100|Crownwood Hare|strike|s101": [
+14,
+"d9a7801f34671ecb576dfa9573444644"
+],
+"bard|L100|Crownwood Hare|strike|s7": [
+14,
+"69e59f5a1f5ebe1a1afa64d62dab999a"
+],
+"bard|L100|Highway Bandit|aim|s101": [
+7,
+"a378c5ad3c6ef76b850129a041050efb"
+],
+"bard|L100|Highway Bandit|aim|s7": [
+7,
+"0eefd6194fe2935f04b65d1ab648d354"
+],
+"bard|L100|Highway Bandit|counter|s101": [
+7,
+"b65c1c05c20154a88d4f535ea1457136"
+],
+"bard|L100|Highway Bandit|counter|s7": [
+9,
+"347ff253706fbe93ce3d5e735d206741"
+],
+"bard|L100|Highway Bandit|defend|s101": [
+14,
+"38081bf65fbf7307e8c6edc012075fac"
+],
+"bard|L100|Highway Bandit|defend|s7": [
+14,
+"b19c4d933665a5464217c67260bf9209"
+],
+"bard|L100|Highway Bandit|evade|s101": [
+14,
+"5be5f121bf0808c77abfb74a7764448b"
+],
+"bard|L100|Highway Bandit|evade|s7": [
+7,
+"216da5c44be68f34d7a420d67a8753a1"
+],
+"bard|L100|Highway Bandit|focus|s101": [
+7,
+"eafd50987698fe865d945716a8c6f3b0"
+],
+"bard|L100|Highway Bandit|focus|s7": [
+9,
+"a56de84b6ca243633c9fee0e24c4e7b9"
+],
+"bard|L100|Highway Bandit|strike|s101": [
+7,
+"8c825a28ea23c5bcbc9f3fb3a8299810"
+],
+"bard|L100|Highway Bandit|strike|s7": [
+9,
+"90b558c2d809335585708c3cd80ecb8b"
+],
+"bard|L100|River Otter|aim|s101": [
+14,
+"b9ad1da33b7b7b967137c857ac4c8032"
+],
+"bard|L100|River Otter|aim|s7": [
+14,
+"704a34f03d6a0c3d80bdb9aa20a20af1"
+],
+"bard|L100|River Otter|counter|s101": [
+14,
+"33985c645db532412bf0366210eac207"
+],
+"bard|L100|River Otter|counter|s7": [
+14,
+"877760a1ca8553161a5167f16c22d401"
+],
+"bard|L100|River Otter|defend|s101": [
+14,
+"2f0b93d17134462a5f847779f9ea0e85"
+],
+"bard|L100|River Otter|defend|s7": [
+14,
+"b4c1ab1746818685bccd4bc8b2623b99"
+],
+"bard|L100|River Otter|evade|s101": [
+14,
+"16ae5cfb879d6a2d11fa67589c88ae2b"
+],
+"bard|L100|River Otter|evade|s7": [
+14,
+"b3bccc2df5a2b3d72d5ac7cc7084cceb"
+],
+"bard|L100|River Otter|focus|s101": [
+14,
+"9cebe08ff2f61392dbd21c59795e2549"
+],
+"bard|L100|River Otter|focus|s7": [
+14,
+"225e7f92dc1ab7345047c1b4a421f8c4"
+],
+"bard|L100|River Otter|strike|s101": [
+14,
+"4f3c569aeaca7143af58d5ee020a3520"
+],
+"bard|L100|River Otter|strike|s7": [
+14,
+"63d567a1dcfa13aa9b3fdb3bd2da96af"
+],
+"bard|L1|Crownwood Hare|aim|s101": [
+13,
+"5c45ddefef19291fc0066fc1af016ad3"
+],
+"bard|L1|Crownwood Hare|aim|s7": [
+12,
+"f8cbf14401bc51a1d610a864baafaf7a"
+],
+"bard|L1|Crownwood Hare|counter|s101": [
+11,
+"2e39120b7fc1843815e0a0644948afbe"
+],
+"bard|L1|Crownwood Hare|counter|s7": [
+11,
+"ea32bcde8212989abc7b7fc321699dd6"
+],
+"bard|L1|Crownwood Hare|defend|s101": [
+14,
+"38d41b4edeed4a9954c93cb1063738b2"
+],
+"bard|L1|Crownwood Hare|defend|s7": [
+14,
+"891cb4ab82b13893d7a11b84d4bf92b1"
+],
+"bard|L1|Crownwood Hare|evade|s101": [
+14,
+"ac394d6a8f32bf19aa0f118a981f0207"
+],
+"bard|L1|Crownwood Hare|evade|s7": [
+13,
+"35fc3f58074eff67d1dae048d7266626"
+],
+"bard|L1|Crownwood Hare|focus|s101": [
+13,
+"0d84be97b79c151cea8994ec6c148e01"
+],
+"bard|L1|Crownwood Hare|focus|s7": [
+14,
+"5298667364cecef8e933b55d7bd86507"
+],
+"bard|L1|Crownwood Hare|strike|s101": [
+14,
+"cb6bfcaf26b0fe5990673536ba21cd05"
+],
+"bard|L1|Crownwood Hare|strike|s7": [
+14,
+"35ba953e95fe710213b3df28b1b1ceaa"
+],
+"bard|L1|Highway Bandit|aim|s101": [
+7,
+"2e5dbe75aa6d262bb5ce280f18ae683e"
+],
+"bard|L1|Highway Bandit|aim|s7": [
+8,
+"1b2c814ed2a39b6cd010643f0e201917"
+],
+"bard|L1|Highway Bandit|counter|s101": [
+8,
+"58e0f322483f66787d96c0e0a5b4d327"
+],
+"bard|L1|Highway Bandit|counter|s7": [
+9,
+"fa0efcfa83e6fed25c630063e9cc346e"
+],
+"bard|L1|Highway Bandit|defend|s101": [
+14,
+"270be15886a0ec9ced79e0ad1245f85b"
+],
+"bard|L1|Highway Bandit|defend|s7": [
+14,
+"7281dcf13fcbe9fec2737772a2d419ab"
+],
+"bard|L1|Highway Bandit|evade|s101": [
+14,
+"d180b9121472b11b6eceee53dc3e23a2"
+],
+"bard|L1|Highway Bandit|evade|s7": [
+7,
+"0365bb3f266e8fe86411ef0000f50a51"
+],
+"bard|L1|Highway Bandit|focus|s101": [
+7,
+"4a782cf872ce7444bc86d04d99dbb24c"
+],
+"bard|L1|Highway Bandit|focus|s7": [
+9,
+"570b63de15bb3ab74ba997f90e0752a5"
+],
+"bard|L1|Highway Bandit|strike|s101": [
+7,
+"c14ce3e2af25befffdc3f920e09a5412"
+],
+"bard|L1|Highway Bandit|strike|s7": [
+10,
+"dcc43f0a5f22bda53e77c2f0393ee065"
+],
+"bard|L1|River Otter|aim|s101": [
+14,
+"ea9ecb9e1fe6edc8b778d541453a5db3"
+],
+"bard|L1|River Otter|aim|s7": [
+14,
+"748e7564faaeeea7971ba6a103b66109"
+],
+"bard|L1|River Otter|counter|s101": [
+14,
+"d4fb5e42dedd71b0f142c135433b61af"
+],
+"bard|L1|River Otter|counter|s7": [
+14,
+"04e474b75ae96acb805aec66235085df"
+],
+"bard|L1|River Otter|defend|s101": [
+14,
+"15e0ba2ddef27c723bd359c98f36ac19"
+],
+"bard|L1|River Otter|defend|s7": [
+14,
+"1e47536f123a7ee56a792f027a21d2c4"
+],
+"bard|L1|River Otter|evade|s101": [
+14,
+"0cebb3f2358190c628b722a711089764"
+],
+"bard|L1|River Otter|evade|s7": [
+14,
+"35db2cc84ba77cc7aee03ca09616f52c"
+],
+"bard|L1|River Otter|focus|s101": [
+14,
+"01c28a97a71faae469b776be813572c1"
+],
+"bard|L1|River Otter|focus|s7": [
+14,
+"d6b144607dfb7d066fc33a01358f9b54"
+],
+"bard|L1|River Otter|strike|s101": [
+14,
+"77b9fbd8a7babefd8f74ebffb778cf85"
+],
+"bard|L1|River Otter|strike|s7": [
+14,
+"4f5d8e909b8afacb804edf391288cff6"
+],
+"bard|L20|Crownwood Hare|aim|s101": [
+14,
+"45770c06cf71cf90c0825cf1c54f1d41"
+],
+"bard|L20|Crownwood Hare|aim|s7": [
+14,
+"cd70c1ea105f50c319340f2c3a97dc18"
+],
+"bard|L20|Crownwood Hare|counter|s101": [
+14,
+"0c3bb960d6dd1cbcfe17c6dab81b8532"
+],
+"bard|L20|Crownwood Hare|counter|s7": [
+14,
+"45aa871c741c03e11260ec55d3496bc6"
+],
+"bard|L20|Crownwood Hare|defend|s101": [
+14,
+"e68a573ca12161e5c11c6d713600fac3"
+],
+"bard|L20|Crownwood Hare|defend|s7": [
+14,
+"0e6f2d93493f2032f47785ed2e6d5220"
+],
+"bard|L20|Crownwood Hare|evade|s101": [
+14,
+"a1726f8bea2367aae3eb7c2c5d6fbb30"
+],
+"bard|L20|Crownwood Hare|evade|s7": [
+14,
+"ef9a511e75ebdfec22e4067e5cd698f4"
+],
+"bard|L20|Crownwood Hare|focus|s101": [
+14,
+"60d05b0bd4e6a3879c3a8cd09dbf59e7"
+],
+"bard|L20|Crownwood Hare|focus|s7": [
+14,
+"853215198e549cd5ba7de9352320fcc6"
+],
+"bard|L20|Crownwood Hare|strike|s101": [
+14,
+"1976982e32bd8813718c5c9fc45eb41f"
+],
+"bard|L20|Crownwood Hare|strike|s7": [
+14,
+"aac21c6454b95988bcf1b09f00e5656d"
+],
+"bard|L20|Highway Bandit|aim|s101": [
+7,
+"0676b740de9ac26dc155987fd8253dc9"
+],
+"bard|L20|Highway Bandit|aim|s7": [
+7,
+"b5521f0327534d4615f0d6fa67d749ef"
+],
+"bard|L20|Highway Bandit|counter|s101": [
+7,
+"4a63fd2563e124c2783a6ba7e4ea8228"
+],
+"bard|L20|Highway Bandit|counter|s7": [
+8,
+"68da1f5d79b4f205faaf41e3290a1444"
+],
+"bard|L20|Highway Bandit|defend|s101": [
+14,
+"847d0328552ad0a0a8466fe8f69a2dd0"
+],
+"bard|L20|Highway Bandit|defend|s7": [
+14,
+"2d39f4b5e3511fc7859a4df0382a34c8"
+],
+"bard|L20|Highway Bandit|evade|s101": [
+14,
+"ea27bc7f1c440cf382997f5a94faf2b0"
+],
+"bard|L20|Highway Bandit|evade|s7": [
+7,
+"c759fcd048cf1aad2440aa304fd15d42"
+],
+"bard|L20|Highway Bandit|focus|s101": [
+7,
+"580f600574adab64d650689588015da5"
+],
+"bard|L20|Highway Bandit|focus|s7": [
+8,
+"1bc461e42ba3c012bbe484ff8c1226c7"
+],
+"bard|L20|Highway Bandit|strike|s101": [
+7,
+"36e33996854c27bc9945adf3f1d19daa"
+],
+"bard|L20|Highway Bandit|strike|s7": [
+9,
+"95d0987a3144a46aa65aadb93b762af0"
+],
+"bard|L20|River Otter|aim|s101": [
+14,
+"dc40ac0bbb23ab6e4c7554a74144960d"
+],
+"bard|L20|River Otter|aim|s7": [
+14,
+"777c109fee4280313fa16b1bd10d89c6"
+],
+"bard|L20|River Otter|counter|s101": [
+14,
+"9d6723bb1a0bd8b88a024cc0a83d844c"
+],
+"bard|L20|River Otter|counter|s7": [
+14,
+"7bf9bc80fd8cb81fffe777ada8b78ab2"
+],
+"bard|L20|River Otter|defend|s101": [
+14,
+"e13358412264d8af6c2654419a71afe5"
+],
+"bard|L20|River Otter|defend|s7": [
+14,
+"7ff65f645a66081e33d842a068c6f3b5"
+],
+"bard|L20|River Otter|evade|s101": [
+14,
+"52c3a2bac7c38f0f23b8c450d590bf3c"
+],
+"bard|L20|River Otter|evade|s7": [
+14,
+"269f87f244641a5e91324a9a803121a7"
+],
+"bard|L20|River Otter|focus|s101": [
+14,
+"09bee36d351c34057b07960b110de4ea"
+],
+"bard|L20|River Otter|focus|s7": [
+14,
+"9afe785b7bcdb2d21e118132d304c4a0"
+],
+"bard|L20|River Otter|strike|s101": [
+14,
+"e34eb2bf9a43aa08865663c7ab87cf8b"
+],
+"bard|L20|River Otter|strike|s7": [
+14,
+"acb05672037cd3c57cbe692f7fa24c0d"
+],
+"bard|L60|Crownwood Hare|aim|s101": [
+14,
+"437cc1f50ce5402d311d88c654c8a13b"
+],
+"bard|L60|Crownwood Hare|aim|s7": [
+14,
+"6e968122eec89be8c5c3148da8d7b93f"
+],
+"bard|L60|Crownwood Hare|counter|s101": [
+14,
+"1dfb5249d22327adbd660074ca5410bd"
+],
+"bard|L60|Crownwood Hare|counter|s7": [
+14,
+"9410dcdb8d380336393ec4fa5147bd2e"
+],
+"bard|L60|Crownwood Hare|defend|s101": [
+14,
+"be45d75a957fc7c106eec7cd07d24b7b"
+],
+"bard|L60|Crownwood Hare|defend|s7": [
+14,
+"ee6b9f04f1f57c2954d53c37a5e22c75"
+],
+"bard|L60|Crownwood Hare|evade|s101": [
+14,
+"5278930f4d73888bd8f0bd58dd085f9e"
+],
+"bard|L60|Crownwood Hare|evade|s7": [
+14,
+"ebc182e1b28f9b6b7581b9703b7f4ba6"
+],
+"bard|L60|Crownwood Hare|focus|s101": [
+14,
+"02431bdcacfe937f1ae83f78d2b9e5bb"
+],
+"bard|L60|Crownwood Hare|focus|s7": [
+14,
+"999d7236fa8caaf3a9e712113efcdd12"
+],
+"bard|L60|Crownwood Hare|strike|s101": [
+14,
+"77674cf6a91692a62d92f0236198bf08"
+],
+"bard|L60|Crownwood Hare|strike|s7": [
+14,
+"114211e80237649780bd92203c25193c"
+],
+"bard|L60|Highway Bandit|aim|s101": [
+8,
+"296909aeb9716074673af0ad3c6f55d9"
+],
+"bard|L60|Highway Bandit|aim|s7": [
+7,
+"ce70baa1d82514ec3b97b00fb64c0198"
+],
+"bard|L60|Highway Bandit|counter|s101": [
+7,
+"e7d4bf4aea0fbdf3c64e41137825f2d9"
+],
+"bard|L60|Highway Bandit|counter|s7": [
+9,
+"8d63b03d2cad10ae629158bf41c9fbdc"
+],
+"bard|L60|Highway Bandit|defend|s101": [
+14,
+"61dee130d0daa09005f6d35b11db31a2"
+],
+"bard|L60|Highway Bandit|defend|s7": [
+14,
+"6a3102406b8cd57badad03f8fea0781b"
+],
+"bard|L60|Highway Bandit|evade|s101": [
+14,
+"190f89f2c8cff710ad7dda84db584ee2"
+],
+"bard|L60|Highway Bandit|evade|s7": [
+7,
+"4fb353fc885d30ff2e32baa2d1bb8745"
+],
+"bard|L60|Highway Bandit|focus|s101": [
+7,
+"98d1c47496119946db36b2b180b96fda"
+],
+"bard|L60|Highway Bandit|focus|s7": [
+9,
+"3bed692998c0b4526d1f4c6c4484d1bc"
+],
+"bard|L60|Highway Bandit|strike|s101": [
+7,
+"58d5490199d971df5cd990ec0f2c9a2a"
+],
+"bard|L60|Highway Bandit|strike|s7": [
+9,
+"67f2bf160fc7199b4b831ecb8fba2bac"
+],
+"bard|L60|River Otter|aim|s101": [
+14,
+"04c8b52d96c58d189cf6aca03409b24a"
+],
+"bard|L60|River Otter|aim|s7": [
+14,
+"a3d5ef863f943eed644d3b929000d820"
+],
+"bard|L60|River Otter|counter|s101": [
+14,
+"c9261cfc1c952186bad5bc870033de46"
+],
+"bard|L60|River Otter|counter|s7": [
+14,
+"abdde8b0ddd59b7fb2b87f4e1938297e"
+],
+"bard|L60|River Otter|defend|s101": [
+14,
+"44720c893f87a62a28fc70dfbf379124"
+],
+"bard|L60|River Otter|defend|s7": [
+14,
+"f9fbdc4720f3a46d483128b04a0c058e"
+],
+"bard|L60|River Otter|evade|s101": [
+14,
+"cc4afa5d09e1c16b5414ad4070a7fe38"
+],
+"bard|L60|River Otter|evade|s7": [
+14,
+"5b5be6310183c6c2b9018217ec5f9d86"
+],
+"bard|L60|River Otter|focus|s101": [
+14,
+"1c69492fe153a8055851317255b66ffe"
+],
+"bard|L60|River Otter|focus|s7": [
+14,
+"721c6350df6c2a64c90c8bf35efe0feb"
+],
+"bard|L60|River Otter|strike|s101": [
+14,
+"544edb6259403bff8b03d045ee5b7bde"
+],
+"bard|L60|River Otter|strike|s7": [
+14,
+"effd33b31b3672ef32f40dddfa01b129"
+],
+"druid|L100|Crownwood Hare|aim|s101": [
+14,
+"30732221261810bb054289859aee6ea3"
+],
+"druid|L100|Crownwood Hare|aim|s7": [
+14,
+"d303159113c4a324e7f794a07dfe1f54"
+],
+"druid|L100|Crownwood Hare|counter|s101": [
+14,
+"e6c5fb5ea75678f86bf7870db0ac0ba1"
+],
+"druid|L100|Crownwood Hare|counter|s7": [
+14,
+"d0dbaa822f6e94aa1387c00e2889a4d4"
+],
+"druid|L100|Crownwood Hare|defend|s101": [
+14,
+"49bae55b2c671c46d49a84076bc36114"
+],
+"druid|L100|Crownwood Hare|defend|s7": [
+14,
+"2a75b69818484d69e971f4c2a4251df1"
+],
+"druid|L100|Crownwood Hare|evade|s101": [
+14,
+"a73a67c2e19ff88a836a21a4b4adc59d"
+],
+"druid|L100|Crownwood Hare|evade|s7": [
+14,
+"40de96beb1d28dcd97523b03e2732454"
+],
+"druid|L100|Crownwood Hare|focus|s101": [
+14,
+"0768b030cccaf348ee0db3c0a3198053"
+],
+"druid|L100|Crownwood Hare|focus|s7": [
+14,
+"ca529e1a7b102fd6a77704fa8e22bde2"
+],
+"druid|L100|Crownwood Hare|strike|s101": [
+14,
+"508d6623cd4e94d86aa2aec6e7ee6311"
+],
+"druid|L100|Crownwood Hare|strike|s7": [
+14,
+"3b280ec610fe95a7c81ae58b56e11bb1"
+],
+"druid|L100|Highway Bandit|aim|s101": [
+14,
+"57e896acf7f2c2a8ff462779c01aace9"
+],
+"druid|L100|Highway Bandit|aim|s7": [
+14,
+"96b2d846a4d86b15ca167e776c66e96b"
+],
+"druid|L100|Highway Bandit|counter|s101": [
+11,
+"a26ed8376ebf3c5120225e6ddf7fa97b"
+],
+"druid|L100|Highway Bandit|counter|s7": [
+14,
+"273d9b7364220ce4d8a2960956dff71b"
+],
+"druid|L100|Highway Bandit|defend|s101": [
+14,
+"2a3e5bf8caabc2375e5e3137b5a72206"
+],
+"druid|L100|Highway Bandit|defend|s7": [
+14,
+"1983710818b68a2b16b26a31c5556e89"
+],
+"druid|L100|Highway Bandit|evade|s101": [
+14,
+"70dae9175bace5eb4b3392e1018be136"
+],
+"druid|L100|Highway Bandit|evade|s7": [
+14,
+"b6263aa93622e8698c5ab82287e558c4"
+],
+"druid|L100|Highway Bandit|focus|s101": [
+11,
+"5cc8d426a1abda4b5d88aff3b541f74e"
+],
+"druid|L100|Highway Bandit|focus|s7": [
+14,
+"11edeead22369d7e48cf1b12c62abb1d"
+],
+"druid|L100|Highway Bandit|strike|s101": [
+14,
+"f9122b9fbb746e4ec7801bc240ab9392"
+],
+"druid|L100|Highway Bandit|strike|s7": [
+14,
+"961c50f2fcc952b2219be6d8ddbb6787"
+],
+"druid|L100|River Otter|aim|s101": [
+14,
+"9424b074697390d3fd6dafddfbe66d5a"
+],
+"druid|L100|River Otter|aim|s7": [
+14,
+"4ca16819f3cca7d4af6f435ca98719b4"
+],
+"druid|L100|River Otter|counter|s101": [
+14,
+"34852302507e162f5bddeda65a6a720c"
+],
+"druid|L100|River Otter|counter|s7": [
+14,
+"4e4d35069da6c8c66b62e9ecb59e9428"
+],
+"druid|L100|River Otter|defend|s101": [
+14,
+"36b5f805b146ed3ddf96dcfe3663a702"
+],
+"druid|L100|River Otter|defend|s7": [
+14,
+"183bf791004bf489fc68b25d6a2492a8"
+],
+"druid|L100|River Otter|evade|s101": [
+14,
+"e4981a5adcd367f5ff872adea4ddd0ea"
+],
+"druid|L100|River Otter|evade|s7": [
+14,
+"bb56dcd738f61ff28119c4276ab7eb04"
+],
+"druid|L100|River Otter|focus|s101": [
+14,
+"3f760c2d932162d13da6711f01e0a3e8"
+],
+"druid|L100|River Otter|focus|s7": [
+14,
+"f3f46f166ad4bd6799d567950bda21b7"
+],
+"druid|L100|River Otter|strike|s101": [
+14,
+"c8b52baa14ccc6aaabac18a9386781c3"
+],
+"druid|L100|River Otter|strike|s7": [
+14,
+"dbedbdfc56c2a8a447de8a971f6e11a7"
+],
+"druid|L1|Crownwood Hare|aim|s101": [
+3,
+"d6860dd5a0d592a887d84d3a9cffbfec"
+],
+"druid|L1|Crownwood Hare|aim|s7": [
+12,
+"ee1441bfcfe13014c84da9d09cbb03d1"
+],
+"druid|L1|Crownwood Hare|counter|s101": [
+11,
+"1c98b898445fba738d59d3483cf6749a"
+],
+"druid|L1|Crownwood Hare|counter|s7": [
+11,
+"8ff593e7fcb23bc46adcef9ad14d375e"
+],
+"druid|L1|Crownwood Hare|defend|s101": [
+14,
+"695050cab9d36cb40bbb25802505e37b"
+],
+"druid|L1|Crownwood Hare|defend|s7": [
+14,
+"6b3830cb7dfdfa6ca514f27c905db744"
+],
+"druid|L1|Crownwood Hare|evade|s101": [
+14,
+"ea009609668070fcf5c090f70971107a"
+],
+"druid|L1|Crownwood Hare|evade|s7": [
+14,
+"565281cd251033dc95a5492c34a19df4"
+],
+"druid|L1|Crownwood Hare|focus|s101": [
+12,
+"59906e2edce9d7edb00db9dceba5314d"
+],
+"druid|L1|Crownwood Hare|focus|s7": [
+14,
+"a32943c8da50b20b39e2ce04f2af42e0"
+],
+"druid|L1|Crownwood Hare|strike|s101": [
+3,
+"29643dbb1c8125ae6b8b6e1a2adaa717"
+],
+"druid|L1|Crownwood Hare|strike|s7": [
+14,
+"8ea093c8e0e59d9b035d8db782397a76"
+],
+"druid|L1|Highway Bandit|aim|s101": [
+3,
+"8d85809b6d9d18c6be88a6ffe8681c6b"
+],
+"druid|L1|Highway Bandit|aim|s7": [
+10,
+"7749bb464f5b7b9561a86d291701722d"
+],
+"druid|L1|Highway Bandit|counter|s101": [
+8,
+"07fa737e48e62c18fc33ce940a882de8"
+],
+"druid|L1|Highway Bandit|counter|s7": [
+9,
+"787e2201550ba41a0389c0b94bc6c2b0"
+],
+"druid|L1|Highway Bandit|defend|s101": [
+14,
+"944e30a3e9e080cda9cc9649386af74f"
+],
+"druid|L1|Highway Bandit|defend|s7": [
+14,
+"e0926b59d789ac9438c658db3364f12b"
+],
+"druid|L1|Highway Bandit|evade|s101": [
+14,
+"fd73f0d7687afc9cb66c2913563d2665"
+],
+"druid|L1|Highway Bandit|evade|s7": [
+11,
+"f8969a4ad68089326aaa67cd1d637b75"
+],
+"druid|L1|Highway Bandit|focus|s101": [
+7,
+"2a031cfac330df8d9611bc7161e0012c"
+],
+"druid|L1|Highway Bandit|focus|s7": [
+12,
+"6b94eca936848c098ada70ffe0232e70"
+],
+"druid|L1|Highway Bandit|strike|s101": [
+7,
+"09e68a8296236ce8bf5f32e0737f503c"
+],
+"druid|L1|Highway Bandit|strike|s7": [
+11,
+"0f54bb73257da352b8f00e9e3b688280"
+],
+"druid|L1|River Otter|aim|s101": [
+14,
+"1a070779b4f7936fe20ccee1e970ee04"
+],
+"druid|L1|River Otter|aim|s7": [
+14,
+"132e987de2ff3e4c8f9b710b7e73af4c"
+],
+"druid|L1|River Otter|counter|s101": [
+14,
+"c2ae2e0d12cca0de5b57d938a870fa38"
+],
+"druid|L1|River Otter|counter|s7": [
+14,
+"c893eb3e5a95b7ad514d744f27efe502"
+],
+"druid|L1|River Otter|defend|s101": [
+14,
+"8bbf6ea03e46d7833a0bf1afa5b9f2d9"
+],
+"druid|L1|River Otter|defend|s7": [
+14,
+"7d8ee6ed10fa73c187b7d37ef21530d2"
+],
+"druid|L1|River Otter|evade|s101": [
+14,
+"94530374a2f055c016c5584d36763b5c"
+],
+"druid|L1|River Otter|evade|s7": [
+14,
+"7062126f410829b1af80bbe62942f5d1"
+],
+"druid|L1|River Otter|focus|s101": [
+14,
+"2383177df537d0abc392014eac9ceb4b"
+],
+"druid|L1|River Otter|focus|s7": [
+14,
+"510e7ef24b84dc233f7f9f6952b350e4"
+],
+"druid|L1|River Otter|strike|s101": [
+14,
+"7dd089be03e1aa8fc1465b19b284505e"
+],
+"druid|L1|River Otter|strike|s7": [
+14,
+"d5654b4f98531f5ca033253591ed636f"
+],
+"druid|L20|Crownwood Hare|aim|s101": [
+14,
+"d7a1d5cd78bf1556c093b6612e37afba"
+],
+"druid|L20|Crownwood Hare|aim|s7": [
+14,
+"c8a14a2c4da0499b4755516652dbc29f"
+],
+"druid|L20|Crownwood Hare|counter|s101": [
+14,
+"990147a3d440a84058246850d2dc1081"
+],
+"druid|L20|Crownwood Hare|counter|s7": [
+14,
+"7b57bffab8fa61bf76ee476d0a90c4c3"
+],
+"druid|L20|Crownwood Hare|defend|s101": [
+14,
+"2ed578093b691e7df2dcafd6e5a3d3f4"
+],
+"druid|L20|Crownwood Hare|defend|s7": [
+14,
+"f6d64dcbb84c1d4667f661f7d7438b07"
+],
+"druid|L20|Crownwood Hare|evade|s101": [
+14,
+"896dccad4314213e6f2a76ec57f1d5ba"
+],
+"druid|L20|Crownwood Hare|evade|s7": [
+14,
+"741b9cf7233c999a651dfacc8adac88f"
+],
+"druid|L20|Crownwood Hare|focus|s101": [
+14,
+"93b1e08e71c7210e4a263e832b7dce62"
+],
+"druid|L20|Crownwood Hare|focus|s7": [
+14,
+"6e113bfc7bb12ec2356784b8a2ea5916"
+],
+"druid|L20|Crownwood Hare|strike|s101": [
+14,
+"fa19c5b4df816a9a5083ceda43c8b29b"
+],
+"druid|L20|Crownwood Hare|strike|s7": [
+14,
+"c88ca0eca58e8d310f8a6ff4b2fa2b1d"
+],
+"druid|L20|Highway Bandit|aim|s101": [
+9,
+"948423b24531e22140884bf89b067c66"
+],
+"druid|L20|Highway Bandit|aim|s7": [
+11,
+"de82a8d74758a857233b8b974f74aa08"
+],
+"druid|L20|Highway Bandit|counter|s101": [
+8,
+"1583f29be8238e78669716824fd86b16"
+],
+"druid|L20|Highway Bandit|counter|s7": [
+10,
+"0c4ab507640d75258c7185140b4df06f"
+],
+"druid|L20|Highway Bandit|defend|s101": [
+14,
+"363d94735213877bc00337abdbb7bc3e"
+],
+"druid|L20|Highway Bandit|defend|s7": [
+14,
+"6fb72c2b93977b6b2eb31f562ef98834"
+],
+"druid|L20|Highway Bandit|evade|s101": [
+14,
+"dcc4d624b0f464ccf80745bb8979e454"
+],
+"druid|L20|Highway Bandit|evade|s7": [
+14,
+"378b1d5e9bb39260307cd225a2b0747a"
+],
+"druid|L20|Highway Bandit|focus|s101": [
+8,
+"d6b91328d4fbe0c259e19a13189385df"
+],
+"druid|L20|Highway Bandit|focus|s7": [
+10,
+"911a41d7d59686c2b44d5c88a853e3d4"
+],
+"druid|L20|Highway Bandit|strike|s101": [
+9,
+"951324ab64b1602e08a67d9eaed76d12"
+],
+"druid|L20|Highway Bandit|strike|s7": [
+12,
+"3732ac049496d2a93e9c02ec748d9f76"
+],
+"druid|L20|River Otter|aim|s101": [
+14,
+"caa5a6d3a5c7929bf28dc554fcfba01b"
+],
+"druid|L20|River Otter|aim|s7": [
+14,
+"8c78d3cfc672ff92fbe7f3056198e368"
+],
+"druid|L20|River Otter|counter|s101": [
+14,
+"60f031e41ea829f8699715172ef2af4e"
+],
+"druid|L20|River Otter|counter|s7": [
+14,
+"756b7ee4ec4164d90731813a18608f25"
+],
+"druid|L20|River Otter|defend|s101": [
+14,
+"335c97a5cd11657ed8c278cfd0cf9b62"
+],
+"druid|L20|River Otter|defend|s7": [
+14,
+"4be6e455e8162e894a7d5aed2044ff82"
+],
+"druid|L20|River Otter|evade|s101": [
+14,
+"9d5279683f10d6d6ed4153fa01b330b5"
+],
+"druid|L20|River Otter|evade|s7": [
+14,
+"010264f6109921019442e1b09b0bcdbc"
+],
+"druid|L20|River Otter|focus|s101": [
+14,
+"2d18df23f1fd1ea39bc5016bf526b7c4"
+],
+"druid|L20|River Otter|focus|s7": [
+14,
+"b7155b3ec3cda26a1e69d50058c71ba3"
+],
+"druid|L20|River Otter|strike|s101": [
+14,
+"364f0f7710579f085b5c7a4e41ed17c1"
+],
+"druid|L20|River Otter|strike|s7": [
+14,
+"08674ae68a405a222068ec4680d83bcb"
+],
+"druid|L60|Crownwood Hare|aim|s101": [
+14,
+"325d2c04c0e8aa926eba170348007a24"
+],
+"druid|L60|Crownwood Hare|aim|s7": [
+14,
+"3386ffa395d5792e4a1dcc3ab0be5652"
+],
+"druid|L60|Crownwood Hare|counter|s101": [
+14,
+"7001de1719aa9abff27a58706147128c"
+],
+"druid|L60|Crownwood Hare|counter|s7": [
+14,
+"abce1a9446cfe34346c940c895dfd967"
+],
+"druid|L60|Crownwood Hare|defend|s101": [
+14,
+"4419b76ac05b90572eb57dfad41d0247"
+],
+"druid|L60|Crownwood Hare|defend|s7": [
+14,
+"61a66149f5f249490a996f77b515852c"
+],
+"druid|L60|Crownwood Hare|evade|s101": [
+14,
+"9817d04a19f27cc43d6e5c0f09294e38"
+],
+"druid|L60|Crownwood Hare|evade|s7": [
+14,
+"bcbc151a2e0ae5e97a80bd69d338b9b7"
+],
+"druid|L60|Crownwood Hare|focus|s101": [
+14,
+"ed5dac9073ca4dde1afe1c2f077ed31b"
+],
+"druid|L60|Crownwood Hare|focus|s7": [
+14,
+"59cf3130352f15203d0c44121e6cb0e6"
+],
+"druid|L60|Crownwood Hare|strike|s101": [
+14,
+"6aba15b6e7a727904abeb8ce1cf62c86"
+],
+"druid|L60|Crownwood Hare|strike|s7": [
+14,
+"9dd710feb9f922be13d5e545002f7a79"
+],
+"druid|L60|Highway Bandit|aim|s101": [
+13,
+"58704c981ce3ee8c822a83194681a907"
+],
+"druid|L60|Highway Bandit|aim|s7": [
+14,
+"bc71a1dfe120b1e1ebd866748a274ed4"
+],
+"druid|L60|Highway Bandit|counter|s101": [
+10,
+"ad2a3265f6019ae408c78ddfff338b64"
+],
+"druid|L60|Highway Bandit|counter|s7": [
+13,
+"933c8dee902f768c1a8525aa2c6eed31"
+],
+"druid|L60|Highway Bandit|defend|s101": [
+14,
+"33410cd0966bda77d0b8c594300d691f"
+],
+"druid|L60|Highway Bandit|defend|s7": [
+14,
+"9007c1dbdd6e7b6092bdbf048ebdfe98"
+],
+"druid|L60|Highway Bandit|evade|s101": [
+14,
+"4cc44364239385b3acd8ca595f83c21b"
+],
+"druid|L60|Highway Bandit|evade|s7": [
+14,
+"1112fc784f8c4d37004d7a9c2606b0d7"
+],
+"druid|L60|Highway Bandit|focus|s101": [
+10,
+"ce40e4cc7cee7d905dbf61d2d9a62a89"
+],
+"druid|L60|Highway Bandit|focus|s7": [
+13,
+"34c64411ba905abe7b9ec5c68c9d92ca"
+],
+"druid|L60|Highway Bandit|strike|s101": [
+14,
+"ac6f261d979affbf01bee172e59e205b"
+],
+"druid|L60|Highway Bandit|strike|s7": [
+14,
+"e5a7c7c1123eac0e71b077e4383ca895"
+],
+"druid|L60|River Otter|aim|s101": [
+14,
+"4fa275dafab8fcd5a160b92ddc79cc03"
+],
+"druid|L60|River Otter|aim|s7": [
+14,
+"32fe588a9249b6ef03446ab963e8647e"
+],
+"druid|L60|River Otter|counter|s101": [
+14,
+"4ed0593c6033177de5f139d7857cca78"
+],
+"druid|L60|River Otter|counter|s7": [
+14,
+"e6c9b87f32ce624a909514e063f13f24"
+],
+"druid|L60|River Otter|defend|s101": [
+14,
+"693d47284b14fcfcee94a2f04687c0f6"
+],
+"druid|L60|River Otter|defend|s7": [
+14,
+"334c391f8f92f860d25b4456c06fc4f5"
+],
+"druid|L60|River Otter|evade|s101": [
+14,
+"8793c5b6b4a23d7beb4475fa7774e627"
+],
+"druid|L60|River Otter|evade|s7": [
+14,
+"d6d6640e41be92c4c7c5e5488f1cc0b5"
+],
+"druid|L60|River Otter|focus|s101": [
+14,
+"74b59c49a5e294996485e527b6e331f9"
+],
+"druid|L60|River Otter|focus|s7": [
+14,
+"c0bd43385b860252391a48eb691b038c"
+],
+"druid|L60|River Otter|strike|s101": [
+14,
+"7fc4e8a994ac072895dea159a7e3d416"
+],
+"druid|L60|River Otter|strike|s7": [
+14,
+"71fecb020fe4b962e9e70b08000f2bb2"
+],
+"hunter|L100|Crownwood Hare|aim|s101": [
+14,
+"9b1b5c9d339a8ffc1e74094465948d72"
+],
+"hunter|L100|Crownwood Hare|aim|s7": [
+14,
+"7df78d186572967368c1cf1132d28ac3"
+],
+"hunter|L100|Crownwood Hare|counter|s101": [
+14,
+"bb124358851abe4518f67692b10f902e"
+],
+"hunter|L100|Crownwood Hare|counter|s7": [
+14,
+"982f12f0e28ca4d202400423f262ed9a"
+],
+"hunter|L100|Crownwood Hare|defend|s101": [
+14,
+"6a6a612007f8c9705c9cdbc091f36af0"
+],
+"hunter|L100|Crownwood Hare|defend|s7": [
+14,
+"86e473da3040090ef9b9044fa247b84f"
+],
+"hunter|L100|Crownwood Hare|evade|s101": [
+14,
+"328741640b3e54430e62a309346b7638"
+],
+"hunter|L100|Crownwood Hare|evade|s7": [
+14,
+"475d0fb97e2d1137e7a81713150e6230"
+],
+"hunter|L100|Crownwood Hare|focus|s101": [
+14,
+"32a083439cb169ef0918f743f4e0e26e"
+],
+"hunter|L100|Crownwood Hare|focus|s7": [
+14,
+"e90c00d1727526a3d90ece3fa48e7294"
+],
+"hunter|L100|Crownwood Hare|strike|s101": [
+14,
+"f85f636fede0657eae1e97629d62bf22"
+],
+"hunter|L100|Crownwood Hare|strike|s7": [
+14,
+"22db1097e0520b4b92397901906a65dc"
+],
+"hunter|L100|Highway Bandit|aim|s101": [
+12,
+"1116f3081d435b2ee30524866307b5bc"
+],
+"hunter|L100|Highway Bandit|aim|s7": [
+12,
+"01beac1b81b56fce60feec466f3447c7"
+],
+"hunter|L100|Highway Bandit|counter|s101": [
+11,
+"4af15e4487057f00d6c8e2f51aceec06"
+],
+"hunter|L100|Highway Bandit|counter|s7": [
+14,
+"ea6ea9cb9e97a0717e07f9c4350d7c4a"
+],
+"hunter|L100|Highway Bandit|defend|s101": [
+14,
+"ee3f153aec86bef1334b008e1f6b4c53"
+],
+"hunter|L100|Highway Bandit|defend|s7": [
+14,
+"6b7587c46691f12067a4d6355d0cdef7"
+],
+"hunter|L100|Highway Bandit|evade|s101": [
+14,
+"fe18bba1030849f7828de4fff595e7d8"
+],
+"hunter|L100|Highway Bandit|evade|s7": [
+14,
+"30b370ef131e366e0a24aa53d6f1b413"
+],
+"hunter|L100|Highway Bandit|focus|s101": [
+14,
+"162347c321101b34864c2d1ffde0e85f"
+],
+"hunter|L100|Highway Bandit|focus|s7": [
+14,
+"51158775cfd853fc6378d4dc3740ad06"
+],
+"hunter|L100|Highway Bandit|strike|s101": [
+11,
+"d773dac965ab807c08112a3ec8074e4f"
+],
+"hunter|L100|Highway Bandit|strike|s7": [
+12,
+"5be4fada713188a63138312d952f7bb1"
+],
+"hunter|L100|River Otter|aim|s101": [
+14,
+"5cddefc547d329160a7aee826b7e616b"
+],
+"hunter|L100|River Otter|aim|s7": [
+14,
+"18510ffb6b67455b33cd6ec3f1faddaa"
+],
+"hunter|L100|River Otter|counter|s101": [
+14,
+"0fa1a8ef2ee8d4c26fc75a985e084fb0"
+],
+"hunter|L100|River Otter|counter|s7": [
+14,
+"8ddeb223e45b7189326788cb0d52c1b3"
+],
+"hunter|L100|River Otter|defend|s101": [
+14,
+"c29c6e205816d74e3617419b89058313"
+],
+"hunter|L100|River Otter|defend|s7": [
+14,
+"21e136a9001613eafbef49fc90fae1a3"
+],
+"hunter|L100|River Otter|evade|s101": [
+14,
+"1dc361f88052658eb3850a1c547b8292"
+],
+"hunter|L100|River Otter|evade|s7": [
+14,
+"b1201289b38cd77b9b41c33fc861b069"
+],
+"hunter|L100|River Otter|focus|s101": [
+14,
+"dbe2d159235675eb92cb60eba85b7fe3"
+],
+"hunter|L100|River Otter|focus|s7": [
+14,
+"dbe2d159235675eb92cb60eba85b7fe3"
+],
+"hunter|L100|River Otter|strike|s101": [
+14,
+"f8a6b94a09b62629dad6c5340502ca89"
+],
+"hunter|L100|River Otter|strike|s7": [
+14,
+"e777dcdd160d6f4d7048a662bfd81d02"
+],
+"hunter|L1|Crownwood Hare|aim|s101": [
+12,
+"4dbf5ce2b2517af53e6b4bc04056b1a5"
+],
+"hunter|L1|Crownwood Hare|aim|s7": [
+13,
+"45b64c25a674b72e52d16209acc764b5"
+],
+"hunter|L1|Crownwood Hare|counter|s101": [
+11,
+"389196885a5b26bd2850c1a47ac8ac22"
+],
+"hunter|L1|Crownwood Hare|counter|s7": [
+11,
+"e5e38bc4638025cd787d474b74874880"
+],
+"hunter|L1|Crownwood Hare|defend|s101": [
+14,
+"653aeadecfaae7ab73602ffaae6fee3e"
+],
+"hunter|L1|Crownwood Hare|defend|s7": [
+14,
+"2a3bb4dde6f21fe9988553fe78dfb94b"
+],
+"hunter|L1|Crownwood Hare|evade|s101": [
+14,
+"71ad6b5e954ad09de04177dcc88c4588"
+],
+"hunter|L1|Crownwood Hare|evade|s7": [
+14,
+"31c5fef527094e2af51ed1f6c99c5fd6"
+],
+"hunter|L1|Crownwood Hare|focus|s101": [
+14,
+"4285f442c60fd06a35b59b0d696f5e33"
+],
+"hunter|L1|Crownwood Hare|focus|s7": [
+14,
+"ec9261fb67386314f1ec44bd799cce63"
+],
+"hunter|L1|Crownwood Hare|strike|s101": [
+11,
+"2077086715f67e33c4ea122634af931a"
+],
+"hunter|L1|Crownwood Hare|strike|s7": [
+14,
+"0b07d0da11e17a1c2074de86c628c5e5"
+],
+"hunter|L1|Highway Bandit|aim|s101": [
+6,
+"09e80da7973fda5fafaba57438a0a334"
+],
+"hunter|L1|Highway Bandit|aim|s7": [
+9,
+"f23a501720715bfb884469891d61282f"
+],
+"hunter|L1|Highway Bandit|counter|s101": [
+5,
+"45bb4ea03de18e34b151e9bd98cc9d8e"
+],
+"hunter|L1|Highway Bandit|counter|s7": [
+9,
+"e3116262556acfdcac2485f1fbb8a1c0"
+],
+"hunter|L1|Highway Bandit|defend|s101": [
+14,
+"ea9121200b98f16241f4ba4c6a191272"
+],
+"hunter|L1|Highway Bandit|defend|s7": [
+14,
+"679a0de214f6db345070b024454b0c9f"
+],
+"hunter|L1|Highway Bandit|evade|s101": [
+14,
+"5db7b8d446dddb552901c44f66a0981d"
+],
+"hunter|L1|Highway Bandit|evade|s7": [
+6,
+"ba9f64e9de0eddc848573564bd1b7fa8"
+],
+"hunter|L1|Highway Bandit|focus|s101": [
+10,
+"33e2fd80b0365fb13bf24a813737b7b7"
+],
+"hunter|L1|Highway Bandit|focus|s7": [
+14,
+"413b3140839957a97cf2dfce9eae8b98"
+],
+"hunter|L1|Highway Bandit|strike|s101": [
+6,
+"ddd40c4e39c5b3d9da99e1792036564e"
+],
+"hunter|L1|Highway Bandit|strike|s7": [
+9,
+"2dd8039a3bbed65a352be7346e3e7d52"
+],
+"hunter|L1|River Otter|aim|s101": [
+14,
+"3a9bc47811a6fd338891664673950dfe"
+],
+"hunter|L1|River Otter|aim|s7": [
+14,
+"ce39f486547a2ad1dfec6e210d1b212e"
+],
+"hunter|L1|River Otter|counter|s101": [
+14,
+"e604a2274a53515ea3b520162fe86482"
+],
+"hunter|L1|River Otter|counter|s7": [
+14,
+"31319290f9cd95739878c5e9b4770bdc"
+],
+"hunter|L1|River Otter|defend|s101": [
+14,
+"0db09d1fe917eac32caaaa58f504d6a2"
+],
+"hunter|L1|River Otter|defend|s7": [
+14,
+"7aee3138511e8d1e286a85887c3f3b24"
+],
+"hunter|L1|River Otter|evade|s101": [
+14,
+"1577508d470ebb8590efe2cd616dd55d"
+],
+"hunter|L1|River Otter|evade|s7": [
+14,
+"e20c8852c064589d48dc80b8392a8d38"
+],
+"hunter|L1|River Otter|focus|s101": [
+14,
+"ab417f5ccd31f0ac046c3f0ded3c2151"
+],
+"hunter|L1|River Otter|focus|s7": [
+14,
+"4ec23b0aa6802fe46974552aa1bf19cb"
+],
+"hunter|L1|River Otter|strike|s101": [
+14,
+"6c8b24e5b37d82947ba19734725d1921"
+],
+"hunter|L1|River Otter|strike|s7": [
+14,
+"3a88f1785e7be133d61b1c2d9169c78f"
+],
+"hunter|L20|Crownwood Hare|aim|s101": [
+14,
+"55c3c5ca0a0e1b1b6d053444a3ee9b7f"
+],
+"hunter|L20|Crownwood Hare|aim|s7": [
+14,
+"74d83684fcb1f1f7ef202764e36ec834"
+],
+"hunter|L20|Crownwood Hare|counter|s101": [
+14,
+"c8737701e8bc820bb5b6e2ddf0eaa842"
+],
+"hunter|L20|Crownwood Hare|counter|s7": [
+14,
+"9e1acf0e584ef9ddedfbbc5c389436e2"
+],
+"hunter|L20|Crownwood Hare|defend|s101": [
+14,
+"6a8a5bc08686bcd78db7c2af9cc563bb"
+],
+"hunter|L20|Crownwood Hare|defend|s7": [
+14,
+"2c392b9a5b9932030bd4b2f20d858848"
+],
+"hunter|L20|Crownwood Hare|evade|s101": [
+14,
+"d0933915a08da6dc64229462230797fb"
+],
+"hunter|L20|Crownwood Hare|evade|s7": [
+14,
+"2b4b16c26eff5ca13a3c2734941a11b8"
+],
+"hunter|L20|Crownwood Hare|focus|s101": [
+14,
+"11e36a44c185ca90a2bf998baee3bd28"
+],
+"hunter|L20|Crownwood Hare|focus|s7": [
+14,
+"59d88e95692c89e706ee5e7ed6bdaa1c"
+],
+"hunter|L20|Crownwood Hare|strike|s101": [
+14,
+"18fd13743f2e9cac7a35a9c338053962"
+],
+"hunter|L20|Crownwood Hare|strike|s7": [
+14,
+"ec248d2e09f152ee0fa8c8ecd6ed3020"
+],
+"hunter|L20|Highway Bandit|aim|s101": [
+8,
+"c70e9664b541c8381b206dc39ffee0ec"
+],
+"hunter|L20|Highway Bandit|aim|s7": [
+9,
+"8c1964b95c3a3b94678750a418f0a34b"
+],
+"hunter|L20|Highway Bandit|counter|s101": [
+8,
+"9844ef8bf4a52dede7e2d52abf11e486"
+],
+"hunter|L20|Highway Bandit|counter|s7": [
+11,
+"8fe2dc6134264bf40f812db02e3bccb7"
+],
+"hunter|L20|Highway Bandit|defend|s101": [
+14,
+"701826f6c63b07d9c2e94e480f01bd48"
+],
+"hunter|L20|Highway Bandit|defend|s7": [
+14,
+"649ea07df61a79bb9f7137575dd21d3d"
+],
+"hunter|L20|Highway Bandit|evade|s101": [
+14,
+"959ae7b6158d7f8bba0913a2abda4f6b"
+],
+"hunter|L20|Highway Bandit|evade|s7": [
+14,
+"7a07093a40d905462bdea0a163c00ad7"
+],
+"hunter|L20|Highway Bandit|focus|s101": [
+14,
+"bcf53cc1c00faed3c115926972739ba8"
+],
+"hunter|L20|Highway Bandit|focus|s7": [
+14,
+"5cea56f70d75b6def2d3d333d3c46dfb"
+],
+"hunter|L20|Highway Bandit|strike|s101": [
+9,
+"053e8f0ded31d839a4b6164f02dc172f"
+],
+"hunter|L20|Highway Bandit|strike|s7": [
+11,
+"b811e57c15a1701ea52cc7c6f3a49284"
+],
+"hunter|L20|River Otter|aim|s101": [
+14,
+"1d27f5e415f2d47ffe67f2d8baa007be"
+],
+"hunter|L20|River Otter|aim|s7": [
+14,
+"999ff69b37c542d34391b070915923a2"
+],
+"hunter|L20|River Otter|counter|s101": [
+14,
+"2b0f91b293a333c6033c882a9874f2ad"
+],
+"hunter|L20|River Otter|counter|s7": [
+14,
+"e7f24cdbffca7edcb63fc0e1642b73ef"
+],
+"hunter|L20|River Otter|defend|s101": [
+14,
+"105de6f87da2c78bb6e29c9d9e6a4ee1"
+],
+"hunter|L20|River Otter|defend|s7": [
+14,
+"ace4b615d31298e6c880f37d425afa61"
+],
+"hunter|L20|River Otter|evade|s101": [
+14,
+"2100278f22eeb70dc11ad595a5940826"
+],
+"hunter|L20|River Otter|evade|s7": [
+14,
+"32c811d1034ee89cf9970dda6833ff43"
+],
+"hunter|L20|River Otter|focus|s101": [
+14,
+"35b04462455527df80366b197b0993f5"
+],
+"hunter|L20|River Otter|focus|s7": [
+14,
+"e7b324b386723f147f374c80e5d39c58"
+],
+"hunter|L20|River Otter|strike|s101": [
+14,
+"6e1858fc51c6b3d97705533a0876b34a"
+],
+"hunter|L20|River Otter|strike|s7": [
+14,
+"d405d8fb5c45c74c74c61742167f66ba"
+],
+"hunter|L60|Crownwood Hare|aim|s101": [
+14,
+"c915c0b91f437e18e09fc406320d130c"
+],
+"hunter|L60|Crownwood Hare|aim|s7": [
+14,
+"15d2f7151bc3eb42ec84840e86ef912d"
+],
+"hunter|L60|Crownwood Hare|counter|s101": [
+14,
+"0296ff4dfb4c985a6e90538d4c9f9b5e"
+],
+"hunter|L60|Crownwood Hare|counter|s7": [
+14,
+"0f4d1544047a37af0633c316cf2d81c7"
+],
+"hunter|L60|Crownwood Hare|defend|s101": [
+14,
+"54bc803ac1feb47502ed99efb2b23d48"
+],
+"hunter|L60|Crownwood Hare|defend|s7": [
+14,
+"945b87ab2183c2d42dd11d7505dc9134"
+],
+"hunter|L60|Crownwood Hare|evade|s101": [
+14,
+"57b1dfa0fdd74b8b55aa55873c2212db"
+],
+"hunter|L60|Crownwood Hare|evade|s7": [
+14,
+"afad064830c97c8f2779d24461a691c0"
+],
+"hunter|L60|Crownwood Hare|focus|s101": [
+14,
+"c067c4fbf911158a2ae08ba88d502b0c"
+],
+"hunter|L60|Crownwood Hare|focus|s7": [
+14,
+"c342871a85b103f79cbe2af9d2d4d848"
+],
+"hunter|L60|Crownwood Hare|strike|s101": [
+14,
+"4c277bf24aa3518fe8e6401687741527"
+],
+"hunter|L60|Crownwood Hare|strike|s7": [
+14,
+"c3471fc0b153895a8f901c8dfe8e3457"
+],
+"hunter|L60|Highway Bandit|aim|s101": [
+8,
+"da66c9fa82743669bd420b536c048bf8"
+],
+"hunter|L60|Highway Bandit|aim|s7": [
+9,
+"27dca5363d2635abc715752c2f7e3d3f"
+],
+"hunter|L60|Highway Bandit|counter|s101": [
+8,
+"aae20f557c45ee8d9da9de6731a966c1"
+],
+"hunter|L60|Highway Bandit|counter|s7": [
+11,
+"651a9e77884549c5282bc3e6298244c6"
+],
+"hunter|L60|Highway Bandit|defend|s101": [
+14,
+"8d88017a6d188622b261e1607a97eaa0"
+],
+"hunter|L60|Highway Bandit|defend|s7": [
+14,
+"639a1ba07ec5a9798767ab2e2ad3cb8f"
+],
+"hunter|L60|Highway Bandit|evade|s101": [
+14,
+"b7565bdb8145c43ae4a17fb8b66a3d97"
+],
+"hunter|L60|Highway Bandit|evade|s7": [
+14,
+"10b24a899d729b9dfedd6fac9cb0e22d"
+],
+"hunter|L60|Highway Bandit|focus|s101": [
+14,
+"7c0b5ba1e1049198c37cd668d2e6cccd"
+],
+"hunter|L60|Highway Bandit|focus|s7": [
+14,
+"bd0cb724c46819743fed38dad150d2a6"
+],
+"hunter|L60|Highway Bandit|strike|s101": [
+9,
+"41a92724366cc7924e7672fa5cd6f328"
+],
+"hunter|L60|Highway Bandit|strike|s7": [
+11,
+"67ab3e1dffa90267ee5087e2330edd09"
+],
+"hunter|L60|River Otter|aim|s101": [
+14,
+"296592aea3c20dff85d857d36e429eb4"
+],
+"hunter|L60|River Otter|aim|s7": [
+14,
+"7149bd5daf9719ceb57ce1700c1dcc90"
+],
+"hunter|L60|River Otter|counter|s101": [
+14,
+"9f871771f96549a0e9cddfacd3692e6d"
+],
+"hunter|L60|River Otter|counter|s7": [
+14,
+"2e31cd8fef5d9aea31aee15ea8230b0c"
+],
+"hunter|L60|River Otter|defend|s101": [
+14,
+"2ff0f82feeff39592be66ed4a0db28a4"
+],
+"hunter|L60|River Otter|defend|s7": [
+14,
+"4978f216a504236682d6dc47a172bb91"
+],
+"hunter|L60|River Otter|evade|s101": [
+14,
+"f1e31548a5a4f02fa55daa672bdf22c1"
+],
+"hunter|L60|River Otter|evade|s7": [
+14,
+"f82741140a658a91d1478cd83baa3a1c"
+],
+"hunter|L60|River Otter|focus|s101": [
+14,
+"6cf6ed92814abf249af52e87a1286512"
+],
+"hunter|L60|River Otter|focus|s7": [
+14,
+"520c5c18782ebc03c38183a15dcf96a9"
+],
+"hunter|L60|River Otter|strike|s101": [
+14,
+"a57fa9eaf92e9faa6dad913b1ac7a36e"
+],
+"hunter|L60|River Otter|strike|s7": [
+14,
+"6de01b37266b9a4ef13ad49523601630"
+],
+"knight|L100|Crownwood Hare|aim|s101": [
+6,
+"fb4e509d8c92e777a054cf4f9708657d"
+],
+"knight|L100|Crownwood Hare|aim|s7": [
+6,
+"20475dc58799c938f7c9b9b018358353"
+],
+"knight|L100|Crownwood Hare|counter|s101": [
+14,
+"70150d28d09265067e543a02a25394b6"
+],
+"knight|L100|Crownwood Hare|counter|s7": [
+14,
+"33a970339e8616efe5a6ca8357e907d7"
+],
+"knight|L100|Crownwood Hare|defend|s101": [
+14,
+"e2f3465ea1177c4392957d7abba34909"
+],
+"knight|L100|Crownwood Hare|defend|s7": [
+14,
+"ebc49a043e65d29721512ed92973e4a6"
+],
+"knight|L100|Crownwood Hare|evade|s101": [
+14,
+"ba75830aba0e82572b65408fb6788df8"
+],
+"knight|L100|Crownwood Hare|evade|s7": [
+14,
+"24bbeb7973b322aa658c867c15999afb"
+],
+"knight|L100|Crownwood Hare|focus|s101": [
+14,
+"0120e68c7d2b4a011f1462d982383dd0"
+],
+"knight|L100|Crownwood Hare|focus|s7": [
+14,
+"fdb42eb7ee77d397e3add608719a911b"
+],
+"knight|L100|Crownwood Hare|strike|s101": [
+6,
+"99c58a1d0feef6547453a24b85379d1e"
+],
+"knight|L100|Crownwood Hare|strike|s7": [
+8,
+"9f7af535bea1dc55928231e10f5d11df"
+],
+"knight|L100|Highway Bandit|aim|s101": [
+12,
+"914b84ca3064cfe585ac5e49e955b905"
+],
+"knight|L100|Highway Bandit|aim|s7": [
+14,
+"9a3535c777c58041c2f5e0c2cffadb2e"
+],
+"knight|L100|Highway Bandit|counter|s101": [
+14,
+"e2267ce060bc06ba9a1ca8ad4ddd3dbf"
+],
+"knight|L100|Highway Bandit|counter|s7": [
+14,
+"788edc5f961383c3a87311ccd241b5ca"
+],
+"knight|L100|Highway Bandit|defend|s101": [
+14,
+"cc2b17462f8017ba28a8a42906aa938c"
+],
+"knight|L100|Highway Bandit|defend|s7": [
+14,
+"15f2f14d8dbee8abae27acb77a8adbd4"
+],
+"knight|L100|Highway Bandit|evade|s101": [
+14,
+"9a3ed486e7100109f978e277a16c49ef"
+],
+"knight|L100|Highway Bandit|evade|s7": [
+14,
+"41875ed465c07f7ef9255a408b6f7d8b"
+],
+"knight|L100|Highway Bandit|focus|s101": [
+14,
+"4a491a9bd535de94a1d3d1976964092b"
+],
+"knight|L100|Highway Bandit|focus|s7": [
+14,
+"2ff78f242be80dffd842de005d5cbc8e"
+],
+"knight|L100|Highway Bandit|strike|s101": [
+14,
+"fd8f6cba93b0385b9e78f2d4262107d7"
+],
+"knight|L100|Highway Bandit|strike|s7": [
+14,
+"7f0b3658336231fe442b3c40799c7f4c"
+],
+"knight|L100|River Otter|aim|s101": [
+14,
+"ce5a2e904922d6218cc1f6551ebde771"
+],
+"knight|L100|River Otter|aim|s7": [
+14,
+"9eae70c78acf60d6747b7fb17348fe45"
+],
+"knight|L100|River Otter|counter|s101": [
+14,
+"92187e4fe53a13a33441fafbdacf6505"
+],
+"knight|L100|River Otter|counter|s7": [
+14,
+"fc14e36c52254fc3bae7aeb184d83fdd"
+],
+"knight|L100|River Otter|defend|s101": [
+14,
+"9ccf2210f2a0f7fd09ff15d7de99884e"
+],
+"knight|L100|River Otter|defend|s7": [
+14,
+"9be3db6bcc35e3a84791a87f4b137c1d"
+],
+"knight|L100|River Otter|evade|s101": [
+14,
+"9897d1c2f666bf184448ab6a0c874c8a"
+],
+"knight|L100|River Otter|evade|s7": [
+14,
+"899a15ab8f3225db669583e18148bbb1"
+],
+"knight|L100|River Otter|focus|s101": [
+14,
+"4b0f35e5887ddfe47e8aae5b5bc31d40"
+],
+"knight|L100|River Otter|focus|s7": [
+14,
+"039fae5a77b9f19495a3c1f6a3eae032"
+],
+"knight|L100|River Otter|strike|s101": [
+14,
+"3e77bcb65fbd81a5b25e0f866540c043"
+],
+"knight|L100|River Otter|strike|s7": [
+14,
+"6b5d25f2d4f412dc30bee512a75ed48c"
+],
+"knight|L1|Crownwood Hare|aim|s101": [
+3,
+"f5e8bfc3c2b45175e343f9466111c502"
+],
+"knight|L1|Crownwood Hare|aim|s7": [
+4,
+"3456ed03239bc3f3fbc475a6217c5a0d"
+],
+"knight|L1|Crownwood Hare|counter|s101": [
+11,
+"f460702c1bb8a036ebe36dea167bf21c"
+],
+"knight|L1|Crownwood Hare|counter|s7": [
+11,
+"3523c2180b0271c5074ca59a164eab1a"
+],
+"knight|L1|Crownwood Hare|defend|s101": [
+14,
+"f7aed8c61ef3732702ba5f7bcfb36e98"
+],
+"knight|L1|Crownwood Hare|defend|s7": [
+14,
+"dc84cf809740fe6cb76de3e66f3dd534"
+],
+"knight|L1|Crownwood Hare|evade|s101": [
+14,
+"c3fa80b8385747fd46ff242b4fb2305c"
+],
+"knight|L1|Crownwood Hare|evade|s7": [
+14,
+"db480fbc53c1b75f8fdd9077d5916854"
+],
+"knight|L1|Crownwood Hare|focus|s101": [
+14,
+"93401816ed883a1965727b6de2031522"
+],
+"knight|L1|Crownwood Hare|focus|s7": [
+14,
+"188878c2dadcc0c04cf3b1c2e6590657"
+],
+"knight|L1|Crownwood Hare|strike|s101": [
+3,
+"bb7ee2552edb12ba81e44ee22ef6fd96"
+],
+"knight|L1|Crownwood Hare|strike|s7": [
+6,
+"1c8b6c63838b0f1cf44eb28736e76ed4"
+],
+"knight|L1|Highway Bandit|aim|s101": [
+3,
+"fb07faac07457ef2189fbd0b82fcfa22"
+],
+"knight|L1|Highway Bandit|aim|s7": [
+6,
+"4eda4f88921d407c566baf107d6d5558"
+],
+"knight|L1|Highway Bandit|counter|s101": [
+9,
+"f4957bee957577560a5ba930df9c4d34"
+],
+"knight|L1|Highway Bandit|counter|s7": [
+9,
+"785260bcf8d766d8103a0eef06ea6bf0"
+],
+"knight|L1|Highway Bandit|defend|s101": [
+14,
+"24ce7b92251d485ca1794206044f3337"
+],
+"knight|L1|Highway Bandit|defend|s7": [
+14,
+"4cf33be3867a990cdf787cf20cbd3d0c"
+],
+"knight|L1|Highway Bandit|evade|s101": [
+14,
+"955f14d54dc92d41503288f2dd77b6b0"
+],
+"knight|L1|Highway Bandit|evade|s7": [
+14,
+"ab35d5e62141c9faf5d4f28a229d1644"
+],
+"knight|L1|Highway Bandit|focus|s101": [
+9,
+"5bd259dc36d7895047c0ddf996d2017e"
+],
+"knight|L1|Highway Bandit|focus|s7": [
+13,
+"07a6ea9318fe4da5b7a1b9a416d62df3"
+],
+"knight|L1|Highway Bandit|strike|s101": [
+3,
+"2766b691ae02ecda22cdd40e6a662967"
+],
+"knight|L1|Highway Bandit|strike|s7": [
+9,
+"523f2317c9fa816a33893a4c46c3b4b4"
+],
+"knight|L1|River Otter|aim|s101": [
+4,
+"0274a425e8f2fddbdb00d3c5616221a8"
+],
+"knight|L1|River Otter|aim|s7": [
+6,
+"4e29d2129b480ce3b012d4ed10f00f4f"
+],
+"knight|L1|River Otter|counter|s101": [
+14,
+"b307ccfce1f6ea761f59ce950775a0fb"
+],
+"knight|L1|River Otter|counter|s7": [
+14,
+"88fc6fca6cbfd308d7ed75eb4cfb413a"
+],
+"knight|L1|River Otter|defend|s101": [
+14,
+"76ff55888325eb9a74e666fb2853400f"
+],
+"knight|L1|River Otter|defend|s7": [
+14,
+"eb5dc141dda8cbf0aa37f851a043a876"
+],
+"knight|L1|River Otter|evade|s101": [
+14,
+"6964f59e1318cfc4f31d72cee81dfa4a"
+],
+"knight|L1|River Otter|evade|s7": [
+14,
+"8cefe12fbd2c77a852a8bed42ae2f902"
+],
+"knight|L1|River Otter|focus|s101": [
+14,
+"080fa1c450c346b2a84afb9895a181cb"
+],
+"knight|L1|River Otter|focus|s7": [
+14,
+"3e4f21181e1ab6a1f47cb76154225e1b"
+],
+"knight|L1|River Otter|strike|s101": [
+4,
+"d46b5bea3ab06a3c74a09fadec003040"
+],
+"knight|L1|River Otter|strike|s7": [
+9,
+"d7981bac9e161ffa9cd5c25aa88c4fc9"
+],
+"knight|L20|Crownwood Hare|aim|s101": [
+4,
+"938ed95e16944b029e60b946e220bc59"
+],
+"knight|L20|Crownwood Hare|aim|s7": [
+6,
+"c671d7cd55d8aec670123594ee58b9d3"
+],
+"knight|L20|Crownwood Hare|counter|s101": [
+14,
+"049de0283199bb0029883facbf869c21"
+],
+"knight|L20|Crownwood Hare|counter|s7": [
+14,
+"c4f5d75ac4672ef15eb0095c1948e5ba"
+],
+"knight|L20|Crownwood Hare|defend|s101": [
+14,
+"4b2ee799fb807cde16915c53d323524d"
+],
+"knight|L20|Crownwood Hare|defend|s7": [
+14,
+"4433fbfaed3d1be7fd6389edf6760b77"
+],
+"knight|L20|Crownwood Hare|evade|s101": [
+14,
+"62532ecaf2b2425403336a3a20eaf6e1"
+],
+"knight|L20|Crownwood Hare|evade|s7": [
+14,
+"1be9a0f21511d8c82afeb0bb5bdc5c78"
+],
+"knight|L20|Crownwood Hare|focus|s101": [
+14,
+"07dcb16438d409181817186fedf312c9"
+],
+"knight|L20|Crownwood Hare|focus|s7": [
+14,
+"45ff50fb69c7f988612e093639c6cac2"
+],
+"knight|L20|Crownwood Hare|strike|s101": [
+4,
+"2c395fcfe1d4d3f9d7b65eabb13f3794"
+],
+"knight|L20|Crownwood Hare|strike|s7": [
+8,
+"1d9a3cffda49a627154bfcdeec396fbf"
+],
+"knight|L20|Highway Bandit|aim|s101": [
+6,
+"1647d482507dee348b6f99100f0f4764"
+],
+"knight|L20|Highway Bandit|aim|s7": [
+8,
+"d38d99cd02a6961771885512f5d73527"
+],
+"knight|L20|Highway Bandit|counter|s101": [
+14,
+"8897b0dd4123b09b1b6ec22380bf101c"
+],
+"knight|L20|Highway Bandit|counter|s7": [
+14,
+"4e62abd02a53bb00952710f0d006ee67"
+],
+"knight|L20|Highway Bandit|defend|s101": [
+14,
+"6122657d0dc411150d125528c090ab7f"
+],
+"knight|L20|Highway Bandit|defend|s7": [
+14,
+"9d4869ec341fbbfa56d671c3a533f557"
+],
+"knight|L20|Highway Bandit|evade|s101": [
+14,
+"46e6cddbd8e8872fc8d4cfc0bbedcfe7"
+],
+"knight|L20|Highway Bandit|evade|s7": [
+14,
+"a03425c51fc6966c68f8e4ecfcc4df1d"
+],
+"knight|L20|Highway Bandit|focus|s101": [
+14,
+"0568d2ba18fc8bb579d4afc03f822c7a"
+],
+"knight|L20|Highway Bandit|focus|s7": [
+14,
+"8750f01d2ff641b242ace8bbf0a80460"
+],
+"knight|L20|Highway Bandit|strike|s101": [
+13,
+"ec32a7e5fc9d1330ededc5f1f82aea66"
+],
+"knight|L20|Highway Bandit|strike|s7": [
+12,
+"1bdd871b4703fba1ba78bb0c792432d1"
+],
+"knight|L20|River Otter|aim|s101": [
+13,
+"8d36e56356cbc06e14d8da5060fb31c0"
+],
+"knight|L20|River Otter|aim|s7": [
+14,
+"442ebfc2dbc4b798acdc21eec429b97a"
+],
+"knight|L20|River Otter|counter|s101": [
+14,
+"d0f4f8d2f05ad3b6488eb32632b72091"
+],
+"knight|L20|River Otter|counter|s7": [
+14,
+"a390e7ce0d2165cf6940054aec0b91ed"
+],
+"knight|L20|River Otter|defend|s101": [
+14,
+"ca725aa9afac939fa2d73ef49471d68b"
+],
+"knight|L20|River Otter|defend|s7": [
+14,
+"ae84c3a538bf9b9d4b201c160a8ddfcd"
+],
+"knight|L20|River Otter|evade|s101": [
+14,
+"d06cd1f8ad5440beef3acd8fbce9e6ba"
+],
+"knight|L20|River Otter|evade|s7": [
+14,
+"1cb44e202cce696c5a508fb8fc61add8"
+],
+"knight|L20|River Otter|focus|s101": [
+14,
+"2726dfae72a89a389a67bbbdf8e5b024"
+],
+"knight|L20|River Otter|focus|s7": [
+14,
+"ded169b22ea09e975281a9fce961cb76"
+],
+"knight|L20|River Otter|strike|s101": [
+14,
+"fa06ad155c271b751744b1d7f473fe89"
+],
+"knight|L20|River Otter|strike|s7": [
+14,
+"de11bce941dd7cc44a1c3dad8e66d71e"
+],
+"knight|L60|Crownwood Hare|aim|s101": [
+6,
+"831b3165dd81797079c4ede550d70382"
+],
+"knight|L60|Crownwood Hare|aim|s7": [
+8,
+"a04cce8c6ad70080bf5dbfbd74418850"
+],
+"knight|L60|Crownwood Hare|counter|s101": [
+14,
+"6cbff530a56162a08675971e7831a616"
+],
+"knight|L60|Crownwood Hare|counter|s7": [
+14,
+"f37d8d3d968371d3753f4af12e51e1c4"
+],
+"knight|L60|Crownwood Hare|defend|s101": [
+14,
+"8a92c202d1d0d8924c340504da1d1bc8"
+],
+"knight|L60|Crownwood Hare|defend|s7": [
+14,
+"bc932d9c0b7ab0daeaa49fc143803cf4"
+],
+"knight|L60|Crownwood Hare|evade|s101": [
+14,
+"0bf16b77eb0c22bcfd1997f26e05d2da"
+],
+"knight|L60|Crownwood Hare|evade|s7": [
+14,
+"3ee5e59c6610828474cd97149f597c32"
+],
+"knight|L60|Crownwood Hare|focus|s101": [
+14,
+"60157c1a7a39d39d4b74262ffb621f06"
+],
+"knight|L60|Crownwood Hare|focus|s7": [
+14,
+"dadb3c3aca8427779e02b9be5f84853b"
+],
+"knight|L60|Crownwood Hare|strike|s101": [
+7,
+"dd9599a7412ef425dc2adc5b9a057ea5"
+],
+"knight|L60|Crownwood Hare|strike|s7": [
+10,
+"1ab5e70bae9323d0cbeae04689da25d2"
+],
+"knight|L60|Highway Bandit|aim|s101": [
+10,
+"3356b7b9aeb2f74d25935ff6e8435f4e"
+],
+"knight|L60|Highway Bandit|aim|s7": [
+13,
+"3c2eb7b9fe0e80054ff0f28e5cf89fd0"
+],
+"knight|L60|Highway Bandit|counter|s101": [
+14,
+"524545da3386ee7e824d16cc1a9f1ee6"
+],
+"knight|L60|Highway Bandit|counter|s7": [
+14,
+"81214e521ca67788927dc589709636b5"
+],
+"knight|L60|Highway Bandit|defend|s101": [
+14,
+"06b06e452072ba274ae9c43880e4c118"
+],
+"knight|L60|Highway Bandit|defend|s7": [
+14,
+"6b0fb09ac35048a720885096f507db99"
+],
+"knight|L60|Highway Bandit|evade|s101": [
+14,
+"a8fe162167744bdd5f93b4b5aad40757"
+],
+"knight|L60|Highway Bandit|evade|s7": [
+14,
+"af07fa8e7fb4404e8750858aeee31fe2"
+],
+"knight|L60|Highway Bandit|focus|s101": [
+14,
+"601041a3906a210f1d87fe7febd846ce"
+],
+"knight|L60|Highway Bandit|focus|s7": [
+14,
+"cb9da03f73770802958644735176b204"
+],
+"knight|L60|Highway Bandit|strike|s101": [
+14,
+"51c7bb6cbc06edea4043cc54f48155ff"
+],
+"knight|L60|Highway Bandit|strike|s7": [
+14,
+"428413b3da503aa361ba825614f3d598"
+],
+"knight|L60|River Otter|aim|s101": [
+13,
+"d9398d669f46a6d99fc837414904fea9"
+],
+"knight|L60|River Otter|aim|s7": [
+14,
+"e12121aa86747eb562ce9499dab84d33"
+],
+"knight|L60|River Otter|counter|s101": [
+14,
+"71b00b1b175954b6983ade92334d1e2c"
+],
+"knight|L60|River Otter|counter|s7": [
+14,
+"4d931465d7fa9955ab48ee9396950b2e"
+],
+"knight|L60|River Otter|defend|s101": [
+14,
+"24c05d0423af786d31177f50c089cf90"
+],
+"knight|L60|River Otter|defend|s7": [
+14,
+"a9e914b65e449b594655d15b49a70644"
+],
+"knight|L60|River Otter|evade|s101": [
+14,
+"ad010e7cebae8eec6f1355ffd0d1e94c"
+],
+"knight|L60|River Otter|evade|s7": [
+14,
+"e1add322716bf09136f02e33d584bd0a"
+],
+"knight|L60|River Otter|focus|s101": [
+14,
+"bdb2db8b6257329d686be18ae4c4bb07"
+],
+"knight|L60|River Otter|focus|s7": [
+14,
+"8f9663d6b7a35bc6e84ac1ae6acffb40"
+],
+"knight|L60|River Otter|strike|s101": [
+14,
+"34fc49e6bbd270d8844ec78111ad2fa5"
+],
+"knight|L60|River Otter|strike|s7": [
+14,
+"a6b168d3d1fd57429b741a8ab164589b"
+],
+"lancer|L100|Crownwood Hare|aim|s101": [
+6,
+"d467b3083bbacd34528fcb4608b762d5"
+],
+"lancer|L100|Crownwood Hare|aim|s7": [
+6,
+"a19bd47d6ad73531a22b5c31f3856d35"
+],
+"lancer|L100|Crownwood Hare|counter|s101": [
+14,
+"89f265c3df16ae2aff84efef858a1ee9"
+],
+"lancer|L100|Crownwood Hare|counter|s7": [
+14,
+"13bcd8dbdefef5db3d81c2db6d05bdc2"
+],
+"lancer|L100|Crownwood Hare|defend|s101": [
+14,
+"8ec14897e6e758ca691a08718a40652c"
+],
+"lancer|L100|Crownwood Hare|defend|s7": [
+14,
+"fa7fedbef4443dcec8d66f2f52d37b0c"
+],
+"lancer|L100|Crownwood Hare|evade|s101": [
+14,
+"806572e3f50a6aa11113829b67eb7b42"
+],
+"lancer|L100|Crownwood Hare|evade|s7": [
+14,
+"e13a036df1a28f69d42b5042622fc6f5"
+],
+"lancer|L100|Crownwood Hare|focus|s101": [
+14,
+"fbbf1e915e535d0be22555da2d2b7930"
+],
+"lancer|L100|Crownwood Hare|focus|s7": [
+14,
+"1037c9850fde9510be5aff7cc097b9f7"
+],
+"lancer|L100|Crownwood Hare|strike|s101": [
+6,
+"a49aab75bd72aaa66e0d7f8703dac060"
+],
+"lancer|L100|Crownwood Hare|strike|s7": [
+5,
+"573391382e0f1c7aceeb3e7078991466"
+],
+"lancer|L100|Highway Bandit|aim|s101": [
+12,
+"3097e5f1390822cd1cddd8eb50475499"
+],
+"lancer|L100|Highway Bandit|aim|s7": [
+10,
+"752229361dc61b73575f1b9898194aa3"
+],
+"lancer|L100|Highway Bandit|counter|s101": [
+14,
+"c0a550d0b4abd865cf71d0f9ec5a53b6"
+],
+"lancer|L100|Highway Bandit|counter|s7": [
+14,
+"2bfba5afaed000a7c83cd53bf0ea12f0"
+],
+"lancer|L100|Highway Bandit|defend|s101": [
+14,
+"de564fa06da89a2643e0f3fc4278df8a"
+],
+"lancer|L100|Highway Bandit|defend|s7": [
+14,
+"6065b35ea6b9e5dd1c0049a2e0fcc01c"
+],
+"lancer|L100|Highway Bandit|evade|s101": [
+14,
+"13fb68b235465be639988ae860493d4a"
+],
+"lancer|L100|Highway Bandit|evade|s7": [
+14,
+"b2c87bc21bb2f4f758130bbe53346c0c"
+],
+"lancer|L100|Highway Bandit|focus|s101": [
+14,
+"d610f4b5c0f9674745240dcb53244b22"
+],
+"lancer|L100|Highway Bandit|focus|s7": [
+14,
+"545b0be12a1fe8113fa0c183e3b94f7c"
+],
+"lancer|L100|Highway Bandit|strike|s101": [
+14,
+"34833decf729f679db6e734338ee3bee"
+],
+"lancer|L100|Highway Bandit|strike|s7": [
+14,
+"b86f12927862350ea80558b3a9b31841"
+],
+"lancer|L100|River Otter|aim|s101": [
+9,
+"8e9074fdd6784e4e9fa03bf2b76c2511"
+],
+"lancer|L100|River Otter|aim|s7": [
+9,
+"d1b3c8615f3b3d3b25f4a674ec2afe41"
+],
+"lancer|L100|River Otter|counter|s101": [
+14,
+"8e22b6aae3a7e2edc41b93bd5c4ebbb7"
+],
+"lancer|L100|River Otter|counter|s7": [
+14,
+"e4a5381a5bff7350549d719abb172236"
+],
+"lancer|L100|River Otter|defend|s101": [
+14,
+"08fcae3f245e45b228f01d337a4bb088"
+],
+"lancer|L100|River Otter|defend|s7": [
+14,
+"88e7904e5f7fba4ac581b213fc076c12"
+],
+"lancer|L100|River Otter|evade|s101": [
+14,
+"cfe5e55ba6c182305526faddfec0af3a"
+],
+"lancer|L100|River Otter|evade|s7": [
+14,
+"77c433aff2719a957d287c8376753b60"
+],
+"lancer|L100|River Otter|focus|s101": [
+14,
+"e5a327b0d93c729dbbfaa17db2dc4eb3"
+],
+"lancer|L100|River Otter|focus|s7": [
+14,
+"7b7cd39bc7337c9564ae8554ca7385c6"
+],
+"lancer|L100|River Otter|strike|s101": [
+10,
+"24779cbf8d5754b59ad516215ebaae90"
+],
+"lancer|L100|River Otter|strike|s7": [
+9,
+"91d5a0e324d35d7eb7fd7d22c538ef4e"
+],
+"lancer|L1|Crownwood Hare|aim|s101": [
+3,
+"3aa3f22acd9c1ec7cb20d68b96d47ba6"
+],
+"lancer|L1|Crownwood Hare|aim|s7": [
+3,
+"416af25f2d9ad5d5b9db269959721f65"
+],
+"lancer|L1|Crownwood Hare|counter|s101": [
+11,
+"d8944e7f190a039def68121c9afc7162"
+],
+"lancer|L1|Crownwood Hare|counter|s7": [
+11,
+"7ba37cec1bfeb9ecc70da14f71a54441"
+],
+"lancer|L1|Crownwood Hare|defend|s101": [
+14,
+"0042c7a470b6227e7a8af87cdefc8542"
+],
+"lancer|L1|Crownwood Hare|defend|s7": [
+14,
+"f405615b7cdb3868d6ef0619dc9ef98a"
+],
+"lancer|L1|Crownwood Hare|evade|s101": [
+14,
+"8b94995be846c74d92cfe7d1610ebbfc"
+],
+"lancer|L1|Crownwood Hare|evade|s7": [
+14,
+"9cb1c0603a2062e1cd2ef3c2a000a120"
+],
+"lancer|L1|Crownwood Hare|focus|s101": [
+14,
+"08ee975a9008657808520187b54b99c7"
+],
+"lancer|L1|Crownwood Hare|focus|s7": [
+14,
+"6dfdd06d2151fa07052f7f6f60b46a7f"
+],
+"lancer|L1|Crownwood Hare|strike|s101": [
+3,
+"ba264e091526d5b3e6b0f9cbbe0ffc5b"
+],
+"lancer|L1|Crownwood Hare|strike|s7": [
+6,
+"cad3e9a85b305115aacbf1086bc4446e"
+],
+"lancer|L1|Highway Bandit|aim|s101": [
+3,
+"bee687868204177484a18cbc6e89484f"
+],
+"lancer|L1|Highway Bandit|aim|s7": [
+6,
+"f59f86c74cb95803a918e2a4529688db"
+],
+"lancer|L1|Highway Bandit|counter|s101": [
+9,
+"50a0c08c66f1443150ea7fc18fd5234a"
+],
+"lancer|L1|Highway Bandit|counter|s7": [
+9,
+"a93362a4e415cc5fe4cee8bf6e0d9063"
+],
+"lancer|L1|Highway Bandit|defend|s101": [
+14,
+"dbdb2c1cecf15adff6b9d4f97600668a"
+],
+"lancer|L1|Highway Bandit|defend|s7": [
+14,
+"f7099030ad4f2ff51ca6541af35881e2"
+],
+"lancer|L1|Highway Bandit|evade|s101": [
+14,
+"e5aa42eaeb15e830e3acdee9034cfa0b"
+],
+"lancer|L1|Highway Bandit|evade|s7": [
+14,
+"25bed9d751cbad5b6817736096fb568c"
+],
+"lancer|L1|Highway Bandit|focus|s101": [
+9,
+"42c41ac8d0a7e34c4f4439809f8c5855"
+],
+"lancer|L1|Highway Bandit|focus|s7": [
+14,
+"1915c1931a691170eb43bc117d957b7c"
+],
+"lancer|L1|Highway Bandit|strike|s101": [
+3,
+"33a31c7b8bf420b2d8d11942417a6fff"
+],
+"lancer|L1|Highway Bandit|strike|s7": [
+9,
+"4d4c6864a5fdaece676286787f3e1419"
+],
+"lancer|L1|River Otter|aim|s101": [
+4,
+"15dcb27bbbdd625be090c3bf447edcbb"
+],
+"lancer|L1|River Otter|aim|s7": [
+6,
+"9dcf8c6d8264151221594701f50086c8"
+],
+"lancer|L1|River Otter|counter|s101": [
+14,
+"0e59395f500b581fdf4aaaf7825eb303"
+],
+"lancer|L1|River Otter|counter|s7": [
+14,
+"d22582b98df9a8feef42e841f74131f1"
+],
+"lancer|L1|River Otter|defend|s101": [
+14,
+"0b4794b78f1d6088639e8d57b9b56ca9"
+],
+"lancer|L1|River Otter|defend|s7": [
+14,
+"a094a10fa2c84ab1ccca5fd285484089"
+],
+"lancer|L1|River Otter|evade|s101": [
+14,
+"ba66123383d41f7195c8519daa283b1d"
+],
+"lancer|L1|River Otter|evade|s7": [
+14,
+"31bc90657f1d2f5ff089ce310337cf3c"
+],
+"lancer|L1|River Otter|focus|s101": [
+14,
+"65d27522399ee7d8bdaf7a4d7556d152"
+],
+"lancer|L1|River Otter|focus|s7": [
+14,
+"ac640acb5f93a5e71d55885af25c9d93"
+],
+"lancer|L1|River Otter|strike|s101": [
+4,
+"1d1c9530be875c40ba8efbd544afbb62"
+],
+"lancer|L1|River Otter|strike|s7": [
+9,
+"4570311117618f3187348d04b907737e"
+],
+"lancer|L20|Crownwood Hare|aim|s101": [
+4,
+"2ef429e619c5e16b79eea2296854f212"
+],
+"lancer|L20|Crownwood Hare|aim|s7": [
+4,
+"37f3f37fd5f654f2a6868538cbaa1be9"
+],
+"lancer|L20|Crownwood Hare|counter|s101": [
+14,
+"4f45ed89b274cf837aa9150b91006bbe"
+],
+"lancer|L20|Crownwood Hare|counter|s7": [
+14,
+"c10e0ccfe6c1fb8a9f98d410e9b64c29"
+],
+"lancer|L20|Crownwood Hare|defend|s101": [
+14,
+"efdcc1bcd58a26e965db17d379b3e092"
+],
+"lancer|L20|Crownwood Hare|defend|s7": [
+14,
+"7aa20d1bc8b04580f2ffede040b4ca94"
+],
+"lancer|L20|Crownwood Hare|evade|s101": [
+14,
+"05904fcbab47e25c618e839bddee1b9a"
+],
+"lancer|L20|Crownwood Hare|evade|s7": [
+14,
+"45f288440f101fea4dc1be1ba3a7ff0d"
+],
+"lancer|L20|Crownwood Hare|focus|s101": [
+14,
+"7abcf0c806b03158c61be3c5f5859435"
+],
+"lancer|L20|Crownwood Hare|focus|s7": [
+14,
+"b26e6b027e7d9fe86f086c301e5b5106"
+],
+"lancer|L20|Crownwood Hare|strike|s101": [
+4,
+"27c12cd88a0f77269175e176a764e3a2"
+],
+"lancer|L20|Crownwood Hare|strike|s7": [
+6,
+"6eeb0c61b5b613e5975c93a12e1b1d08"
+],
+"lancer|L20|Highway Bandit|aim|s101": [
+6,
+"d9c646dd6c9515aa9674abe34449d0f0"
+],
+"lancer|L20|Highway Bandit|aim|s7": [
+7,
+"6536d90d9e715f8a4807a67b5e57f829"
+],
+"lancer|L20|Highway Bandit|counter|s101": [
+10,
+"97dd6515f1516416389f48be4eb37a25"
+],
+"lancer|L20|Highway Bandit|counter|s7": [
+11,
+"b4b0d016833dd2c9320262f1559f7758"
+],
+"lancer|L20|Highway Bandit|defend|s101": [
+14,
+"7c1ce9808a15eceba5ce1756466313a1"
+],
+"lancer|L20|Highway Bandit|defend|s7": [
+14,
+"332087a35f949f914eeac065287e64d6"
+],
+"lancer|L20|Highway Bandit|evade|s101": [
+14,
+"054b292c3774484c4914fd5d1b6a4b1d"
+],
+"lancer|L20|Highway Bandit|evade|s7": [
+14,
+"b912dbc16663fddcac9353bed2da4c97"
+],
+"lancer|L20|Highway Bandit|focus|s101": [
+10,
+"f3c791fee61bd602dddfb114ef1d27e7"
+],
+"lancer|L20|Highway Bandit|focus|s7": [
+11,
+"34d301777fa134f1d303d5914cc900cf"
+],
+"lancer|L20|Highway Bandit|strike|s101": [
+9,
+"7b119ca3cef6958b74b234bf6fb1208c"
+],
+"lancer|L20|Highway Bandit|strike|s7": [
+11,
+"fdc8415de855c74afe885475b39248a5"
+],
+"lancer|L20|River Otter|aim|s101": [
+7,
+"ae271a48a9cc0e4d3e4e6cdbe3de4325"
+],
+"lancer|L20|River Otter|aim|s7": [
+7,
+"5a95f6d36c50ae3abaa6f39ee3d5059b"
+],
+"lancer|L20|River Otter|counter|s101": [
+14,
+"832af06c16e9e5c010d43ae83282655f"
+],
+"lancer|L20|River Otter|counter|s7": [
+14,
+"74bec6d90b8243bcffff8308fa8b29a1"
+],
+"lancer|L20|River Otter|defend|s101": [
+14,
+"b3f288c4cb8eb9ce501be6ebdec95259"
+],
+"lancer|L20|River Otter|defend|s7": [
+14,
+"c72a1be932f023c11d7f274f7290240a"
+],
+"lancer|L20|River Otter|evade|s101": [
+14,
+"07245f81add4ed34d0905a014e85bdda"
+],
+"lancer|L20|River Otter|evade|s7": [
+14,
+"df5f64b1691b2ea6290058c7f9a8c0c7"
+],
+"lancer|L20|River Otter|focus|s101": [
+14,
+"12a340315fbf5ce487eb618fa4e3ad04"
+],
+"lancer|L20|River Otter|focus|s7": [
+14,
+"e5b985f785e05e7f3138a91571ead3ab"
+],
+"lancer|L20|River Otter|strike|s101": [
+8,
+"99d3d7c54cdf7d9c658638c0968ef94a"
+],
+"lancer|L20|River Otter|strike|s7": [
+9,
+"2fa54ccf3c3af11af361021f3329a95b"
+],
+"lancer|L60|Crownwood Hare|aim|s101": [
+5,
+"e93cd6824610806a8c39766a391e97a0"
+],
+"lancer|L60|Crownwood Hare|aim|s7": [
+6,
+"1cda5c8a6bb9a770c106757604fa3d73"
+],
+"lancer|L60|Crownwood Hare|counter|s101": [
+14,
+"632b69a05e3123d9b80d028886958001"
+],
+"lancer|L60|Crownwood Hare|counter|s7": [
+14,
+"7d0c9c041c6435aa1a1910f73b5d1907"
+],
+"lancer|L60|Crownwood Hare|defend|s101": [
+14,
+"a094836c5b964cc811b40c2f1b2c4ab9"
+],
+"lancer|L60|Crownwood Hare|defend|s7": [
+14,
+"025471165fdca03f557c3f31be6100ef"
+],
+"lancer|L60|Crownwood Hare|evade|s101": [
+14,
+"272a1adb77a2faf441f15e3cb09f3d8c"
+],
+"lancer|L60|Crownwood Hare|evade|s7": [
+14,
+"01d89d7b87e4f9c96ee9eddac2fb2369"
+],
+"lancer|L60|Crownwood Hare|focus|s101": [
+14,
+"dac49b6703ffb9b794ef29e6f97c4bdc"
+],
+"lancer|L60|Crownwood Hare|focus|s7": [
+14,
+"2c7197636db0b6b3bdc3533f7856819e"
+],
+"lancer|L60|Crownwood Hare|strike|s101": [
+5,
+"465e425166b1b114bee9af15ee858d6d"
+],
+"lancer|L60|Crownwood Hare|strike|s7": [
+6,
+"16b37171511425703ebc3f90a6fb5a57"
+],
+"lancer|L60|Highway Bandit|aim|s101": [
+10,
+"f6e71d809ec73f10ec3a42de3d9d65dd"
+],
+"lancer|L60|Highway Bandit|aim|s7": [
+12,
+"663a6d7ba66175247368112bb576be72"
+],
+"lancer|L60|Highway Bandit|counter|s101": [
+13,
+"7e16e1edf0d2cf7813cfee583333e34e"
+],
+"lancer|L60|Highway Bandit|counter|s7": [
+13,
+"dbb2be6ab7536daee41faa3b6e9c6923"
+],
+"lancer|L60|Highway Bandit|defend|s101": [
+14,
+"c1925a55aa2baca4f3000a0a856c21cd"
+],
+"lancer|L60|Highway Bandit|defend|s7": [
+14,
+"5458d8ee48e1c74e1e3c4a61850a5171"
+],
+"lancer|L60|Highway Bandit|evade|s101": [
+14,
+"de71155331320819503793d5d16a589d"
+],
+"lancer|L60|Highway Bandit|evade|s7": [
+14,
+"11f1a509d7f674ee66b4fbb8d835e694"
+],
+"lancer|L60|Highway Bandit|focus|s101": [
+13,
+"2199f42e71a8edff82cfeb61cc2de289"
+],
+"lancer|L60|Highway Bandit|focus|s7": [
+13,
+"8a6e5713b4ea204b62211b32f3873b16"
+],
+"lancer|L60|Highway Bandit|strike|s101": [
+14,
+"9a2134b9eda8ae7bbf71b0bfa4e4d88c"
+],
+"lancer|L60|Highway Bandit|strike|s7": [
+8,
+"1bd51ec6631a80016874992b8a430671"
+],
+"lancer|L60|River Otter|aim|s101": [
+9,
+"cdc4fc15d5faf7de9e37970a7b6795b9"
+],
+"lancer|L60|River Otter|aim|s7": [
+9,
+"642ba1a47d627ab922723a49e3ff69b4"
+],
+"lancer|L60|River Otter|counter|s101": [
+14,
+"70131fc9a5244cf577064862d6f8befe"
+],
+"lancer|L60|River Otter|counter|s7": [
+14,
+"f61893ee846a8c3186416f4fb43ef439"
+],
+"lancer|L60|River Otter|defend|s101": [
+14,
+"ce4465d15ff01af18b200f51128a7bfe"
+],
+"lancer|L60|River Otter|defend|s7": [
+14,
+"c9ec0f4eebbe6fc25cd7f1cec19ef314"
+],
+"lancer|L60|River Otter|evade|s101": [
+14,
+"b90f992772912ff1b34b77c2e418db16"
+],
+"lancer|L60|River Otter|evade|s7": [
+14,
+"859ee9bbf8cc2847c16903ba2c166dd8"
+],
+"lancer|L60|River Otter|focus|s101": [
+14,
+"7403374aaa5b9cbc6eaaa066f63c2cb1"
+],
+"lancer|L60|River Otter|focus|s7": [
+14,
+"22f79d0dabf49a00ad10e4db6819ed15"
+],
+"lancer|L60|River Otter|strike|s101": [
+8,
+"29cc5e7f9854c2c6d4cf8657a0fdd3ca"
+],
+"lancer|L60|River Otter|strike|s7": [
+10,
+"cfe9c4c57ce4cb94682c8b8cdfbabab6"
+],
+"mage|L100|Crownwood Hare|aim|s101": [
+14,
+"fa9d3d8ba3c3f92f0e5fcbbbe5d7d62d"
+],
+"mage|L100|Crownwood Hare|aim|s7": [
+14,
+"6691fdc1e422ac5f8976ae648e3d84fc"
+],
+"mage|L100|Crownwood Hare|counter|s101": [
+14,
+"2c5b8bfc1ebdb595df5f23fdc9507f27"
+],
+"mage|L100|Crownwood Hare|counter|s7": [
+14,
+"b3ddfeaea53d93fbd921f0557e66ec58"
+],
+"mage|L100|Crownwood Hare|defend|s101": [
+14,
+"58294f4cc1066472160a95a5e80c2db5"
+],
+"mage|L100|Crownwood Hare|defend|s7": [
+14,
+"3ffcb714eb316268413fbe778a12cc18"
+],
+"mage|L100|Crownwood Hare|evade|s101": [
+14,
+"99d21a65b650c9757aa19a5589855eaa"
+],
+"mage|L100|Crownwood Hare|evade|s7": [
+14,
+"4132740b61fecd6f3c2240ee295f61d5"
+],
+"mage|L100|Crownwood Hare|focus|s101": [
+14,
+"e64011b227cec82e2a648d5b0d9c8455"
+],
+"mage|L100|Crownwood Hare|focus|s7": [
+14,
+"79f57344f9fd904563c1fcff8d400bf5"
+],
+"mage|L100|Crownwood Hare|strike|s101": [
+14,
+"5ed3878b9cbc62eeb942a9415f84a90b"
+],
+"mage|L100|Crownwood Hare|strike|s7": [
+14,
+"0667a2a9035e955243f9cd9efb58b160"
+],
+"mage|L100|Highway Bandit|aim|s101": [
+7,
+"30727fbefb8fc249c0f073650b547e1d"
+],
+"mage|L100|Highway Bandit|aim|s7": [
+9,
+"d2dc748d8976f7ba8ca996de4f344f0b"
+],
+"mage|L100|Highway Bandit|counter|s101": [
+7,
+"8a460e028e6774427f4378eaa268dfed"
+],
+"mage|L100|Highway Bandit|counter|s7": [
+8,
+"f74663472c728494ff44d4745013d790"
+],
+"mage|L100|Highway Bandit|defend|s101": [
+14,
+"c90cdff52f4b3ae22fea864d7708d993"
+],
+"mage|L100|Highway Bandit|defend|s7": [
+14,
+"2dac3181ac7a4a0e98902857f65dd0ff"
+],
+"mage|L100|Highway Bandit|evade|s101": [
+14,
+"da645befd2e2604a215cfe9b4ef64408"
+],
+"mage|L100|Highway Bandit|evade|s7": [
+11,
+"f8917fa46dc0db833da76bdda4a68936"
+],
+"mage|L100|Highway Bandit|focus|s101": [
+7,
+"3d5b1f94a3d175c5f155b9c03dd32e0c"
+],
+"mage|L100|Highway Bandit|focus|s7": [
+8,
+"7d6cb0a19dd019abcae6996ad810b79d"
+],
+"mage|L100|Highway Bandit|strike|s101": [
+7,
+"2943225c715188bfc00a1314f429d408"
+],
+"mage|L100|Highway Bandit|strike|s7": [
+10,
+"1e1ca886c9f81c7badc0a371eecb3699"
+],
+"mage|L100|River Otter|aim|s101": [
+14,
+"934242f8254414f532f0c614d3fefba2"
+],
+"mage|L100|River Otter|aim|s7": [
+14,
+"bbbd95562b8bc55d29544ca662678efa"
+],
+"mage|L100|River Otter|counter|s101": [
+14,
+"31a32f188d0f2624fc7cd3b6be198c67"
+],
+"mage|L100|River Otter|counter|s7": [
+14,
+"a1ed5b0d4a75340f7d7637a40970b041"
+],
+"mage|L100|River Otter|defend|s101": [
+14,
+"e2ef3906fad2e2d7b8d303fe0686d36f"
+],
+"mage|L100|River Otter|defend|s7": [
+14,
+"e6d45769d79076f778716b6edf589c85"
+],
+"mage|L100|River Otter|evade|s101": [
+14,
+"9cdddccb0a6073c0c2aa6eacab8d3218"
+],
+"mage|L100|River Otter|evade|s7": [
+14,
+"34209f59b39f902f3705289f354d01a3"
+],
+"mage|L100|River Otter|focus|s101": [
+14,
+"eda3c0e799cd89c11f2f0512117c7189"
+],
+"mage|L100|River Otter|focus|s7": [
+14,
+"4aa2eab4f78f1d7e35142adc061026bb"
+],
+"mage|L100|River Otter|strike|s101": [
+14,
+"e1f79957d5ca5bc2102953b6abc1f15d"
+],
+"mage|L100|River Otter|strike|s7": [
+14,
+"87b82912feede2f92ca9aaed8f963849"
+],
+"mage|L1|Crownwood Hare|aim|s101": [
+4,
+"fe8e7c4bb34819cbc35396c7c1bda8f4"
+],
+"mage|L1|Crownwood Hare|aim|s7": [
+11,
+"d30d1e159a8ac091b1ee102a55a521fd"
+],
+"mage|L1|Crownwood Hare|counter|s101": [
+11,
+"03bbb942835795ed92946167d819ea9c"
+],
+"mage|L1|Crownwood Hare|counter|s7": [
+11,
+"9f76a7298df52dc4b52fc562807a9930"
+],
+"mage|L1|Crownwood Hare|defend|s101": [
+14,
+"10d49f484543a5fe8812c4bb2265fca9"
+],
+"mage|L1|Crownwood Hare|defend|s7": [
+14,
+"9afa0de4aeea2a282c657d060c086f76"
+],
+"mage|L1|Crownwood Hare|evade|s101": [
+14,
+"1e8a1523ea797cb4c95e1daba481cc19"
+],
+"mage|L1|Crownwood Hare|evade|s7": [
+14,
+"5d1de41a6681d7f86cbcf95aa5dfb3e2"
+],
+"mage|L1|Crownwood Hare|focus|s101": [
+12,
+"36166799ee326b7900961e2585632045"
+],
+"mage|L1|Crownwood Hare|focus|s7": [
+14,
+"9c403ed349d77001d8bff3972f6c703b"
+],
+"mage|L1|Crownwood Hare|strike|s101": [
+4,
+"e8523fed9ce63440c339cc801670af4c"
+],
+"mage|L1|Crownwood Hare|strike|s7": [
+14,
+"2b2e1963d01bfaf0b51cee7ea968a5d9"
+],
+"mage|L1|Highway Bandit|aim|s101": [
+5,
+"d12ee4ef474dd1ed90f6af15ca125b41"
+],
+"mage|L1|Highway Bandit|aim|s7": [
+13,
+"746b22ef7277117f578a79472f9f538c"
+],
+"mage|L1|Highway Bandit|counter|s101": [
+8,
+"6c7e6e29ead2389071108175741e7ab5"
+],
+"mage|L1|Highway Bandit|counter|s7": [
+9,
+"e896b90c9a850b481da7d60fb90527c4"
+],
+"mage|L1|Highway Bandit|defend|s101": [
+14,
+"f8aa372c73e0f0ec0de81e30bc5ebf5b"
+],
+"mage|L1|Highway Bandit|defend|s7": [
+14,
+"13a6e85ffe98e08938a5a022d1ca7c71"
+],
+"mage|L1|Highway Bandit|evade|s101": [
+14,
+"55a0d797717c6b281684eb694f85376c"
+],
+"mage|L1|Highway Bandit|evade|s7": [
+11,
+"11643a22339f2c3ae2e099d9ca7282c0"
+],
+"mage|L1|Highway Bandit|focus|s101": [
+7,
+"bc4d6eae4f4060c650dfcf13a277811b"
+],
+"mage|L1|Highway Bandit|focus|s7": [
+12,
+"1f6c80f4ddb78a272bd118b0483ff530"
+],
+"mage|L1|Highway Bandit|strike|s101": [
+11,
+"839d1f04112a83a324fb63158e4dd0f1"
+],
+"mage|L1|Highway Bandit|strike|s7": [
+14,
+"e46f3530dddd29e7a17e66662c531576"
+],
+"mage|L1|River Otter|aim|s101": [
+14,
+"65b1fb852f24e3ddf585bf1e784ebede"
+],
+"mage|L1|River Otter|aim|s7": [
+14,
+"809b3da907ea8004c0d8a1bdd113cea4"
+],
+"mage|L1|River Otter|counter|s101": [
+14,
+"e51f3355767dadefe71eca254349ef54"
+],
+"mage|L1|River Otter|counter|s7": [
+14,
+"20a46227d3ad3a21eae15bd7669518a2"
+],
+"mage|L1|River Otter|defend|s101": [
+14,
+"aff8c56b85ad7f6577e19ff50571b470"
+],
+"mage|L1|River Otter|defend|s7": [
+14,
+"cfdfa59be9b6409c8e60363bb1b0845a"
+],
+"mage|L1|River Otter|evade|s101": [
+14,
+"33012094c57cfab1fec5851343e651ef"
+],
+"mage|L1|River Otter|evade|s7": [
+14,
+"8de4c1681631cd2b8f22b8fd66576977"
+],
+"mage|L1|River Otter|focus|s101": [
+14,
+"0dbaa388d95f95338d945ba0290329c8"
+],
+"mage|L1|River Otter|focus|s7": [
+14,
+"a1384611af37af6bcb04f045c53e8c43"
+],
+"mage|L1|River Otter|strike|s101": [
+14,
+"f06c300324fccaa7846f086de0042b54"
+],
+"mage|L1|River Otter|strike|s7": [
+14,
+"330029a509a80e02f6ffac44a7bc9d07"
+],
+"mage|L20|Crownwood Hare|aim|s101": [
+7,
+"9f3852429c80d99118e737cadb30e067"
+],
+"mage|L20|Crownwood Hare|aim|s7": [
+11,
+"9d24bec4653a42eef90f9e1ec23400d7"
+],
+"mage|L20|Crownwood Hare|counter|s101": [
+14,
+"248119dfa0b66246529752498366909d"
+],
+"mage|L20|Crownwood Hare|counter|s7": [
+14,
+"e597e0fccbfaf7c6fb7b88e341a54b2e"
+],
+"mage|L20|Crownwood Hare|defend|s101": [
+14,
+"9b2c25699b7432213d05ac1d655e7246"
+],
+"mage|L20|Crownwood Hare|defend|s7": [
+14,
+"82389ad0bfd1fe06db8f3a4b562f93c3"
+],
+"mage|L20|Crownwood Hare|evade|s101": [
+14,
+"1e113988d86d5953b53e57816e828f95"
+],
+"mage|L20|Crownwood Hare|evade|s7": [
+14,
+"86df744ad049734610b74ace64af00eb"
+],
+"mage|L20|Crownwood Hare|focus|s101": [
+14,
+"176b8ab01b594b1ee0b52cfd00e81297"
+],
+"mage|L20|Crownwood Hare|focus|s7": [
+14,
+"2b45d63415b464a2716e9df75ac35e63"
+],
+"mage|L20|Crownwood Hare|strike|s101": [
+7,
+"55c414eb9ed6ea8a8fd59ef9b27e5fa3"
+],
+"mage|L20|Crownwood Hare|strike|s7": [
+14,
+"c691a815707c89c52b23bb08e61fb5f6"
+],
+"mage|L20|Highway Bandit|aim|s101": [
+7,
+"455266e190d802f763ad73afd7339df1"
+],
+"mage|L20|Highway Bandit|aim|s7": [
+10,
+"df2be23e2e270b3eb40c16afdf160f9e"
+],
+"mage|L20|Highway Bandit|counter|s101": [
+7,
+"1f732d818ce5d3ff82c2cfbd895b273f"
+],
+"mage|L20|Highway Bandit|counter|s7": [
+9,
+"542c1ca801b2b4ea055a0a831b16554c"
+],
+"mage|L20|Highway Bandit|defend|s101": [
+14,
+"de958e32adb04b1070f4b20f2cf31ec2"
+],
+"mage|L20|Highway Bandit|defend|s7": [
+14,
+"563ad066745073acf89f0cea3af2a95a"
+],
+"mage|L20|Highway Bandit|evade|s101": [
+14,
+"d018e0416f17825e66c88f69f6374581"
+],
+"mage|L20|Highway Bandit|evade|s7": [
+11,
+"55b963b91a05473d371f13e7c3f87052"
+],
+"mage|L20|Highway Bandit|focus|s101": [
+7,
+"b576d7452e4083fcefff9ca2e1e8a12b"
+],
+"mage|L20|Highway Bandit|focus|s7": [
+9,
+"c8cf5e48b8f791d3b3f540979884fc89"
+],
+"mage|L20|Highway Bandit|strike|s101": [
+7,
+"16dc150a125692a527c4f57ed0774962"
+],
+"mage|L20|Highway Bandit|strike|s7": [
+11,
+"e34a3db9ae69fc70c0b1b9bff4385983"
+],
+"mage|L20|River Otter|aim|s101": [
+14,
+"4bada1db8fe127bebc2ac530596fd721"
+],
+"mage|L20|River Otter|aim|s7": [
+14,
+"e72baa3b6b43d389b4a27804d80ead73"
+],
+"mage|L20|River Otter|counter|s101": [
+14,
+"36393e77183767b85862315044568ab7"
+],
+"mage|L20|River Otter|counter|s7": [
+14,
+"57aaa74f8caa50063fa8b2bcd5d44f98"
+],
+"mage|L20|River Otter|defend|s101": [
+14,
+"ea98bdd696bdb6c49123db938f2a7e38"
+],
+"mage|L20|River Otter|defend|s7": [
+14,
+"d40906397bd73392d44a33fbd7adffa4"
+],
+"mage|L20|River Otter|evade|s101": [
+14,
+"7fb2d5a96845a8225e2a6a96d9100650"
+],
+"mage|L20|River Otter|evade|s7": [
+14,
+"71e7e4f4963acc5db5b741149913d40f"
+],
+"mage|L20|River Otter|focus|s101": [
+14,
+"3b9840b73516711a300de4c542b8bf65"
+],
+"mage|L20|River Otter|focus|s7": [
+14,
+"2454c46d03d8d7ff370a8cb9c18cf87d"
+],
+"mage|L20|River Otter|strike|s101": [
+14,
+"80eb60915ff0e203fb1f4de37a8a3ccc"
+],
+"mage|L20|River Otter|strike|s7": [
+14,
+"d0e5be9fc46f882914d421159be01f77"
+],
+"mage|L60|Crownwood Hare|aim|s101": [
+14,
+"19e6ef7e60919fac98145e697a560730"
+],
+"mage|L60|Crownwood Hare|aim|s7": [
+14,
+"8b727eeafdad6d675d55755f2098ff1c"
+],
+"mage|L60|Crownwood Hare|counter|s101": [
+14,
+"b217d1ca25ca3f943be9d009c8df86c1"
+],
+"mage|L60|Crownwood Hare|counter|s7": [
+14,
+"db6521018574ad6b50d05f9f0b92f63c"
+],
+"mage|L60|Crownwood Hare|defend|s101": [
+14,
+"ff0924d319369782ccbc836aad36ce2f"
+],
+"mage|L60|Crownwood Hare|defend|s7": [
+14,
+"e9acff6aa098418908b1d8e34373b4ed"
+],
+"mage|L60|Crownwood Hare|evade|s101": [
+14,
+"7d1ad6eb7af0b83e2e14e963fee9f737"
+],
+"mage|L60|Crownwood Hare|evade|s7": [
+14,
+"c9f87ddbf470edcef97894e6d34a2074"
+],
+"mage|L60|Crownwood Hare|focus|s101": [
+14,
+"f1551f6e25fd4d02fedcf1575ec88a54"
+],
+"mage|L60|Crownwood Hare|focus|s7": [
+14,
+"8152c15ae0fe14f855e46c0b11c23fe6"
+],
+"mage|L60|Crownwood Hare|strike|s101": [
+14,
+"8d543b8a79141e6c783bb1db2e348a74"
+],
+"mage|L60|Crownwood Hare|strike|s7": [
+14,
+"0c2c794bbdb3886f89cf4419a103fc6b"
+],
+"mage|L60|Highway Bandit|aim|s101": [
+7,
+"47e23ab8606738b1dffa091296ad61a4"
+],
+"mage|L60|Highway Bandit|aim|s7": [
+9,
+"342a070fa0b560d9ee47d06f06a4ac4d"
+],
+"mage|L60|Highway Bandit|counter|s101": [
+7,
+"f7a5c321de4dc8e4d2f080cba7d365f3"
+],
+"mage|L60|Highway Bandit|counter|s7": [
+9,
+"9d593f60c0dce3adc0f5bae7ef5f023f"
+],
+"mage|L60|Highway Bandit|defend|s101": [
+14,
+"93de8ee2630d1e3f86a9de650c38ecbb"
+],
+"mage|L60|Highway Bandit|defend|s7": [
+14,
+"a8aeb0e176076794da10dbef4d79a6ad"
+],
+"mage|L60|Highway Bandit|evade|s101": [
+14,
+"cf85746bba6888697380b635dd736052"
+],
+"mage|L60|Highway Bandit|evade|s7": [
+11,
+"3d1f869aa8b46419884f76bf406e8d42"
+],
+"mage|L60|Highway Bandit|focus|s101": [
+7,
+"b73cf9e862c901b93838a3f94b687a24"
+],
+"mage|L60|Highway Bandit|focus|s7": [
+9,
+"cbe4df5d3cb7e43124cf8562db2946a2"
+],
+"mage|L60|Highway Bandit|strike|s101": [
+7,
+"e1460c7e2cf58409a16da05fe07d9192"
+],
+"mage|L60|Highway Bandit|strike|s7": [
+11,
+"eb8a665a3b24bd15259376ab99835af2"
+],
+"mage|L60|River Otter|aim|s101": [
+14,
+"f683f55dfe3811ee46b54fe224211b4a"
+],
+"mage|L60|River Otter|aim|s7": [
+14,
+"ddbaa244548d36d99adf004f8a79b4e3"
+],
+"mage|L60|River Otter|counter|s101": [
+14,
+"67fe1dee7612355a976abd5f4e7c3520"
+],
+"mage|L60|River Otter|counter|s7": [
+14,
+"39eca8b6d38cca157838cdb97d6c5c59"
+],
+"mage|L60|River Otter|defend|s101": [
+14,
+"5235ab998a3b311806e1bbae9500d393"
+],
+"mage|L60|River Otter|defend|s7": [
+14,
+"644a8536a7d3431dd09f07b751df7de3"
+],
+"mage|L60|River Otter|evade|s101": [
+14,
+"0b4f9492604490435f64d7bd2efb4723"
+],
+"mage|L60|River Otter|evade|s7": [
+14,
+"61f2731cb0735420093cd1701338b839"
+],
+"mage|L60|River Otter|focus|s101": [
+14,
+"54830801eac0682082ca917b8c1f6629"
+],
+"mage|L60|River Otter|focus|s7": [
+14,
+"e755d6dc496bda1f8dfede27870fb324"
+],
+"mage|L60|River Otter|strike|s101": [
+14,
+"cd350f00f3c68e70d7345141f2a1abd4"
+],
+"mage|L60|River Otter|strike|s7": [
+14,
+"f022f6f0fba990555ef1e49ae9306b2b"
+],
+"paladin|L100|Crownwood Hare|aim|s101": [
+5,
+"4e1d266091802571cad8bf839ed3f8b6"
+],
+"paladin|L100|Crownwood Hare|aim|s7": [
+6,
+"3835c27b145be3be44def4dfbdf1e2df"
+],
+"paladin|L100|Crownwood Hare|counter|s101": [
+14,
+"6b1bd58767f7d945021ebedecb99354e"
+],
+"paladin|L100|Crownwood Hare|counter|s7": [
+14,
+"82a51ddc1cfe2d08b47bcf72290b07ba"
+],
+"paladin|L100|Crownwood Hare|defend|s101": [
+14,
+"8924b3286f40bf3c30f0b5d1696ea97e"
+],
+"paladin|L100|Crownwood Hare|defend|s7": [
+14,
+"7d9197ed7b2bed64eb822a96907fde63"
+],
+"paladin|L100|Crownwood Hare|evade|s101": [
+14,
+"472b8cf65e7f5a694b0cb9a3d47b465f"
+],
+"paladin|L100|Crownwood Hare|evade|s7": [
+14,
+"2709724409b51e1d265d77c34ab60f37"
+],
+"paladin|L100|Crownwood Hare|focus|s101": [
+14,
+"ede468e68ff2c1b3e1339faae99d6484"
+],
+"paladin|L100|Crownwood Hare|focus|s7": [
+14,
+"b9edf7365806a7a13ad12ef061184272"
+],
+"paladin|L100|Crownwood Hare|strike|s101": [
+5,
+"dc25d14ba3c3e6b4706166790a1f6843"
+],
+"paladin|L100|Crownwood Hare|strike|s7": [
+7,
+"2a2b3d603b65991c87231a1193300c75"
+],
+"paladin|L100|Highway Bandit|aim|s101": [
+10,
+"6c692de26e690437f352aff18028040a"
+],
+"paladin|L100|Highway Bandit|aim|s7": [
+14,
+"15e9c15179c713ade243d8c5e230f77d"
+],
+"paladin|L100|Highway Bandit|counter|s101": [
+14,
+"a692edab11f19f75e983a9211b798bf5"
+],
+"paladin|L100|Highway Bandit|counter|s7": [
+14,
+"ec1371873f0fbc08cc09a1efdb1c6234"
+],
+"paladin|L100|Highway Bandit|defend|s101": [
+14,
+"3c2ce8f1aea26f8a5291cc172cf8c636"
+],
+"paladin|L100|Highway Bandit|defend|s7": [
+14,
+"22a869bb8fee8968f5fa65a2c4c8e994"
+],
+"paladin|L100|Highway Bandit|evade|s101": [
+14,
+"5a1fc2f6276c83a55d85bd3b813e0d6a"
+],
+"paladin|L100|Highway Bandit|evade|s7": [
+14,
+"ad79ee42cdd62c9f09671b004d92bd59"
+],
+"paladin|L100|Highway Bandit|focus|s101": [
+14,
+"8a7e1cda29c988d47d39dcdbfdcdc517"
+],
+"paladin|L100|Highway Bandit|focus|s7": [
+14,
+"7050531eacfb29180a5b08a00011c439"
+],
+"paladin|L100|Highway Bandit|strike|s101": [
+14,
+"a364cecff971baea2f814be08a0212a2"
+],
+"paladin|L100|Highway Bandit|strike|s7": [
+14,
+"35d79d114ce5255d033be807a06c7beb"
+],
+"paladin|L100|River Otter|aim|s101": [
+9,
+"8262abac3b32d303f421dfdc9c372a51"
+],
+"paladin|L100|River Otter|aim|s7": [
+9,
+"180261b6186db18a284418515780dfd7"
+],
+"paladin|L100|River Otter|counter|s101": [
+14,
+"9591ae0c9a3f5096d301c05d432c3401"
+],
+"paladin|L100|River Otter|counter|s7": [
+14,
+"c5fc7358d6542ca80c849291790b5166"
+],
+"paladin|L100|River Otter|defend|s101": [
+14,
+"e526b62a2dd87f1ca8d264ba725af581"
+],
+"paladin|L100|River Otter|defend|s7": [
+14,
+"2efbaa19535e8adfdaae2800b15d7815"
+],
+"paladin|L100|River Otter|evade|s101": [
+14,
+"240457118bbab5d1c1e1102b0660f576"
+],
+"paladin|L100|River Otter|evade|s7": [
+14,
+"d9e2545a1b6210ae93aff36d11a1c1cf"
+],
+"paladin|L100|River Otter|focus|s101": [
+14,
+"a5573e8e94b1a95616f09b6d8b17db90"
+],
+"paladin|L100|River Otter|focus|s7": [
+14,
+"c3c0b373760b8c786d492be7720dba97"
+],
+"paladin|L100|River Otter|strike|s101": [
+9,
+"7013b32d72fd3f829dc3af3cb0da44dc"
+],
+"paladin|L100|River Otter|strike|s7": [
+11,
+"e410a3c47bd4378fd3df78e7e7ba8b25"
+],
+"paladin|L1|Crownwood Hare|aim|s101": [
+3,
+"479a15a0328cfed458ec500742a2bec8"
+],
+"paladin|L1|Crownwood Hare|aim|s7": [
+3,
+"16fb01d3c80b52812dfaf06f760de6c8"
+],
+"paladin|L1|Crownwood Hare|counter|s101": [
+11,
+"bab62435bd1cde802a8858e9e7ac1bfd"
+],
+"paladin|L1|Crownwood Hare|counter|s7": [
+11,
+"52259e145bb08fadbbc724e8bd5cfe2c"
+],
+"paladin|L1|Crownwood Hare|defend|s101": [
+14,
+"6fb5d91c6997a8226974194e3e8706f1"
+],
+"paladin|L1|Crownwood Hare|defend|s7": [
+14,
+"d55c3df4e4908cb7356b3bcef9fafc06"
+],
+"paladin|L1|Crownwood Hare|evade|s101": [
+14,
+"e3b7e5b308caf21debb53763ce24173c"
+],
+"paladin|L1|Crownwood Hare|evade|s7": [
+14,
+"77209e3529df8d17911ebba876cccf9f"
+],
+"paladin|L1|Crownwood Hare|focus|s101": [
+14,
+"9ce9f275ce025273d75ff4082b4b6ba3"
+],
+"paladin|L1|Crownwood Hare|focus|s7": [
+14,
+"944845d9db3522858c5dbc492edf9cd6"
+],
+"paladin|L1|Crownwood Hare|strike|s101": [
+3,
+"c4e8b898ebcb208e2995e3ca9d27fd71"
+],
+"paladin|L1|Crownwood Hare|strike|s7": [
+6,
+"17748f698c152fc5d23f7061d99193f0"
+],
+"paladin|L1|Highway Bandit|aim|s101": [
+3,
+"c97206b8a91b934f08a30dd7d6c8dba8"
+],
+"paladin|L1|Highway Bandit|aim|s7": [
+6,
+"9c58840b9d4131fd3a8f60455c7c877f"
+],
+"paladin|L1|Highway Bandit|counter|s101": [
+9,
+"276040cbd40c5e354d06a36a5f27bd92"
+],
+"paladin|L1|Highway Bandit|counter|s7": [
+9,
+"a897b49ffd0326f74027c85afc41d6b0"
+],
+"paladin|L1|Highway Bandit|defend|s101": [
+14,
+"a17518849f9e86c0413ebf675fdf8587"
+],
+"paladin|L1|Highway Bandit|defend|s7": [
+14,
+"4db7d04b693d6682351c32a8e07f49cc"
+],
+"paladin|L1|Highway Bandit|evade|s101": [
+14,
+"80fce9d398dd5313d3baef6e2508afb9"
+],
+"paladin|L1|Highway Bandit|evade|s7": [
+14,
+"817e69823ff02936376752fb2e8f099f"
+],
+"paladin|L1|Highway Bandit|focus|s101": [
+14,
+"f180061d72edb57575911020dac4e325"
+],
+"paladin|L1|Highway Bandit|focus|s7": [
+14,
+"29dfc14cdb80de838d316356b1911a8d"
+],
+"paladin|L1|Highway Bandit|strike|s101": [
+3,
+"ebbc76b509b5f723b1b81669c3283afd"
+],
+"paladin|L1|Highway Bandit|strike|s7": [
+7,
+"f72282dcbb5885f2df4aaf212138aab7"
+],
+"paladin|L1|River Otter|aim|s101": [
+3,
+"3218566d8ee92e73fa1e424dd6533f6b"
+],
+"paladin|L1|River Otter|aim|s7": [
+6,
+"6fb4618daf7129d5f5d824778a0a4b81"
+],
+"paladin|L1|River Otter|counter|s101": [
+14,
+"401d9275b92e86d9c21330576e8f1de5"
+],
+"paladin|L1|River Otter|counter|s7": [
+14,
+"7fb05230427b795d62072dc819a6ce65"
+],
+"paladin|L1|River Otter|defend|s101": [
+14,
+"e92d97ecf6463ab41b3d813c695b8045"
+],
+"paladin|L1|River Otter|defend|s7": [
+14,
+"a494928b81292e3bce745a1d3429cb55"
+],
+"paladin|L1|River Otter|evade|s101": [
+14,
+"a96a06faff8b79777929667d9fedadb7"
+],
+"paladin|L1|River Otter|evade|s7": [
+14,
+"0e2dae1fee0d268ffe916ea9ce5ba9c7"
+],
+"paladin|L1|River Otter|focus|s101": [
+14,
+"20b63409f6920cc6f958fe0ee1d0692b"
+],
+"paladin|L1|River Otter|focus|s7": [
+14,
+"500a7e07f4538e76b16a3a00531ba624"
+],
+"paladin|L1|River Otter|strike|s101": [
+4,
+"f427dadae22022d07ab8dfde20c3e0a1"
+],
+"paladin|L1|River Otter|strike|s7": [
+9,
+"69dec79cd35fa688af61d2528226d7e3"
+],
+"paladin|L20|Crownwood Hare|aim|s101": [
+4,
+"c774ead3f889d24885eef1edd2f2ca93"
+],
+"paladin|L20|Crownwood Hare|aim|s7": [
+6,
+"3e6ba14e27542a613b68f6da733b8321"
+],
+"paladin|L20|Crownwood Hare|counter|s101": [
+14,
+"fcb1468f5a332eb85c46063a916ce9e8"
+],
+"paladin|L20|Crownwood Hare|counter|s7": [
+14,
+"2f3870c8e922d937fdf9e53bf83f7318"
+],
+"paladin|L20|Crownwood Hare|defend|s101": [
+14,
+"6247dca4b2b1f4c19dfbcddfc49521f3"
+],
+"paladin|L20|Crownwood Hare|defend|s7": [
+14,
+"3e574cdccf4e1039253fc46b197e12a6"
+],
+"paladin|L20|Crownwood Hare|evade|s101": [
+14,
+"a0a59bc265492540db95952c5a06e766"
+],
+"paladin|L20|Crownwood Hare|evade|s7": [
+14,
+"a096bd596f476d1847d9299ce2e5ecd8"
+],
+"paladin|L20|Crownwood Hare|focus|s101": [
+14,
+"d8001858e520d24ae355755efe9d62ae"
+],
+"paladin|L20|Crownwood Hare|focus|s7": [
+14,
+"f53174f3b8fd84d79f2dcf9500c8900d"
+],
+"paladin|L20|Crownwood Hare|strike|s101": [
+4,
+"a5818b9aba58ec7c212f8c480131f307"
+],
+"paladin|L20|Crownwood Hare|strike|s7": [
+9,
+"24fc59a51e21dce156e99e33249b5dbf"
+],
+"paladin|L20|Highway Bandit|aim|s101": [
+6,
+"f5aa31055485a2ee9e4172b33f69aca7"
+],
+"paladin|L20|Highway Bandit|aim|s7": [
+11,
+"3c13109aa53056c2d4061eb34e670efd"
+],
+"paladin|L20|Highway Bandit|counter|s101": [
+14,
+"d39afb7dd390bc3dcf5e0b98b1f69886"
+],
+"paladin|L20|Highway Bandit|counter|s7": [
+14,
+"8d48a9d90ed7c9907e37aa27f70efa6f"
+],
+"paladin|L20|Highway Bandit|defend|s101": [
+14,
+"33dd6929cb7b043170274e419bff97a0"
+],
+"paladin|L20|Highway Bandit|defend|s7": [
+14,
+"c1753f50de6d31aa6de1c50d0553d4e1"
+],
+"paladin|L20|Highway Bandit|evade|s101": [
+14,
+"1675693193ae2766d8695bcff4cc0daf"
+],
+"paladin|L20|Highway Bandit|evade|s7": [
+14,
+"1b312cc29af362d0b230dc709f9c5096"
+],
+"paladin|L20|Highway Bandit|focus|s101": [
+14,
+"99d8e1e4b6a8b16b504f517468fec6f3"
+],
+"paladin|L20|Highway Bandit|focus|s7": [
+14,
+"bb6f26c4e3af3632be6b2cc4b52834f8"
+],
+"paladin|L20|Highway Bandit|strike|s101": [
+14,
+"ec68ebcc00c3bdbaec3f39f20ee0dec4"
+],
+"paladin|L20|Highway Bandit|strike|s7": [
+14,
+"d28f3bf5d9f359b59d80b9247900c3d6"
+],
+"paladin|L20|River Otter|aim|s101": [
+13,
+"e23d06fdedb610f8804cb4af320ed2d5"
+],
+"paladin|L20|River Otter|aim|s7": [
+14,
+"19f79d56a756e4e9927c671fb47711da"
+],
+"paladin|L20|River Otter|counter|s101": [
+14,
+"157ab3269f1e086dad8ea51894be85b7"
+],
+"paladin|L20|River Otter|counter|s7": [
+14,
+"72c0e1db8ceb306697388f9efedce919"
+],
+"paladin|L20|River Otter|defend|s101": [
+14,
+"9531f6ad6dacc662d27027330b9c8978"
+],
+"paladin|L20|River Otter|defend|s7": [
+14,
+"f7fd8891b90879b92840bd1f74790fa1"
+],
+"paladin|L20|River Otter|evade|s101": [
+14,
+"f50133134b8787c46148032b4badd6e0"
+],
+"paladin|L20|River Otter|evade|s7": [
+14,
+"7083793c3a560b7349ca1d62aeab9a2f"
+],
+"paladin|L20|River Otter|focus|s101": [
+14,
+"08a6c307d26cdae16339798bca3a9117"
+],
+"paladin|L20|River Otter|focus|s7": [
+14,
+"0b7b2ac676677476c6779fcd52a84435"
+],
+"paladin|L20|River Otter|strike|s101": [
+14,
+"f5238cf9090503212fc9f39f3650075a"
+],
+"paladin|L20|River Otter|strike|s7": [
+14,
+"ea9bbc437c8ab9cfaf3585ead5b2d3a1"
+],
+"paladin|L60|Crownwood Hare|aim|s101": [
+7,
+"40e41cd10bd6a6a25fc642bd4b0e3637"
+],
+"paladin|L60|Crownwood Hare|aim|s7": [
+9,
+"d87087f470f69c86b5f620c735d9a954"
+],
+"paladin|L60|Crownwood Hare|counter|s101": [
+14,
+"018733ff94146af278dc9bb6d332e428"
+],
+"paladin|L60|Crownwood Hare|counter|s7": [
+14,
+"9e07bab6c3da13d006ed52fca6d3d9a7"
+],
+"paladin|L60|Crownwood Hare|defend|s101": [
+14,
+"f029195f7ba8ec2d048974005a8e33f5"
+],
+"paladin|L60|Crownwood Hare|defend|s7": [
+14,
+"fc1e434201ffd48d60045ce020af8206"
+],
+"paladin|L60|Crownwood Hare|evade|s101": [
+14,
+"92b299908e13bae8c89005f8f900835e"
+],
+"paladin|L60|Crownwood Hare|evade|s7": [
+14,
+"4f9c013d929e57f527daea75725cff3d"
+],
+"paladin|L60|Crownwood Hare|focus|s101": [
+14,
+"436af1680eb431ca0507e377a1b8e9ca"
+],
+"paladin|L60|Crownwood Hare|focus|s7": [
+14,
+"788b8512912bd2ae51d1995cefdfaba0"
+],
+"paladin|L60|Crownwood Hare|strike|s101": [
+10,
+"24f2c247fcbf657b9cb2c0bf6c9ed811"
+],
+"paladin|L60|Crownwood Hare|strike|s7": [
+11,
+"e15cf61fe5b94dd049a273545b284fc1"
+],
+"paladin|L60|Highway Bandit|aim|s101": [
+13,
+"deedeb5dde213713505bdfe8f0258193"
+],
+"paladin|L60|Highway Bandit|aim|s7": [
+14,
+"1ac8d2f021b21372bcfacb7434ef8a7e"
+],
+"paladin|L60|Highway Bandit|counter|s101": [
+14,
+"38b5220282496b2aab9744d458478887"
+],
+"paladin|L60|Highway Bandit|counter|s7": [
+14,
+"cffc112905ea7320a0703258690f6c60"
+],
+"paladin|L60|Highway Bandit|defend|s101": [
+14,
+"9433ae106717592dd332704a1e3c4c4f"
+],
+"paladin|L60|Highway Bandit|defend|s7": [
+14,
+"582e8b1ee875fbe2ae21dd4c6c6cbcb7"
+],
+"paladin|L60|Highway Bandit|evade|s101": [
+14,
+"e17ae7dc0f767c5a274a7606730c6caf"
+],
+"paladin|L60|Highway Bandit|evade|s7": [
+14,
+"49ecd6f7e40139113ccf1519bd548ab7"
+],
+"paladin|L60|Highway Bandit|focus|s101": [
+14,
+"4bc8f6057a4b8afaa58b46866de17c30"
+],
+"paladin|L60|Highway Bandit|focus|s7": [
+14,
+"3db790d1fb3d8e5d46d77bf86452ba36"
+],
+"paladin|L60|Highway Bandit|strike|s101": [
+14,
+"83d0a9855e49b2d35740b39e2aeb14b8"
+],
+"paladin|L60|Highway Bandit|strike|s7": [
+14,
+"05f94b1a0af98741334aedaac27c84c3"
+],
+"paladin|L60|River Otter|aim|s101": [
+13,
+"08c39026f08d05b8498eeec6410942db"
+],
+"paladin|L60|River Otter|aim|s7": [
+14,
+"5040cdb2c30a63d6dbdbaa18ac97add4"
+],
+"paladin|L60|River Otter|counter|s101": [
+14,
+"7bec5116de5a148bcba1ef278bdb223e"
+],
+"paladin|L60|River Otter|counter|s7": [
+14,
+"e24573130f420ac5c7fb4bffaee82f90"
+],
+"paladin|L60|River Otter|defend|s101": [
+14,
+"528807a2032032c54288f47b127de0f9"
+],
+"paladin|L60|River Otter|defend|s7": [
+14,
+"a6b63af765481c8e7b95b0cca3195217"
+],
+"paladin|L60|River Otter|evade|s101": [
+14,
+"a418bd1c30f6e42fe6fc6a4eb827f9b9"
+],
+"paladin|L60|River Otter|evade|s7": [
+14,
+"3258ce406b11f0f767e742e3b0907866"
+],
+"paladin|L60|River Otter|focus|s101": [
+14,
+"d2cbcd279465ab77d182582734b3a1c2"
+],
+"paladin|L60|River Otter|focus|s7": [
+14,
+"778993827747677f77e3ea1837fb752a"
+],
+"paladin|L60|River Otter|strike|s101": [
+14,
+"468e679966894505322d534c9bc2dd08"
+],
+"paladin|L60|River Otter|strike|s7": [
+14,
+"345a802852b9f06813dfffe64d5af85a"
+],
+"priest|L100|Crownwood Hare|aim|s101": [
+14,
+"9917084e30f0c2c43b31426ab9dbefe1"
+],
+"priest|L100|Crownwood Hare|aim|s7": [
+14,
+"f3736efcd58a25f2b55ba97200ac5538"
+],
+"priest|L100|Crownwood Hare|counter|s101": [
+14,
+"247f6880cb9480893a8e9187dc9728d3"
+],
+"priest|L100|Crownwood Hare|counter|s7": [
+14,
+"f16c0b69c292934f03521d66d071e146"
+],
+"priest|L100|Crownwood Hare|defend|s101": [
+14,
+"9304a66fe9fa322a4bbd6bc78733ddcd"
+],
+"priest|L100|Crownwood Hare|defend|s7": [
+14,
+"94380660ee5443237917e43f130bb1f6"
+],
+"priest|L100|Crownwood Hare|evade|s101": [
+14,
+"739b5f6d35fbb4ffb99442e7a24a2b63"
+],
+"priest|L100|Crownwood Hare|evade|s7": [
+14,
+"1ecbb7e3cd5cbe8cdc5fe7071001ef74"
+],
+"priest|L100|Crownwood Hare|focus|s101": [
+14,
+"aba30d07ccee983ec1f7966a935adb3d"
+],
+"priest|L100|Crownwood Hare|focus|s7": [
+14,
+"bc5636bc9601dbb1ce1a8f13892411be"
+],
+"priest|L100|Crownwood Hare|strike|s101": [
+14,
+"38a3e1152bb48b59314f1bd1a7bffe00"
+],
+"priest|L100|Crownwood Hare|strike|s7": [
+14,
+"3d79a8db9e2c9fdb6e3b517e730a77fb"
+],
+"priest|L100|Highway Bandit|aim|s101": [
+14,
+"796fca52f8fe23bd6c1c95ecbe7dba82"
+],
+"priest|L100|Highway Bandit|aim|s7": [
+14,
+"0909b349c0453962213d4062fad7550b"
+],
+"priest|L100|Highway Bandit|counter|s101": [
+14,
+"7ba2a51a5be887d01a18ce4d006cb50d"
+],
+"priest|L100|Highway Bandit|counter|s7": [
+14,
+"39ad8e5219d844f484989ce8e4d972a5"
+],
+"priest|L100|Highway Bandit|defend|s101": [
+14,
+"885af3bf434f731fd1355bde4da0ff17"
+],
+"priest|L100|Highway Bandit|defend|s7": [
+14,
+"1a2caf2c7715ce0e3f039c4afa48ad89"
+],
+"priest|L100|Highway Bandit|evade|s101": [
+14,
+"79855a4c4c0f48b59b757f40ccf00b94"
+],
+"priest|L100|Highway Bandit|evade|s7": [
+14,
+"841bf9ce9447a2d62c908795be7303d2"
+],
+"priest|L100|Highway Bandit|focus|s101": [
+14,
+"73927577dd5799d7b4344bdb43c510df"
+],
+"priest|L100|Highway Bandit|focus|s7": [
+14,
+"c6bf8852ffe39a88b248dacfdb961cb1"
+],
+"priest|L100|Highway Bandit|strike|s101": [
+14,
+"95a163032389e1d1c2f0cbd15bf601b4"
+],
+"priest|L100|Highway Bandit|strike|s7": [
+14,
+"b028bd744bd8a3dd53efbf62cf1e5456"
+],
+"priest|L100|River Otter|aim|s101": [
+14,
+"82097d3ac08974e8c9903a396a6f36dd"
+],
+"priest|L100|River Otter|aim|s7": [
+14,
+"6fe1f5a78a226a663890ded601e9a27c"
+],
+"priest|L100|River Otter|counter|s101": [
+14,
+"2751b3051745aa178f97a2d379095b79"
+],
+"priest|L100|River Otter|counter|s7": [
+14,
+"21f17e17f1e1b45c0f26abf2b3394b2d"
+],
+"priest|L100|River Otter|defend|s101": [
+14,
+"fd976187555a088ff0f67d92bd932946"
+],
+"priest|L100|River Otter|defend|s7": [
+14,
+"aef1076cc9d47a2a097738f2b3422365"
+],
+"priest|L100|River Otter|evade|s101": [
+14,
+"98b11380bfcf4e92a013d374acfe5413"
+],
+"priest|L100|River Otter|evade|s7": [
+14,
+"545eb744e03c0cf38dc6ee13e9f64f84"
+],
+"priest|L100|River Otter|focus|s101": [
+14,
+"060a1ba6a40cf093f60c3bd220a185a8"
+],
+"priest|L100|River Otter|focus|s7": [
+14,
+"d8418447cbf02c4071284b645dbd8b43"
+],
+"priest|L100|River Otter|strike|s101": [
+14,
+"b8de9c4498d04bc4b1d8c79a3d793499"
+],
+"priest|L100|River Otter|strike|s7": [
+14,
+"cf332ec48aa637e94ccc281064ba7b21"
+],
+"priest|L1|Crownwood Hare|aim|s101": [
+14,
+"c75eb9b87a20e50c3185b92513f4e434"
+],
+"priest|L1|Crownwood Hare|aim|s7": [
+14,
+"5cf7da29f9d13af4ea27882911f07d37"
+],
+"priest|L1|Crownwood Hare|counter|s101": [
+11,
+"d4cd7f969bca02cf1d7ecbbb2033902d"
+],
+"priest|L1|Crownwood Hare|counter|s7": [
+11,
+"4f7392602f0ea4ea7a3abcda80f87c92"
+],
+"priest|L1|Crownwood Hare|defend|s101": [
+14,
+"5132310961193a8b66e30c0fd82c1258"
+],
+"priest|L1|Crownwood Hare|defend|s7": [
+14,
+"758afc60dcaa99eb3ef73ae368ed5dd1"
+],
+"priest|L1|Crownwood Hare|evade|s101": [
+14,
+"4b20c2982dc0011a47fdf579710d1df6"
+],
+"priest|L1|Crownwood Hare|evade|s7": [
+14,
+"6ea851a4c1f8738632bc5fb5a157f533"
+],
+"priest|L1|Crownwood Hare|focus|s101": [
+14,
+"52e8f7cc75599cdd458a6462a9175106"
+],
+"priest|L1|Crownwood Hare|focus|s7": [
+14,
+"2a29968450983303f37adb89c569ac22"
+],
+"priest|L1|Crownwood Hare|strike|s101": [
+14,
+"cb90c8c78fae3782b4bd879ef92cee6c"
+],
+"priest|L1|Crownwood Hare|strike|s7": [
+14,
+"4ad9fd37960fc17dbc05d25733b80d3d"
+],
+"priest|L1|Highway Bandit|aim|s101": [
+14,
+"f21c490262a179e857182b930bfc280d"
+],
+"priest|L1|Highway Bandit|aim|s7": [
+12,
+"f3f9c85cf94e919b2cb21bb73527bf3b"
+],
+"priest|L1|Highway Bandit|counter|s101": [
+9,
+"b2c7509aa3ca1432b4e2a538fccae2a9"
+],
+"priest|L1|Highway Bandit|counter|s7": [
+9,
+"1b73ec5c9ba7b2e55bd7b9d33cc67ba3"
+],
+"priest|L1|Highway Bandit|defend|s101": [
+14,
+"effed525f857229f7af346708bb89724"
+],
+"priest|L1|Highway Bandit|defend|s7": [
+14,
+"ff1af126d3ed34d27a1235382738d748"
+],
+"priest|L1|Highway Bandit|evade|s101": [
+14,
+"11438378ea95408daaac0c3eaaeae9b5"
+],
+"priest|L1|Highway Bandit|evade|s7": [
+14,
+"4a0b82c4c1debea213ed8ecf01940644"
+],
+"priest|L1|Highway Bandit|focus|s101": [
+14,
+"28dbb5c9e44d213c4becdcd884ed63de"
+],
+"priest|L1|Highway Bandit|focus|s7": [
+14,
+"0d2e7cb4ba8665b133dc955f5fec5710"
+],
+"priest|L1|Highway Bandit|strike|s101": [
+14,
+"4cbbf3e6b46ef85969702835181f021f"
+],
+"priest|L1|Highway Bandit|strike|s7": [
+14,
+"93cbdf388da1454dfdc226d2afb4b8d2"
+],
+"priest|L1|River Otter|aim|s101": [
+14,
+"8a6d42269a3e88e296120d6dac24df95"
+],
+"priest|L1|River Otter|aim|s7": [
+14,
+"c66423fb3bbd98a10cc6b843985483bf"
+],
+"priest|L1|River Otter|counter|s101": [
+14,
+"7746ffe325c3df88cab01bbe2188221a"
+],
+"priest|L1|River Otter|counter|s7": [
+14,
+"2cb059887cdfba72dd714805ecb700e0"
+],
+"priest|L1|River Otter|defend|s101": [
+14,
+"c307970bd29d3ccb9633142a511e721e"
+],
+"priest|L1|River Otter|defend|s7": [
+14,
+"84bc831a0888b41ef9015e4e8bd8d212"
+],
+"priest|L1|River Otter|evade|s101": [
+14,
+"ef7e6fe3cbcc06641533969a7dea68b5"
+],
+"priest|L1|River Otter|evade|s7": [
+14,
+"3304332cb4703ceecf273e84484bb438"
+],
+"priest|L1|River Otter|focus|s101": [
+14,
+"92d9b205313a625f8a9575ae1983c52c"
+],
+"priest|L1|River Otter|focus|s7": [
+14,
+"3c141bc2dcb95614ff4ca51e3c6354d6"
+],
+"priest|L1|River Otter|strike|s101": [
+14,
+"44c8311bc6f13b9a4204ff2bbb413a4f"
+],
+"priest|L1|River Otter|strike|s7": [
+14,
+"fe83e4f5428d09a42ddccdc6be2d8371"
+],
+"priest|L20|Crownwood Hare|aim|s101": [
+14,
+"d09287ee1a2c4640b9fcefbe667e7598"
+],
+"priest|L20|Crownwood Hare|aim|s7": [
+14,
+"f70b063f4433243e99c0827935f60bfe"
+],
+"priest|L20|Crownwood Hare|counter|s101": [
+14,
+"d4c0525094319cc820f2779fa78b8f05"
+],
+"priest|L20|Crownwood Hare|counter|s7": [
+14,
+"abf8dd241884d61f8f2e12139f25efeb"
+],
+"priest|L20|Crownwood Hare|defend|s101": [
+14,
+"d272083a72576740fa5d12ebc8400129"
+],
+"priest|L20|Crownwood Hare|defend|s7": [
+14,
+"9bcfa800c7b003cd90d04a1564af6d0b"
+],
+"priest|L20|Crownwood Hare|evade|s101": [
+14,
+"0ffdb9d6b6b5607fcccf726677fc68a9"
+],
+"priest|L20|Crownwood Hare|evade|s7": [
+14,
+"173b39d0cc8ca1488d04bc237ebf2cf0"
+],
+"priest|L20|Crownwood Hare|focus|s101": [
+14,
+"a5a4817998f700cbd91e6c666d0e3d16"
+],
+"priest|L20|Crownwood Hare|focus|s7": [
+14,
+"61208ba4e8052cc8ea67a5eb74bc488e"
+],
+"priest|L20|Crownwood Hare|strike|s101": [
+14,
+"e2299834b9154056ccae5576cd00705b"
+],
+"priest|L20|Crownwood Hare|strike|s7": [
+14,
+"26426820743c84feb14e2be944c6455f"
+],
+"priest|L20|Highway Bandit|aim|s101": [
+14,
+"5796f5077c16b0568f1834e8666375a4"
+],
+"priest|L20|Highway Bandit|aim|s7": [
+13,
+"bcc68ab0ca15afa036155e42b56f7d1f"
+],
+"priest|L20|Highway Bandit|counter|s101": [
+14,
+"b22f24a7b7c0c8fb76be6a6005546d30"
+],
+"priest|L20|Highway Bandit|counter|s7": [
+14,
+"3795f5e92726b0780ad53c074919cef2"
+],
+"priest|L20|Highway Bandit|defend|s101": [
+14,
+"aa90694b149f14ec0ed907daa7dcade2"
+],
+"priest|L20|Highway Bandit|defend|s7": [
+14,
+"0a7bb6aa8f5cef068a6978c8f1d8a293"
+],
+"priest|L20|Highway Bandit|evade|s101": [
+14,
+"4040bdebd8ac021e41c65df33e20ee3a"
+],
+"priest|L20|Highway Bandit|evade|s7": [
+14,
+"407724b7e7c7c455b2f0a0148738e113"
+],
+"priest|L20|Highway Bandit|focus|s101": [
+14,
+"6671672ecf6aed704637765ffa9a0851"
+],
+"priest|L20|Highway Bandit|focus|s7": [
+14,
+"19f74684a9ae633991da885f6637dfa3"
+],
+"priest|L20|Highway Bandit|strike|s101": [
+14,
+"ec0fc4b92bb48db56d8faeaeac304744"
+],
+"priest|L20|Highway Bandit|strike|s7": [
+14,
+"2cfd4762d20f3d44b58a087110e62bfe"
+],
+"priest|L20|River Otter|aim|s101": [
+14,
+"f8132d3f2ebab5e5ec970d0855db275a"
+],
+"priest|L20|River Otter|aim|s7": [
+14,
+"a6334fb8808e18128c0a01e098036a1e"
+],
+"priest|L20|River Otter|counter|s101": [
+14,
+"56984c293121396f918d39ecf8fba8c4"
+],
+"priest|L20|River Otter|counter|s7": [
+14,
+"c07b7aae4272cf70f722f993299df4b2"
+],
+"priest|L20|River Otter|defend|s101": [
+14,
+"a6fc0565c5798d51733003021e19b670"
+],
+"priest|L20|River Otter|defend|s7": [
+14,
+"de981201f9a6bd83e6ce0c010fd611fd"
+],
+"priest|L20|River Otter|evade|s101": [
+14,
+"b6baffe2adba24023df034b9e684b53e"
+],
+"priest|L20|River Otter|evade|s7": [
+14,
+"bb0b987d887b3e0ffae13c44e793adc1"
+],
+"priest|L20|River Otter|focus|s101": [
+14,
+"7339f0c5e2b175a03e41b111fef2dcc2"
+],
+"priest|L20|River Otter|focus|s7": [
+14,
+"a6e122a01395ae34578c18e792ce3b73"
+],
+"priest|L20|River Otter|strike|s101": [
+14,
+"23a180a63f747cfff1a3b74cc0a053fa"
+],
+"priest|L20|River Otter|strike|s7": [
+14,
+"7e77e8ca09d60d3e8b49dc925b6095ab"
+],
+"priest|L60|Crownwood Hare|aim|s101": [
+14,
+"02f508a8d97f45c6778af99a463432cb"
+],
+"priest|L60|Crownwood Hare|aim|s7": [
+14,
+"8685a8fd29d20c1ec36b41b8f3b36a86"
+],
+"priest|L60|Crownwood Hare|counter|s101": [
+14,
+"1b028631cc31f1e6db12d5380a9969b4"
+],
+"priest|L60|Crownwood Hare|counter|s7": [
+14,
+"2c9bfb13e0b825b3a04afba2cf771b8f"
+],
+"priest|L60|Crownwood Hare|defend|s101": [
+14,
+"72c45f7880e14dbc526b3010ac7550e2"
+],
+"priest|L60|Crownwood Hare|defend|s7": [
+14,
+"3e05f0438dc8222544e8ad300a5f39f7"
+],
+"priest|L60|Crownwood Hare|evade|s101": [
+14,
+"36ef5f05c0b20747fe87e8bd507cf92c"
+],
+"priest|L60|Crownwood Hare|evade|s7": [
+14,
+"409d5001b85b9553057252fa725162f8"
+],
+"priest|L60|Crownwood Hare|focus|s101": [
+14,
+"c09f169dd85b61119dec3dacc7d1c9e3"
+],
+"priest|L60|Crownwood Hare|focus|s7": [
+14,
+"36dee4582732ad59f437a38f822ca786"
+],
+"priest|L60|Crownwood Hare|strike|s101": [
+14,
+"cb9da40355de0301c75d00d155d3ef5f"
+],
+"priest|L60|Crownwood Hare|strike|s7": [
+14,
+"fe05fe9ec0d0b11f8019377fd08326fe"
+],
+"priest|L60|Highway Bandit|aim|s101": [
+14,
+"955f085481ffdb1b6d7b6dcf7ac70bd7"
+],
+"priest|L60|Highway Bandit|aim|s7": [
+14,
+"1ea5860d40418ec6fa5f081234e77717"
+],
+"priest|L60|Highway Bandit|counter|s101": [
+14,
+"c94839a1c368dfdd9b02f7daa3a1728e"
+],
+"priest|L60|Highway Bandit|counter|s7": [
+14,
+"cc43f974a72e0a8a2320acffbacd8dac"
+],
+"priest|L60|Highway Bandit|defend|s101": [
+14,
+"e5fefdb76cebefd5b873993d03c3515e"
+],
+"priest|L60|Highway Bandit|defend|s7": [
+14,
+"352247700adf406212801969fd3e5d29"
+],
+"priest|L60|Highway Bandit|evade|s101": [
+14,
+"11d4f70481dbc6002abd785aa2c80545"
+],
+"priest|L60|Highway Bandit|evade|s7": [
+14,
+"8f1723e21f468b51b029870beec2ab9b"
+],
+"priest|L60|Highway Bandit|focus|s101": [
+14,
+"6f9baece4e2317cd3880573c9429338d"
+],
+"priest|L60|Highway Bandit|focus|s7": [
+14,
+"1b0b715ec98ed5a6e956de0d67f760db"
+],
+"priest|L60|Highway Bandit|strike|s101": [
+14,
+"c11913e21b94aa58c2d3bbbda44242d7"
+],
+"priest|L60|Highway Bandit|strike|s7": [
+14,
+"83105238ef8646d48a56187e3f9a01e7"
+],
+"priest|L60|River Otter|aim|s101": [
+14,
+"95688b1dd40acdcabe78c2bc749ebee8"
+],
+"priest|L60|River Otter|aim|s7": [
+14,
+"eb21a273edea98badd4040c2c42f7ba5"
+],
+"priest|L60|River Otter|counter|s101": [
+14,
+"ff80cb4f88089e5d4734fcbbb7c137f9"
+],
+"priest|L60|River Otter|counter|s7": [
+14,
+"9bde3e667ef057d6ad808bdcf0fe4d87"
+],
+"priest|L60|River Otter|defend|s101": [
+14,
+"3c5cdee5a29a8e1889e4cb58c8791e76"
+],
+"priest|L60|River Otter|defend|s7": [
+14,
+"9c60af55cee7b7fa81705c10c4fc67df"
+],
+"priest|L60|River Otter|evade|s101": [
+14,
+"7828491dbca65911730cc6407be5fe5b"
+],
+"priest|L60|River Otter|evade|s7": [
+14,
+"47bcddcb782ac6d7e69c2eebcca3eb4b"
+],
+"priest|L60|River Otter|focus|s101": [
+14,
+"55740072692ab752d6635095c196439c"
+],
+"priest|L60|River Otter|focus|s7": [
+14,
+"b4b80571a2afd6caeb81fa62ad125ad8"
+],
+"priest|L60|River Otter|strike|s101": [
+14,
+"7e7b55418931a2c76bbf4d905a6fd2a9"
+],
+"priest|L60|River Otter|strike|s7": [
+14,
+"f483405a38273b57376a6c169d1a0feb"
+],
+"rogue|L100|Crownwood Hare|aim|s101": [
+8,
+"0c8bd5ad5cd598d711f9e44c01d0bfaa"
+],
+"rogue|L100|Crownwood Hare|aim|s7": [
+8,
+"a3fe7c4e03e8d5c1a2149e236037446d"
+],
+"rogue|L100|Crownwood Hare|counter|s101": [
+9,
+"f579583f587593a1220e4e9d6d9d9620"
+],
+"rogue|L100|Crownwood Hare|counter|s7": [
+8,
+"e7e371de158d143045fe779ca53b8cd4"
+],
+"rogue|L100|Crownwood Hare|defend|s101": [
+14,
+"489b19750868246967dbe8ea3a122953"
+],
+"rogue|L100|Crownwood Hare|defend|s7": [
+14,
+"6bb3c305e0dd3520cbd8885ea1d12df7"
+],
+"rogue|L100|Crownwood Hare|evade|s101": [
+14,
+"4010b3035a634673e6009f94ddd017cd"
+],
+"rogue|L100|Crownwood Hare|evade|s7": [
+14,
+"8f33aa2bf6307d54b2401f5be2d7ec83"
+],
+"rogue|L100|Crownwood Hare|focus|s101": [
+14,
+"9dda863676f4d18c1716f6b2613b7598"
+],
+"rogue|L100|Crownwood Hare|focus|s7": [
+14,
+"649c1207b713cab53696cc5ea2a31903"
+],
+"rogue|L100|Crownwood Hare|strike|s101": [
+7,
+"4b94baecfa703702f1683f7cd9347029"
+],
+"rogue|L100|Crownwood Hare|strike|s7": [
+9,
+"e3ff0440826c0c898bb28ba5099afcb6"
+],
+"rogue|L100|Highway Bandit|aim|s101": [
+7,
+"545351fa8ebc694d9d92f986acb1b37b"
+],
+"rogue|L100|Highway Bandit|aim|s7": [
+10,
+"9cee2f2e0997b99cf29b19c236abbe46"
+],
+"rogue|L100|Highway Bandit|counter|s101": [
+7,
+"335a2c99e8c0ca35d19c2d24225d9059"
+],
+"rogue|L100|Highway Bandit|counter|s7": [
+8,
+"401b0d250594924391849dfdb30c398b"
+],
+"rogue|L100|Highway Bandit|defend|s101": [
+14,
+"3ecdc5b1ae85885dcec35d5c787ce7df"
+],
+"rogue|L100|Highway Bandit|defend|s7": [
+14,
+"be962a6cee3bd65008eba50dfcd652a1"
+],
+"rogue|L100|Highway Bandit|evade|s101": [
+14,
+"056b9620d5f37c149dd378d87e7934fb"
+],
+"rogue|L100|Highway Bandit|evade|s7": [
+14,
+"c1ae3600d30d5efa43466d27c0e5ccd7"
+],
+"rogue|L100|Highway Bandit|focus|s101": [
+7,
+"3212818664473014ea827f2edc4464ab"
+],
+"rogue|L100|Highway Bandit|focus|s7": [
+8,
+"a8c27fa6e53c03a8122bd1c5430171b1"
+],
+"rogue|L100|Highway Bandit|strike|s101": [
+7,
+"2d23d332a6ec29c8c44a68ec30bcf37c"
+],
+"rogue|L100|Highway Bandit|strike|s7": [
+12,
+"23ca83d96d16876b83664515c9de2c8e"
+],
+"rogue|L100|River Otter|aim|s101": [
+14,
+"f459d263af41d6a6b46b8085cbb9a74b"
+],
+"rogue|L100|River Otter|aim|s7": [
+14,
+"8808153b95b4a706227e2288396d4375"
+],
+"rogue|L100|River Otter|counter|s101": [
+14,
+"336aaed8b096f414d62b50277c55985b"
+],
+"rogue|L100|River Otter|counter|s7": [
+14,
+"9c495e755be1c163533effd19f467f11"
+],
+"rogue|L100|River Otter|defend|s101": [
+14,
+"8e6dbc3895cf56b22f458023ae38d14e"
+],
+"rogue|L100|River Otter|defend|s7": [
+14,
+"61d235e4ba971c00e79a18b8938139a6"
+],
+"rogue|L100|River Otter|evade|s101": [
+14,
+"d80b963eb6047350520dae8d9c162fc6"
+],
+"rogue|L100|River Otter|evade|s7": [
+14,
+"aee44eb5d484bc3fd525664477591dcd"
+],
+"rogue|L100|River Otter|focus|s101": [
+14,
+"774717327a521d31eee4ba479c837c72"
+],
+"rogue|L100|River Otter|focus|s7": [
+14,
+"914955a8daf09e936d81ec85ad52112a"
+],
+"rogue|L100|River Otter|strike|s101": [
+14,
+"baf89d377c1afd9706a935ffc9c2c214"
+],
+"rogue|L100|River Otter|strike|s7": [
+14,
+"3d5f88bd8e0cc652d3e585f71a974212"
+],
+"rogue|L1|Crownwood Hare|aim|s101": [
+10,
+"bfc7fac962578d10d4c2327e6c19bc8b"
+],
+"rogue|L1|Crownwood Hare|aim|s7": [
+14,
+"b35c3537744b0537110f638a930323f3"
+],
+"rogue|L1|Crownwood Hare|counter|s101": [
+11,
+"0479819b2fb407191ab81556ba217ae5"
+],
+"rogue|L1|Crownwood Hare|counter|s7": [
+11,
+"f8d5ee86109f8a11ab4c45a282beb374"
+],
+"rogue|L1|Crownwood Hare|defend|s101": [
+14,
+"3f4c1b2a0ff9a968655b0943e8cb2adf"
+],
+"rogue|L1|Crownwood Hare|defend|s7": [
+14,
+"4e459600b6c4b67f4bc65e7d14463439"
+],
+"rogue|L1|Crownwood Hare|evade|s101": [
+14,
+"d5342f20ad69614e98ed98aef2715c9d"
+],
+"rogue|L1|Crownwood Hare|evade|s7": [
+14,
+"ca52f44f5e228216d793a25901f52530"
+],
+"rogue|L1|Crownwood Hare|focus|s101": [
+12,
+"d16ecd75bdde4db8851c112aac2b1801"
+],
+"rogue|L1|Crownwood Hare|focus|s7": [
+14,
+"8a7bf4804f843c191d71b0788716e25b"
+],
+"rogue|L1|Crownwood Hare|strike|s101": [
+4,
+"8576cd6ccaa3a6456016efbfd9b49efb"
+],
+"rogue|L1|Crownwood Hare|strike|s7": [
+14,
+"e8a0a02b2624c9cc34f1a59104086422"
+],
+"rogue|L1|Highway Bandit|aim|s101": [
+10,
+"82a16c8603e33f8decfb4e818a0f35b0"
+],
+"rogue|L1|Highway Bandit|aim|s7": [
+11,
+"ff68d20a919c5aec9b25ede94f32e3b4"
+],
+"rogue|L1|Highway Bandit|counter|s101": [
+8,
+"d8550d37898b99b768e147fc77f58483"
+],
+"rogue|L1|Highway Bandit|counter|s7": [
+9,
+"07d038e2b8b9ce3a95799afeafff6be7"
+],
+"rogue|L1|Highway Bandit|defend|s101": [
+14,
+"d18771f7660e5e07fef93218c05131a8"
+],
+"rogue|L1|Highway Bandit|defend|s7": [
+14,
+"6f5464996aec3f64c2bb2a839c5ade63"
+],
+"rogue|L1|Highway Bandit|evade|s101": [
+14,
+"f31079b6da8cd705baabfc88452824c1"
+],
+"rogue|L1|Highway Bandit|evade|s7": [
+14,
+"f7aa809e248b9577f18a1cc9aab759f9"
+],
+"rogue|L1|Highway Bandit|focus|s101": [
+7,
+"cc470d8425c813f799c40e337149da28"
+],
+"rogue|L1|Highway Bandit|focus|s7": [
+12,
+"0b584f8957dfef797fb9eae45f681411"
+],
+"rogue|L1|Highway Bandit|strike|s101": [
+11,
+"abe446b6964a1209b9dc3e92fb307add"
+],
+"rogue|L1|Highway Bandit|strike|s7": [
+13,
+"a5850ee39bd8015c024bd08716876f37"
+],
+"rogue|L1|River Otter|aim|s101": [
+14,
+"7735e9057f6bcbd862aab52ebfe3bde9"
+],
+"rogue|L1|River Otter|aim|s7": [
+14,
+"bb59467487516b9cfbb6206cf2070bde"
+],
+"rogue|L1|River Otter|counter|s101": [
+14,
+"3eef6dc53558d7a2eb5b341b7c3a8652"
+],
+"rogue|L1|River Otter|counter|s7": [
+14,
+"252b13a55b477db8b75d0fceed79abe6"
+],
+"rogue|L1|River Otter|defend|s101": [
+14,
+"90e54f3468d21b358f2ecff89d689f83"
+],
+"rogue|L1|River Otter|defend|s7": [
+14,
+"78cc7e994d7e3c4039aee545a547a6cd"
+],
+"rogue|L1|River Otter|evade|s101": [
+14,
+"dd69999281ecc402507e2a0adc507e01"
+],
+"rogue|L1|River Otter|evade|s7": [
+14,
+"e93c9844d0a057a498524b6e64356200"
+],
+"rogue|L1|River Otter|focus|s101": [
+14,
+"672d1f9499de1a4b8dad72d8cf2de627"
+],
+"rogue|L1|River Otter|focus|s7": [
+14,
+"ab0515407ba210a260a26c14dc48c2cd"
+],
+"rogue|L1|River Otter|strike|s101": [
+14,
+"cff8a08b7622c24156fe4f3c2618c0cd"
+],
+"rogue|L1|River Otter|strike|s7": [
+14,
+"2d62d975369249c5173a5993629d9d60"
+],
+"rogue|L20|Crownwood Hare|aim|s101": [
+12,
+"da09a72b0b0686fcede129bb36962782"
+],
+"rogue|L20|Crownwood Hare|aim|s7": [
+13,
+"8321cdc27f6221b14dac65fc8a866e74"
+],
+"rogue|L20|Crownwood Hare|counter|s101": [
+14,
+"9a55b36c9a3e673546d0b7894918a8ab"
+],
+"rogue|L20|Crownwood Hare|counter|s7": [
+14,
+"3fae36997185fa531bec38aa699f615b"
+],
+"rogue|L20|Crownwood Hare|defend|s101": [
+14,
+"25479a689d5d48e5e335a465b5d867b1"
+],
+"rogue|L20|Crownwood Hare|defend|s7": [
+14,
+"c024eedd06de7b186f28559f5a900a92"
+],
+"rogue|L20|Crownwood Hare|evade|s101": [
+14,
+"ae61b9b53f8ea5d374d25cff35445b25"
+],
+"rogue|L20|Crownwood Hare|evade|s7": [
+14,
+"073a6357ac0f1534a3edc10e09868981"
+],
+"rogue|L20|Crownwood Hare|focus|s101": [
+14,
+"59e512af4c40cf570d86f8d1ad86fa1d"
+],
+"rogue|L20|Crownwood Hare|focus|s7": [
+14,
+"c1c161d80ac66551a93ca2dadb57a9d1"
+],
+"rogue|L20|Crownwood Hare|strike|s101": [
+11,
+"c899914180f3ecf8e8b7edeec243ce2e"
+],
+"rogue|L20|Crownwood Hare|strike|s7": [
+14,
+"5a9fca65b3c9294e5a94b1b8e956c896"
+],
+"rogue|L20|Highway Bandit|aim|s101": [
+9,
+"fb22017ddce4614cd503a3c56faea861"
+],
+"rogue|L20|Highway Bandit|aim|s7": [
+11,
+"2e67588c3a2fd44d6e9f8438977cf9e4"
+],
+"rogue|L20|Highway Bandit|counter|s101": [
+7,
+"f85b3b7ce6e76ff222dae0c7429eaf0d"
+],
+"rogue|L20|Highway Bandit|counter|s7": [
+9,
+"8558185673c32f2d0760adb16522f4a4"
+],
+"rogue|L20|Highway Bandit|defend|s101": [
+14,
+"341d53fd1063cca91b039eb28e1b9ce5"
+],
+"rogue|L20|Highway Bandit|defend|s7": [
+14,
+"e1301de60e1ce2a2e91c5a6ac576e0d9"
+],
+"rogue|L20|Highway Bandit|evade|s101": [
+14,
+"500ceb6f32ddf3c55cb5f27d419fa43d"
+],
+"rogue|L20|Highway Bandit|evade|s7": [
+14,
+"c3975d845ca5f5fdfcffa2839aea4ba6"
+],
+"rogue|L20|Highway Bandit|focus|s101": [
+7,
+"fe702a1e152b1aa575491884fe91bcca"
+],
+"rogue|L20|Highway Bandit|focus|s7": [
+9,
+"a224f0e09e78a8925d910be402055687"
+],
+"rogue|L20|Highway Bandit|strike|s101": [
+9,
+"ed30f298c0a12770be888cf5baac608a"
+],
+"rogue|L20|Highway Bandit|strike|s7": [
+11,
+"fb9f1ba0b466ada9dcc35919e5303da8"
+],
+"rogue|L20|River Otter|aim|s101": [
+14,
+"6fab816d672a6c278f4fab5acaaf44ff"
+],
+"rogue|L20|River Otter|aim|s7": [
+14,
+"e63a37876a534f1a8fdbe78ce16ac2c6"
+],
+"rogue|L20|River Otter|counter|s101": [
+14,
+"5976cf2b0e396256976751eb5a24873a"
+],
+"rogue|L20|River Otter|counter|s7": [
+14,
+"e41915278f4217059dccc396f85d3235"
+],
+"rogue|L20|River Otter|defend|s101": [
+14,
+"eb738883af31d2343dd852defe68644b"
+],
+"rogue|L20|River Otter|defend|s7": [
+14,
+"e472f9240fd0ef02ee1412bac582fec0"
+],
+"rogue|L20|River Otter|evade|s101": [
+14,
+"071d949ecc87495d9523ca41f9f5efdd"
+],
+"rogue|L20|River Otter|evade|s7": [
+14,
+"2b23cb6cb7aaedc981f3e167d4fceed1"
+],
+"rogue|L20|River Otter|focus|s101": [
+14,
+"954ca1b30b6ebb2d4a1db313476d3cd6"
+],
+"rogue|L20|River Otter|focus|s7": [
+14,
+"e39160ab77a413aefda12821c16f6223"
+],
+"rogue|L20|River Otter|strike|s101": [
+14,
+"3474024921915aa513f20e779817646b"
+],
+"rogue|L20|River Otter|strike|s7": [
+14,
+"6c4ec45ca37099c8e5468244288c6aef"
+],
+"rogue|L60|Crownwood Hare|aim|s101": [
+11,
+"fff128b6c14a4e30dc81f6e3d2eb20f8"
+],
+"rogue|L60|Crownwood Hare|aim|s7": [
+12,
+"249e5bb0c8fc47a6331c834de2284735"
+],
+"rogue|L60|Crownwood Hare|counter|s101": [
+14,
+"cd97a7e7a3c343aa5b6629bd968ea0e4"
+],
+"rogue|L60|Crownwood Hare|counter|s7": [
+14,
+"cd5049651d4616ffe8c585a42876fdb3"
+],
+"rogue|L60|Crownwood Hare|defend|s101": [
+14,
+"b1f55423deeda8bac3607ceb2c9d2c7b"
+],
+"rogue|L60|Crownwood Hare|defend|s7": [
+14,
+"c9a2bc6dee65e523ffd19afcedb5b1ee"
+],
+"rogue|L60|Crownwood Hare|evade|s101": [
+14,
+"1ad32a4c21148c783de5d33f4dd4abb5"
+],
+"rogue|L60|Crownwood Hare|evade|s7": [
+14,
+"b1ad65065baf2f3e80c2bbf659e2c515"
+],
+"rogue|L60|Crownwood Hare|focus|s101": [
+14,
+"1f11a3690aabf1026146bfd71299e565"
+],
+"rogue|L60|Crownwood Hare|focus|s7": [
+14,
+"fceaa40b69d7d63334b4c0677f2e018b"
+],
+"rogue|L60|Crownwood Hare|strike|s101": [
+11,
+"b70afbccddd6a75879fded4c4ab73e31"
+],
+"rogue|L60|Crownwood Hare|strike|s7": [
+14,
+"57819a97f0328b60e5a8bb6b4e781c5f"
+],
+"rogue|L60|Highway Bandit|aim|s101": [
+7,
+"6966c1086196684f5a70ce3b8297d81d"
+],
+"rogue|L60|Highway Bandit|aim|s7": [
+9,
+"700a076c40bfb5567f04ad58ed6ec094"
+],
+"rogue|L60|Highway Bandit|counter|s101": [
+7,
+"c48265a15bf27c4d9ed54c4029609404"
+],
+"rogue|L60|Highway Bandit|counter|s7": [
+9,
+"6c764274f8e6a7b9e41595d1208c5dda"
+],
+"rogue|L60|Highway Bandit|defend|s101": [
+14,
+"383863a38ec5fae3f646e94b04499ee2"
+],
+"rogue|L60|Highway Bandit|defend|s7": [
+14,
+"c2dfc42d8641f66dc7adfd229139c6e3"
+],
+"rogue|L60|Highway Bandit|evade|s101": [
+14,
+"ccbc52fcd20754ec51b66a8f431950aa"
+],
+"rogue|L60|Highway Bandit|evade|s7": [
+14,
+"871a970dfbf04a6aa24e095a166a99ba"
+],
+"rogue|L60|Highway Bandit|focus|s101": [
+7,
+"065dc17121cca2e2b4ed57fb434525f9"
+],
+"rogue|L60|Highway Bandit|focus|s7": [
+9,
+"0315570c8232792e38a3102edb24ee82"
+],
+"rogue|L60|Highway Bandit|strike|s101": [
+8,
+"8d0736c50d190fcc33b43377fef3ee8a"
+],
+"rogue|L60|Highway Bandit|strike|s7": [
+10,
+"c22cc9b13b32b3cba09779e8c1b4a7e1"
+],
+"rogue|L60|River Otter|aim|s101": [
+14,
+"4c766a8336db33abdc6d4433e52b81a9"
+],
+"rogue|L60|River Otter|aim|s7": [
+14,
+"c5783938fd6552032b1494143cb53326"
+],
+"rogue|L60|River Otter|counter|s101": [
+14,
+"fb6719bcd0db9f5a1fd21cda5e7a0c23"
+],
+"rogue|L60|River Otter|counter|s7": [
+14,
+"8a60b9464474f03ae4c8c81aae879f0b"
+],
+"rogue|L60|River Otter|defend|s101": [
+14,
+"842e7b84799242a299a16ed6c67da557"
+],
+"rogue|L60|River Otter|defend|s7": [
+14,
+"374dc3708feb24720dc265d13b4822e2"
+],
+"rogue|L60|River Otter|evade|s101": [
+14,
+"4cc83902c9e126f64e09de70b9f54be3"
+],
+"rogue|L60|River Otter|evade|s7": [
+14,
+"abdd3c9757dbef12d11bb65dd3205b5f"
+],
+"rogue|L60|River Otter|focus|s101": [
+14,
+"0f56f0e47d9b654409bcc2db30eb2b96"
+],
+"rogue|L60|River Otter|focus|s7": [
+14,
+"587a60f3db4fa70d889aeae300e2f3a3"
+],
+"rogue|L60|River Otter|strike|s101": [
+14,
+"234a9dd393d90745d42df0afda4b94ac"
+],
+"rogue|L60|River Otter|strike|s7": [
+14,
+"bbbf0597868a35bc3849b4e06bb97202"
+]
+}

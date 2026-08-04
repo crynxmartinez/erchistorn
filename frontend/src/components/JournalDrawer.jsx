@@ -438,7 +438,7 @@ function DiscoveriesPage({ biomes }) {
                                                         </div>
                                                         {m.discovered && (
                                                             <div className="text-muted-foreground text-[10px]">
-                                                                PWR {m.power}
+                                                                THREAT {m.threat}
                                                             </div>
                                                         )}
                                                     </div>
@@ -516,7 +516,7 @@ function BestiaryPage({ monsters, continents }) {
                                         <div key={m.id} className="border border-border/60 p-2" data-testid={`journal-monster-${m.id}`}>
                                             <div className="flex justify-between items-baseline">
                                                 <div className="font-pixel text-sm uppercase text-primary">{m.name}</div>
-                                                <div className="stat-label text-primary/60">PWR {m.power} · HP {m.hp}</div>
+                                                <div className="stat-label text-primary/60">THREAT {m.threat} · HP {m.hp}</div>
                                             </div>
                                             {m.drops?.length > 0 && (
                                                 <div className="text-xs text-muted-foreground mt-1">
@@ -570,7 +570,7 @@ function MaterialsPage({ items }) {
                                     <PixelSprite item={it} size={28} />
                                     <div className="min-w-0">
                                         <div className={`font-pixel uppercase text-sm truncate ${RARITY_COLORS[r] || ""}`}>{it.name}</div>
-                                        <div className="text-muted-foreground text-xs">{it.kind}{it.power ? ` · pow ${it.power}` : ""}</div>
+                                        <div className="text-muted-foreground text-xs">{it.kind}</div>
                                     </div>
                                 </div>
                             ))}

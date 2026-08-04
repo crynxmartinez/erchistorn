@@ -59,6 +59,7 @@ export default function CharacterSheet({ character, portraits, race, role, maste
         ["head", "Head"], ["body", "Body"],
         ["left_hand", "L.Hand"], ["right_hand", "R.Hand"],
         ["legs", "Legs"], ["feet", "Feet"],
+        ["hands", "Hands"],
         ["earring_l", "Ear L"], ["earring_r", "Ear R"],
         ["ring_l", "Ring L"], ["ring_r", "Ring R"],
         ["neck", "Neck"], ["back", "Back"],
@@ -204,8 +205,11 @@ export default function CharacterSheet({ character, portraits, race, role, maste
                     );
                 })()}
                 <div className="stat-label mb-2">MAIN STATS</div>
-                <div className="grid grid-cols-3 gap-1 font-mono text-xs">
-                    {["might", "grace", "insight"].map((k) => (
+                <div className="grid grid-cols-4 gap-1 font-mono text-xs">
+                    {/* Resilience feeds Armor. It is granted by the Guardian role
+                        and by level-up for defensive masteries, so it belongs
+                        beside the other main stats rather than hidden. */}
+                    {["might", "grace", "insight", "resilience"].map((k) => (
                         <Tooltip key={k}>
                             <TooltipTrigger asChild>
                                 <div className="text-center border-b border-border/40 pb-1 cursor-help" data-testid={`stat-tip-${k}`}>
@@ -231,32 +235,71 @@ export default function CharacterSheet({ character, portraits, race, role, maste
                         </Tooltip>
                     ))}
                 </div>
-                {(character.stats?.armor_bonus || character.stats?.evasion_mod) ? (
-                    <div className="grid grid-cols-2 gap-1 font-mono text-xs mt-2">
-                        {character.stats?.armor_bonus ? (
+                {/* Derived defenses — computed server-side from gear + stats.
+                    Always shown: armor is a core defensive layer and the player
+                    needs to see what their equipment is doing. */}
+                {character.derived ? (
+                    <>
+                        <div className="stat-label mt-3 mb-2">DEFENSES</div>
+                        <div className="grid grid-cols-2 gap-1 font-mono text-xs">
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <div className="flex justify-between border-b border-border/40 pb-0.5 cursor-help">
-                                        <span className="text-muted-foreground">ARMOR+</span>
-                                        <StatValue statKey="armor_bonus" character={character} />
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom"><StatHint label={STAT_HINTS.armor_bonus} /></TooltipContent>
-                            </Tooltip>
-                        ) : null}
-                        {character.stats?.evasion_mod ? (
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div className="flex justify-between border-b border-border/40 pb-0.5 cursor-help">
-                                        <span className="text-muted-foreground">EVA</span>
-                                        <span className={character.stats.evasion_mod < 0 ? "text-destructive" : "text-primary"}>
-                                            {character.stats.evasion_mod >= 0 ? "+" : ""}{character.stats.evasion_mod}
+                                    <div className="flex justify-between border-b border-border/40 pb-0.5 cursor-help" data-testid="derived-armor">
+                                        <span className="text-muted-foreground">ARMOR</span>
+                                        <span className="text-primary">
+                                            {character.derived.armor}
+                                            <span className="text-muted-foreground ml-1">
+                                                ({character.derived.physical_reduction_pct}%)
+                                            </span>
                                         </span>
                                     </div>
                                 </TooltipTrigger>
-                                <TooltipContent side="bottom"><StatHint label={STAT_HINTS.evasion_mod} /></TooltipContent>
+                                <TooltipContent side="bottom">
+                                    <StatHint label={`Reduces physical damage by ${character.derived.physical_reduction_pct}%. From heavy armor, shields, and Resilience.`} />
+                                </TooltipContent>
                             </Tooltip>
-                        ) : null}
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex justify-between border-b border-border/40 pb-0.5 cursor-help" data-testid="derived-mr">
+                                        <span className="text-muted-foreground">M.RES</span>
+                                        <span className="text-primary">
+                                            {character.derived.magic_resistance}
+                                            <span className="text-muted-foreground ml-1">
+                                                ({character.derived.magical_reduction_pct}%)
+                                            </span>
+                                        </span>
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom">
+                                    <StatHint label={`Reduces magical damage by ${character.derived.magical_reduction_pct}%. From light armor and Essence.`} />
+                                </TooltipContent>
+                            </Tooltip>
+                            <div className="flex justify-between border-b border-border/40 pb-0.5">
+                                <span className="text-muted-foreground">ACC</span>
+                                <span className="text-primary">{character.derived.accuracy}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-border/40 pb-0.5">
+                                <span className="text-muted-foreground">EVA</span>
+                                <span className="text-primary">{character.derived.evasion}</span>
+                            </div>
+                        </div>
+                    </>
+                ) : null}
+                {/* Temporary evasion modifier from buffs/debuffs — distinct from
+                    the derived EVA total above, so label it as a modifier. */}
+                {character.stats?.evasion_mod ? (
+                    <div className="grid grid-cols-2 gap-1 font-mono text-xs mt-2">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className="flex justify-between border-b border-border/40 pb-0.5 cursor-help">
+                                    <span className="text-muted-foreground">EVA MOD</span>
+                                    <span className={character.stats.evasion_mod < 0 ? "text-destructive" : "text-primary"}>
+                                        {character.stats.evasion_mod >= 0 ? "+" : ""}{character.stats.evasion_mod}
+                                    </span>
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom"><StatHint label={STAT_HINTS.evasion_mod} /></TooltipContent>
+                        </Tooltip>
                     </div>
                 ) : null}
             </div>

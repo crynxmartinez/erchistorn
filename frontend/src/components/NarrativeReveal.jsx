@@ -107,6 +107,27 @@ export default function NarrativeReveal({ result, onClose, itemsById }) {
                             )}
                         </div>
 
+                        {/* Level-ups now grant deterministic, mastery-guided stats
+                            instead of a hidden random pick, so show the player
+                            exactly what they earned. */}
+                        {result.rewards?.level_ups?.length > 0 && (
+                            <div className="border-t border-primary/40 pt-4 mt-4" data-testid="level-up-panel">
+                                <div className="stat-label mb-2 text-primary">LEVEL UP</div>
+                                <div className="space-y-1">
+                                    {result.rewards.level_ups.map((lu) => (
+                                        <div key={lu.level} className="flex items-baseline gap-2 font-mono text-xs">
+                                            <span className="font-pixel text-lg text-primary">LV {lu.level}</span>
+                                            <span className="text-foreground/80">
+                                                {Object.entries(lu.stat_gains || {})
+                                                    .map(([stat, val]) => `+${val} ${stat.slice(0, 3).toUpperCase()}`)
+                                                    .join("  ")}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {result.rewards?.items?.length > 0 && (
                             <div className="border-t border-border pt-4 mt-4">
                                 <div className="stat-label mb-2">ITEMS FOUND</div>

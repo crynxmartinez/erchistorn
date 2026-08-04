@@ -22,13 +22,14 @@ const CATEGORIES = [
 
 const EQUIP_SLOTS = [
     "head", "body", "left_hand", "right_hand",
-    "legs", "feet", "earring_l", "earring_r",
+    "legs", "feet", "hands", "earring_l", "earring_r",
     "ring_l", "ring_r", "neck", "back",
 ];
 
 const SLOT_LABELS = {
     head: "Head", body: "Body", left_hand: "L.Hand", right_hand: "R.Hand",
-    legs: "Legs", feet: "Feet", earring_l: "Ear L", earring_r: "Ear R",
+    legs: "Legs", feet: "Feet", hands: "Hands",
+    earring_l: "Ear L", earring_r: "Ear R",
     ring_l: "Ring L", ring_r: "Ring R", neck: "Neck", back: "Back",
 };
 
@@ -218,7 +219,6 @@ export default function Inventory({ character, itemsById, onCharacterUpdate, onS
 
     const statLine = (it) => {
         const parts = [];
-        if (it.power) parts.push(`PWR ${it.power}`);
         if (it.accuracy) parts.push(`ACC +${it.accuracy}`);
         if (it.evasion) parts.push(`EVA +${it.evasion}`);
         if (it.stats) {

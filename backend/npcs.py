@@ -105,7 +105,7 @@ NPCS: list[dict] = [
              "requirements": {"kills": [("ruin_ghast", 6)], "character_level": 5},
              "rewards": {"gold": 800, "xp": 500, "relationship": 700,
                          "unique_item": {"id": "vigilkeeper", "name": "Vigilkeeper (Ansel's Blade)",
-                                         "rarity": "epic", "kind": "weapon", "power": 18, "slot": "right_hand"}}},
+                                         "rarity": "epic", "kind": "weapon", "slot": "right_hand"}}},
         ],
     },
     # ---------------- MUSHKARA / GRUNHOLD ----------------
@@ -151,7 +151,7 @@ NPCS: list[dict] = [
              "requirements": {"kills": [("obsidian_wraith", 4)], "character_level": 10},
              "rewards": {"gold": 1200, "xp": 800, "relationship": 750,
                          "unique_item": {"id": "chainbreaker_hammer", "name": "Chainbreaker (Thraka's Hammer)",
-                                         "rarity": "epic", "kind": "weapon", "power": 22, "slot": "right_hand"}}},
+                                         "rarity": "epic", "kind": "weapon", "slot": "right_hand"}}},
         ],
     },
     # ---------------- CONCORDIA / ELARIS ----------------
@@ -200,7 +200,7 @@ NPCS: list[dict] = [
              "requirements": {"kills": [("specter_rider", 3), ("chain_wraith", 3)], "character_level": 14},
              "rewards": {"gold": 1600, "xp": 950, "relationship": 800,
                          "unique_item": {"id": "amber_diplomacy_ring", "name": "Amber Ring of the Federation",
-                                         "rarity": "epic", "kind": "relic", "power": 0}}},
+                                         "rarity": "epic", "kind": "relic"}}},
         ],
     },
     # ---------------- KHARDRUM / JAHRAHOLD ----------------
@@ -244,7 +244,7 @@ NPCS: list[dict] = [
              "requirements": {"kills": [("frost_wyrm_kin", 2)], "character_level": 22},
              "rewards": {"gold": 2000, "xp": 1200, "relationship": 850,
                          "unique_item": {"id": "marrowsong_spear", "name": "Marrowsong (Thora's Spear)",
-                                         "rarity": "epic", "kind": "weapon", "power": 26, "slot": "right_hand"}}},
+                                         "rarity": "epic", "kind": "weapon", "slot": "right_hand"}}},
         ],
     },
     # ---------------- HAYA / SOLUNARA ----------------
@@ -288,7 +288,7 @@ NPCS: list[dict] = [
              "requirements": {"kills": [("star_wraith", 2)], "character_level": 30},
              "rewards": {"gold": 2400, "xp": 1500, "relationship": 900,
                          "unique_item": {"id": "sun_moon_lute", "name": "The Sun-Moon Lute",
-                                         "rarity": "epic", "kind": "relic", "power": 0}}},
+                                         "rarity": "epic", "kind": "relic"}}},
         ],
     },
     # ---------------- GENNEL / RINDIVAR GROVE ----------------
@@ -332,7 +332,7 @@ NPCS: list[dict] = [
              "requirements": {"kills": [("sylvan_druid_lost", 1)], "character_level": 38},
              "rewards": {"gold": 2600, "xp": 1700, "relationship": 950,
                          "unique_item": {"id": "ryke_claw_necklace", "name": "Ryke's Claw (Zerith's Necklace)",
-                                         "rarity": "epic", "kind": "relic", "power": 0}}},
+                                         "rarity": "epic", "kind": "relic"}}},
         ],
     },
     # ---------------- HYLION / ATLANTYRION ----------------
@@ -376,7 +376,7 @@ NPCS: list[dict] = [
              "requirements": {"kills": [("kraken_spawn", 1)], "character_level": 45},
              "rewards": {"gold": 3000, "xp": 2200, "relationship": 1000,
                          "unique_item": {"id": "calvar_tide_ring", "name": "Calvar's Tidebound Ring",
-                                         "rarity": "epic", "kind": "relic", "power": 0}}},
+                                         "rarity": "epic", "kind": "relic"}}},
         ],
     },
     # ---------------- DAW'UL TALALU / VEILGROVE ----------------
@@ -420,7 +420,7 @@ NPCS: list[dict] = [
              "requirements": {"kills": [("sylvan_druid_lost", 1)], "character_level": 48},
              "rewards": {"gold": 3400, "xp": 2600, "relationship": 1050,
                          "unique_item": {"id": "elderroot_seed_relic", "name": "Elderroot Seed (Mireth's Gift)",
-                                         "rarity": "legendary", "kind": "relic", "power": 0}}},
+                                         "rarity": "legendary", "kind": "relic"}}},
         ],
     },
 ]

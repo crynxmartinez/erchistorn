@@ -7,6 +7,11 @@ from .constants import (
     AFFIX_TIERS,
     ITEM_RARITIES,
     MAX_UPGRADES,
+    ARMOR_BONUS_BY_TYPE_TIER,
+    MAGIC_RESIST_BY_TYPE_TIER,
+    ARMOR_SLOT_MULT,
+    SHIELD_ARMOR_BY_TIER,
+    ARMOR_PER_RESILIENCE,
 )
 from .base_items import BASE_ITEMS, BASE_ITEMS_BY_ID
 from .affixes import PREFIXES, SUFFIXES, AFFIXES_BY_ID
@@ -24,6 +29,8 @@ from .upgrades import socket_gem, socket_rune, get_upgrade_count, can_upgrade, g
 __all__ = [
     "WEAPON_TYPES", "ARMOR_TYPES", "EQUIP_SLOTS", "RARITY_WEIGHTS",
     "AFFIX_TIERS", "ITEM_RARITIES", "MAX_UPGRADES",
+    "ARMOR_BONUS_BY_TYPE_TIER", "MAGIC_RESIST_BY_TYPE_TIER",
+    "ARMOR_SLOT_MULT", "SHIELD_ARMOR_BY_TIER", "ARMOR_PER_RESILIENCE",
     "BASE_ITEMS", "BASE_ITEMS_BY_ID",
     "PREFIXES", "SUFFIXES", "AFFIXES_BY_ID",
     "GEMS", "GEMS_BY_ID",

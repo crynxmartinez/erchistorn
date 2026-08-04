@@ -388,6 +388,59 @@ BASE_ITEMS: list[dict] = [
      "desc": "A teardrop moonstone that catches light that isn't there. It was given, the story goes, by the moon herself to a mortal who made her laugh."},
 ]
 
+# ============================================================
+# Derived defensive stats
+# ============================================================
+def _apply_derived_defenses(items: list[dict]) -> None:
+    """Inject `armor_bonus` and `magic_resist` into armor and shield base_stats.
+
+    Derived from (armor_type, tier) and the slot's share, rather than written out
+    by hand on 30+ entries, so the defensive curve stays consistent and is tuned
+    in exactly one place (items/constants.py).
+
+    Feeding these through `base_stats` is deliberate: `compute_item_total_stats`
+    already aggregates base_stats + affixes + gems, and
+    `apply_enchantments_to_stats` already resolves procedural instances
+    correctly. Routing defense through that one path means armor cannot silently
+    stop working for instance-based gear the way it did before — there is no
+    second lookup to fall out of sync.
+
+    Explicit values already present on an item are respected and never
+    overwritten, so a hand-tuned exception stays hand-tuned.
+    """
+    from .constants import (
+        ARMOR_BONUS_BY_TYPE_TIER,
+        ARMOR_SLOT_MULT,
+        MAGIC_RESIST_BY_TYPE_TIER,
+        SHIELD_ARMOR_BY_TIER,
+    )
+
+    for item in items:
+        stats = item.setdefault("base_stats", {})
+        tier = int(item.get("tier", 1) or 1)
+
+        # Shields — armor by tier, regardless of armor_type.
+        if item.get("weapon_type") == "shield":
+            stats.setdefault("armor_bonus", SHIELD_ARMOR_BY_TIER.get(tier, 10))
+            continue
+
+        if item.get("kind") != "armor":
+            continue
+
+        armor_type = item.get("armor_type")
+        slot_mult = ARMOR_SLOT_MULT.get(item.get("slot", ""), 0.5)
+
+        base_armor = ARMOR_BONUS_BY_TYPE_TIER.get((armor_type, tier))
+        if base_armor is not None:
+            stats.setdefault("armor_bonus", max(1, round(base_armor * slot_mult)))
+
+        base_mr = MAGIC_RESIST_BY_TYPE_TIER.get((armor_type, tier))
+        if base_mr is not None:
+            stats.setdefault("magic_resist", max(1, round(base_mr * slot_mult)))
+
+
+_apply_derived_defenses(BASE_ITEMS)
+
 # Build lookup dict
 BASE_ITEMS_BY_ID: dict[str, dict] = {item["id"]: item for item in BASE_ITEMS}
 

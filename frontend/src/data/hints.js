@@ -6,6 +6,7 @@ export const STAT_HINTS = {
     might:      "Physical damage & melee attacks. +3% Physical Damage per point. Drives every swing of a weapon.",
     grace:      "Accuracy and Evasion. Determines hit chance via advantage levels and reduces incoming hit odds.",
     insight:    "Magical damage & spell effect. +3% Magical Damage per point. Fuels arcane and divine skills.",
+    resilience: "Innate toughness. Each point adds +2 Armor, reducing physical damage. Granted by the Guardian role and by defensive masteries as they level.",
     // Life stats
     vitality:   "Maximum Health = 50 + VIT × 10. Resists Bleed, Poison, and Disease. More VIT = harder to kill.",
     cognition:  "Skill Capacity = 2 + COG ÷ 2 (max 8). Determines how many skills you can use per encounter.",
@@ -14,9 +15,11 @@ export const STAT_HINTS = {
     // Derived
     armor_bonus:"Flat damage reduction on top of your armor's own value.",
     evasion_mod:"Modifier to your evasion chance. Positive = dodgier, negative = clumsier.",
+    armor:      "Reduces incoming physical damage. Heavy armor and shields give the most; Resilience adds to it. Caps at 80% reduction.",
+    magic_resistance: "Reduces incoming magical damage. Light armor gives the most, and Essence adds ×2. Caps at 80% reduction.",
     // Meters
     hp:         "Health. Reach 0 and you're downed — visit a Sanctuary or use a potion to recover. Racial HP regen restores HP passively over time, even while logged out.",
-    xp:         "Experience toward the next level. Every level nudges every stat up.",
+    xp:         "Experience toward the next level. Each level raises your mastery's signature stats — a Knight grows Might, a Mage grows Insight.",
     gold:       "Currency for markets, inns, fast travel, and trainers.",
 };
 

@@ -68,15 +68,22 @@ class UserPublic(BaseModel):
 
 # ---------- CHARACTER ----------
 class CharacterStats(BaseModel):
+    # Primary stats — raised by racial starting_stats and level-up.
     vitality: int
     cognition: int
     essence: int
     durability: int
+    # Main stats — drive damage, accuracy and defense. Raised by role/mastery
+    # allocation at creation, by equipped gear, and by level-up (see
+    # progression.py). Might scales physical damage, Insight magical, Grace
+    # accuracy and evasion, Resilience armor.
     might: int = 0
     grace: int = 0
     insight: int = 0
     resilience: int = 0
+    # Derived/equipment defenses.
     armor_bonus: int = 0
+    magic_resist: int = 0
     evasion_mod: int = 0
     attack_success_mod: int = 0
 
