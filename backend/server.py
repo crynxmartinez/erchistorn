@@ -1,6 +1,7 @@
 """Erchis Fantasy Dice RPG — main FastAPI server."""
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import random
@@ -17,8 +18,11 @@ sys.path.insert(0, str(ROOT_DIR))
 
 from bson import ObjectId  # noqa: E402
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response  # noqa: E402
+from fastapi.exceptions import RequestValidationError  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.responses import JSONResponse  # noqa: E402
 from motor.motor_asyncio import AsyncIOMotorClient  # noqa: E402
+from starlette.exceptions import HTTPException as StarletteHTTPException  # noqa: E402
 
 from auth import (  # noqa: E402
     clear_auth_cookies,
@@ -217,6 +221,102 @@ initialize_world_stocks()
 
 app = FastAPI(title="Erchis RPG")
 api = APIRouter(prefix="/api")
+
+# ---------------- error observability ----------------
+#
+# Every crash found while testing this build was found by reading a uvicorn
+# traceback by hand. In production those are invisible: the client sees
+# "Internal Server Error", nothing counts them, and nobody learns until a player
+# complains. Eight handlers were raising at request time while the module
+# imported cleanly and every route registered.
+#
+# 4xx is logged too, at INFO. Three of those eight bugs presented as a route that
+# rejected *every* call rather than crashing — a shape that is invisible unless
+# rejections are counted, because each individual 4xx looks like a normal gate.
+ERROR_COUNTS: dict[str, int] = {}
+REJECT_COUNTS: dict[str, int] = {}
+
+
+def _route_label(request: Request) -> str:
+    """Templated path, so /npc/abc and /npc/def aggregate into one counter."""
+    route = request.scope.get("route")
+    path = getattr(route, "path", None) or request.url.path
+    return f"{request.method} {path}"
+
+
+def _user_hint(request: Request) -> str:
+    """Identify the caller without logging credentials.
+
+    The auth token is a cookie; logging it would put a live session in the log
+    file. The cookie's presence and a short digest are enough to correlate a
+    burst of errors to one player.
+    """
+    token = request.cookies.get("access_token")
+    if not token:
+        return "anon"
+    return "user:" + hashlib.sha256(token.encode()).hexdigest()[:10]
+
+
+@app.exception_handler(Exception)
+async def _log_unhandled(request: Request, exc: Exception):
+    label = _route_label(request)
+    ERROR_COUNTS[label] = ERROR_COUNTS.get(label, 0) + 1
+    logger.error(
+        "500 %s | %s | %s: %s | count=%d",
+        label, _user_hint(request), type(exc).__name__, exc,
+        ERROR_COUNTS[label],
+        exc_info=exc,
+    )
+    # Still a generic body — the traceback goes to the log, never to the client.
+    return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
+
+
+@app.exception_handler(StarletteHTTPException)
+async def _log_http_exception(request: Request, exc: StarletteHTTPException):
+    label = _route_label(request)
+    if exc.status_code >= 500:
+        ERROR_COUNTS[label] = ERROR_COUNTS.get(label, 0) + 1
+        logger.error("%d %s | %s | %s", exc.status_code, label,
+                     _user_hint(request), exc.detail)
+    else:
+        REJECT_COUNTS[label] = REJECT_COUNTS.get(label, 0) + 1
+        logger.info("%d %s | %s | %s | rejects=%d", exc.status_code, label,
+                    _user_hint(request), exc.detail, REJECT_COUNTS[label])
+    return JSONResponse(status_code=exc.status_code,
+                        content={"detail": exc.detail},
+                        headers=getattr(exc, "headers", None))
+
+
+@app.exception_handler(RequestValidationError)
+async def _log_validation_error(request: Request, exc: RequestValidationError):
+    """A 422 means the client and server disagree on a payload shape.
+
+    Worth its own line: four of the five dead Mage routes never reached their bug
+    under test because a wrong-shaped payload 422'd first, so a route stuck at
+    100% validation failure is a strong signal something is calling it wrong.
+    """
+    label = _route_label(request)
+    REJECT_COUNTS[label] = REJECT_COUNTS.get(label, 0) + 1
+    logger.info("422 %s | %s | %s | rejects=%d", label, _user_hint(request),
+                str(exc.errors())[:200], REJECT_COUNTS[label])
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+
+
+@api.get("/_diagnostics/errors")
+async def error_diagnostics():
+    """Counts since boot, so "is anything 500ing?" is one request to answer.
+
+    Deliberately unauthenticated but information-free: route labels and counts
+    only, no user ids, payloads or tracebacks.
+    """
+    return {
+        "server_errors": dict(sorted(ERROR_COUNTS.items(),
+                                     key=lambda kv: -kv[1])),
+        "rejections": dict(sorted(REJECT_COUNTS.items(),
+                                  key=lambda kv: -kv[1])),
+        "total_server_errors": sum(ERROR_COUNTS.values()),
+        "total_rejections": sum(REJECT_COUNTS.values()),
+    }
 
 
 # ---------------- helpers ----------------
