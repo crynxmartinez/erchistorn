@@ -362,10 +362,35 @@ def _xp_for_next(level: int) -> int:
     return xp_for_next(level)
 
 
-def _apply_rewards_to_character(character: dict, rewards: dict, reduce: bool = True) -> None:
+def _apply_rewards_to_character(character: dict, rewards: dict, reduce: bool = True,
+                                log: list | None = None) -> None:
+    """Grant `rewards` to `character`, halving gold and XP unless `reduce` is off.
+
+    The applied amounts are written back into `rewards` because that same dict is
+    what the combat/gather responses hand to the client. Previously the client
+    was shown the *pre-damper* figures while the character banked half: a victory
+    panel read "GOLD +7 / XP +41" and the player actually received 3 gold and
+    20 XP. Reporting the granted amount keeps the damper (which is deliberate —
+    only one of ten call sites opts out with reduce=False) while making the
+    numbers on screen true.
+    """
     mult = 0.5 if reduce else 1.0
-    character["gold"] = character.get("gold", 0) + int(rewards.get("gold", 0) * mult)
-    character["xp"] = character.get("xp", 0) + int(rewards.get("xp", 0) * mult)
+    gold_gain = int(rewards.get("gold", 0) * mult)
+    xp_gain = int(rewards.get("xp", 0) * mult)
+    character["gold"] = character.get("gold", 0) + gold_gain
+    character["xp"] = character.get("xp", 0) + xp_gain
+    rewards["gold"] = gold_gain
+    rewards["xp"] = xp_gain
+    # The engine also stamps the raw figures onto its own `victory` log entry,
+    # which is what the reward panel actually renders — so correcting `rewards`
+    # alone still left "+41 XP" on screen for a 20 XP gain. The damper lives here
+    # rather than in the engine so the golden combat logs stay byte-identical.
+    for entry in log or []:
+        if isinstance(entry, dict) and entry.get("kind") == "victory":
+            if "gold" in entry:
+                entry["gold"] = gold_gain
+            if "xp" in entry:
+                entry["xp"] = xp_gain
     # Also add items to inventory (supports both static items and procedural instances)
     for it in rewards.get("items", []) or []:
         if isinstance(it, (list, tuple)):
@@ -1320,7 +1345,7 @@ async def do_action(payload: ActionPayload, user: dict = Depends(_get_current_us
             "magnitude": 1,
         })
 
-    _apply_rewards_to_character(ch, result["rewards"])
+    _apply_rewards_to_character(ch, result["rewards"], log=result.get("log"))
     _level_up_if_needed(ch, result["rewards"])
     if result.get("monster_slain"):
         ch["kills"] = ch.get("kills", 0) + 1
@@ -1672,7 +1697,7 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
         "item_instances": ch.get("item_instances", []),
     }
     if result.get("victory"):
-        _apply_rewards_to_character(ch, result["rewards"])
+        _apply_rewards_to_character(ch, result["rewards"], log=result.get("log"))
         _level_up_if_needed(ch, result["rewards"])
         ch["kills"] = ch.get("kills", 0) + 1
         biome = combat["state"].get("biome_id") or ch.get("current_biome")

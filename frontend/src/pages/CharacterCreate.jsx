@@ -94,12 +94,24 @@ export default function CharacterCreate() {
             essence: race.starting_stats.essence,
             durability: race.starting_stats.durability,
             might: 0, grace: 0, insight: 0,
+            // Resilience drives armor (2 armor per point), and the Guardian role
+            // is the one that raises it — without initialising it here the value
+            // came out undefined and rendered blank.
+            resilience: 0,
             armor_bonus: 0, evasion_mod: 0, attack_success_mod: 0,
         };
         if (role?.main_stats) {
             base.might += role.main_stats.might || 0;
             base.grace += role.main_stats.grace || 0;
             base.insight += role.main_stats.insight || 0;
+        }
+        // Each role also grants one flat bonus (Fighter +2 Vitality, Guardian +2
+        // Resilience, Scout +2 Grace, Scholar +2 Cognition, Healer +2 Essence).
+        // This was missing, so the summary under-reported the stat the player's
+        // role actually raises: a Human Fighter Knight was shown Vitality 4 and
+        // created with 6. The server applies it, so the summary was simply lying.
+        for (const [k, v] of Object.entries(role?.bonus || {})) {
+            base[k] = (base[k] || 0) + v;
         }
         if (mastery?.main_stats) {
             base.might += mastery.main_stats.might || 0;
@@ -212,7 +224,7 @@ export default function CharacterCreate() {
                      stepName === "Adaptation" && marineAdaptation ? <AspectDetail aspect={marineAdaptations.find(a => a.id === marineAdaptation)} kind="marine" /> :
                      stepName === "Portrait" && portraitId ? <PortraitPreview portrait={filteredPortraits.find(p => p.id === portraitId)} race={race} /> :
                      stepName === "Name" ? <IdentityPreview race={race} role={role} mastery={mastery} origin={origin} name={name} portraits={portraits} portraitId={portraitId} /> :
-                     stepName === "Summary" ? <StatBreakdown race={race} role={role} mastery={mastery} origin={origin} stats={finalStats} /> :
+                     stepName === "Summary" ? <StatBreakdown race={race} role={role} mastery={mastery} origin={origin} gift={race?.gifts?.find((g) => g.id === racialGift)} stats={finalStats} /> :
                      <div className="stat-label text-muted-foreground">Make a selection to see details…</div>
                     }
                 </div>
@@ -722,18 +734,26 @@ function IdentityPreview({ race, role, mastery, origin, name, portraits, portrai
     );
 }
 
-function StatBreakdown({ race, role, mastery, origin, stats }) {
+function StatBreakdown({ race, role, mastery, origin, gift, stats }) {
     if (!stats) return null;
     const R = race?.starting_stats || {};
     const RO = role?.main_stats || {};
+    const RB = role?.bonus || {};
     const MA = mastery?.main_stats || {};
     const OB = origin?.bonus || {};
     const OD = origin?.drawback || {};
+    const GB = gift?.bonus || {};
 
+    // Every contributor must appear here, or a stat shows a total nothing
+    // accounts for. Durability read "Race 5" against a total of 6 because the
+    // racial gift's +1 was never credited, and Vitality omitted the role bonus
+    // entirely.
     const line = (key) => {
         const parts = [];
         if (R[key]) parts.push(`Race ${R[key]}`);
         if (RO[key]) parts.push(`Role ${RO[key]}`);
+        if (RB[key]) parts.push(`Role +${RB[key]}`);
+        if (GB[key]) parts.push(`Gift +${GB[key]}`);
         if (MA[key]) parts.push(`Mastery +${MA[key]}`);
         if (OB[key]) parts.push(`Origin +${OB[key]}`);
         if (OD[key]) parts.push(`Origin ${OD[key]}`);
@@ -745,7 +765,7 @@ function StatBreakdown({ race, role, mastery, origin, stats }) {
             <div className="stat-label text-primary/70 mb-2">FINAL STATS</div>
             <h3 className="font-pixel text-2xl uppercase text-primary mb-4">Stat Breakdown</h3>
             <div className="space-y-2 text-xs">
-                {["vitality","cognition","essence","durability","might","grace","insight"].map((k) => (
+                {["vitality","cognition","essence","durability","might","grace","insight","resilience"].map((k) => (
                     <div key={k} className="border-b border-border/40 pb-1.5">
                         <div className="flex justify-between font-mono">
                             <span className="uppercase text-muted-foreground">{k}</span>

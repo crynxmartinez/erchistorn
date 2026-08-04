@@ -4529,7 +4529,7 @@ BIOME_ACTIONS: dict[str, list[dict]] = {
 # DAILY MISSION POOL
 # ============================================================
 DAILY_MISSION_POOL: list[dict] = [
-    {"id": "hunt_wolves",   "desc": "Slay 3 Gray Wolves in Aetheria.",           "target": {"kind": "kill", "id": "gray_wolf", "count": 3},   "reward": {"gold": 60, "xp": 50}},
+    {"id": "hunt_wolves",   "desc": "Slay 3 Gray Wolves in Valeria.",            "target": {"kind": "kill", "id": "gray_wolf", "count": 3},   "reward": {"gold": 60, "xp": 50}},
     {"id": "gather_herbs",  "desc": "Gather 5 Wild Herbs.",                       "target": {"kind": "gather", "id": "wild_herb", "count": 5},"reward": {"gold": 40, "xp": 30}},
     {"id": "loot_ruin",     "desc": "Complete one Loot Ruins run in Old Kingdom.","target": {"kind": "action", "id": "loot_ruins", "count": 1},"reward": {"gold": 80, "xp": 60}},
     {"id": "craft_two",     "desc": "Craft any 2 items.",                         "target": {"kind": "craft", "count": 2},                     "reward": {"gold": 70, "xp": 55}},

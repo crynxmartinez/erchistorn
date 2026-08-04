@@ -44,7 +44,12 @@ export default function SkillsPanel({ character, skillsById, rogueInnateSkills, 
             <div className="text-xs space-y-1">
                 <div className="font-pixel text-sm uppercase text-primary">{s.name}</div>
                 <div className="stat-label text-primary/70">
-                    {s.power_type}{s.damage_type ? ` · ${s.damage_type.toUpperCase()}` : ""} · CD {s.cooldown} · PWR {s.power} · CAP {s.skill_capacity_cost ?? 1}
+                    {/* `skill.power` was renamed to `skill.damage`; none of the 350
+                        skills carry `power` any more, so this rendered a bare
+                        "PWR" label with no number. Buffs like Iron Stance have no
+                        damage at all, so the segment is omitted rather than shown
+                        as zero. */}
+                    {s.power_type}{s.damage_type ? ` · ${s.damage_type.toUpperCase()}` : ""} · CD {s.cooldown}{s.damage ? ` · DMG ${s.damage}` : ""} · CAP {s.skill_capacity_cost ?? 1}
                 </div>
                 {s.trigger && (
                     <div className="stat-label text-muted-foreground">Trigger: {s.trigger}</div>

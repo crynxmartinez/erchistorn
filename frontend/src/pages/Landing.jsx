@@ -4,7 +4,7 @@ import { Dices, Swords, Sparkles, Map, Skull, ScrollText } from "lucide-react";
 const FEATURES = [
     { icon: Dices,    title: "Weighted D6 Fate",  desc: "Every action is a dice throw. 6 outcomes. 20+ narratives each. Your strength shifts the odds — but never guarantees them." },
     { icon: Swords,   title: "Turn-Based Combat", desc: "Auto-selected skills, item triggers, manual override when it matters. Dice narrative meets tactical depth." },
-    { icon: Map,      title: "Seven Continents",  desc: "Aetheria, Vulkaros, Nyxmoor, Frosthelm, Zephyria, Sablewaste, Verdania. Each biome, its own monsters and materials." },
+    { icon: Map,      title: "Eleven Continents", desc: "Valeria, Mushkara, Concordia, Khardrum, Haya, Gennel, Hylion, Daw'ul Talalu, Azurea, Vael'Turog, Orinth. Each biome, its own monsters and materials." },
     { icon: Sparkles, title: "Erchis Lore",       desc: "8 playable races with unique perks — Sacred Oaths, Sun-and-Moon magic, Zone-triggers, aquatic sovereignty." },
     { icon: Skull,    title: "Crafting & Rarity", desc: "Six-tier rarity from Common to Mythic. Craft with materials from every corner of the world." },
     { icon: ScrollText, title: "Skillbooks & Teachers", desc: "Learn from wandering masters or hunt rare skillbooks dropped by monsters." },
@@ -46,7 +46,7 @@ export default function Landing() {
                         <span className="text-foreground">ERCHIS</span>
                     </h1>
                     <p className="narr text-xl md:text-2xl max-w-2xl mt-8 text-foreground/85">
-                        Eight races. Seven continents. One six-sided die that will decide
+                        Eight races. Eleven continents. One six-sided die that will decide
                         whether you become legend — or footnote.
                     </p>
                     <div className="flex flex-wrap gap-4 mt-12">
