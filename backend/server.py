@@ -1648,7 +1648,11 @@ async def combat_start(payload: CombatStartPayload, user: dict = Depends(_get_cu
     # skinned (see the turn handler), so they are not caught by the active-only
     # filter above. Clear them here — this is what bounds the collection to at
     # most one document per user.
-    await db.combats.delete_many({"user_id": user["_id"], "state.active": False})
+    # `$ne: True` rather than `== False` on purpose: `$ne` is the one comparison
+    # operator that *does* match documents where the field is absent. A combat doc
+    # missing `state.active` would slip past an equality filter and never be
+    # collected, quietly restoring the unbounded growth this is here to prevent.
+    await db.combats.delete_many({"user_id": user["_id"], "state.active": {"$ne": True}})
     state = start_combat(ch, payload.monster_id)
     state["biome_id"] = biome
     if "error" in state:
