@@ -8913,7 +8913,20 @@ def start_enchant(character: dict, recipe_id: str, target_item_id: str) -> dict:
     if not target_entry:
         return {"error": "Target item not in inventory"}
 
-    target_item = ITEMS_BY_ID.get(target_item_id)
+    # Resolve the target against procedural instances FIRST.
+    #
+    # Everything a player owns is an instance whose id looks like
+    # "item_fc91e66e65e7"; those ids are not in ITEMS_BY_ID, which only holds the
+    # legacy static catalogue. Looking the target up there alone meant this
+    # returned "Unknown target item" for every item anyone could actually own —
+    # measured: 0 of 6 instances on a fresh character resolved — so enchanting was
+    # dead in practice and only worked for static ids the modern game never
+    # creates. Same defect that made compute_armor always return 0.
+    target_item = next(
+        (i for i in character.get("item_instances", [])
+         if i.get("instance_id") == target_item_id),
+        None,
+    ) or ITEMS_BY_ID.get(target_item_id)
     if not target_item:
         return {"error": "Unknown target item"}
 

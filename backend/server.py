@@ -2360,15 +2360,28 @@ async def cancel_craft(user: dict = Depends(_get_current_user)):
         raise HTTPException(status_code=400, detail="No craft to cancel")
     entry = queue[0]
     recipe = RECIPES_BY_ID.get(entry["recipe_id"])
+    refunded: list[tuple[str, int]] = []
     if recipe:
-        # Refund half the materials
+        # Refund half the materials, rounded down.
         for mat_id, qty in recipe["materials"]:
-            _add_item_to_inventory(ch, mat_id, qty // 2)
+            back = qty // 2
+            if back:
+                _add_item_to_inventory(ch, mat_id, back)
+                refunded.append((mat_id, back))
     ch["crafting_queue"] = []
     await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
         "inventory": ch["inventory"], "crafting_queue": [],
     }})
-    return {"character": ch, "message": "Craft cancelled. Half the materials were recovered."}
+    # Say what was actually returned. Floor division means a material required in
+    # quantity 1 refunds nothing, so the flat "half the materials were recovered"
+    # line was untrue for 12 of 257 cancellable recipes and outright wrong for
+    # craft_antidote, whose two single-unit materials are both lost entirely.
+    if not refunded:
+        message = "Craft cancelled. The materials were too few to recover any."
+    else:
+        detail = ", ".join(f"{qty}x {mid}" for mid, qty in refunded)
+        message = f"Craft cancelled. Recovered {detail}."
+    return {"character": ch, "message": message, "refunded": refunded}
 
 
 @api.post("/game/craft/enchant")
