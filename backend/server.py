@@ -6379,7 +6379,7 @@ origins = list({*_env_origins, "http://localhost:3000", "https://erchis.online"}
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"^https://([a-z0-9-]+\.)*(emergent\.host|emergentagent\.com|erchis\.online)$",
+    allow_origin_regex=r"^https://([a-z0-9-]+\.)*(emergent\.host|emergentagent\.com|erchis\.online|vercel\.app)$",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
@@ -6569,12 +6569,24 @@ async def _migrate_characters() -> None:
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Replaces the deprecated @app.on_event("startup"/"shutdown") pair."""
-    await _ensure_indexes()
-    await _migrate_statuses()
-    await _migrate_characters()
+    try:
+        await _ensure_indexes()
+    except Exception as e:
+        logger.warning("Index creation skipped: %s", e)
+    try:
+        await _migrate_statuses()
+    except Exception as e:
+        logger.warning("Status migration skipped: %s", e)
+    try:
+        await _migrate_characters()
+    except Exception as e:
+        logger.warning("Character migration skipped: %s", e)
     logger.info("Erchis server up. Allowed origins: %s", origins)
     yield
-    client.close()
+    try:
+        client.close()
+    except Exception:
+        pass
 
 
 app.router.lifespan_context = lifespan
