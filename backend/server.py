@@ -383,6 +383,24 @@ async def _get_character_or_404(user_id: str) -> dict:
         ch["masteries"].insert(0, _mastery)
     ch.setdefault("training_skill_id", None)
     ch.setdefault("training_until", None)
+    # Stat training system — tick completed queues
+    from game_engine import _tick_training, _training_reset_if_needed
+    _training_reset_if_needed(ch)
+    _training_completed = _tick_training(ch)
+    ch.setdefault("trained_stats", {})
+    ch.setdefault("training_time_used_main", 0)
+    ch.setdefault("training_time_used_life", 0)
+    # Study perks system — tick expired buffs and completed tiers
+    from game_engine import _tick_study
+    ch.setdefault("study_perks", {})
+    _tick_study(ch)
+    # Resolve system — tick regen/decay
+    from game_engine import _tick_resolve
+    if "last_resolve_update" not in ch:
+        ch["resolve"] = 50
+        ch["last_resolve_update"] = datetime.now(timezone.utc).isoformat()
+    ch.setdefault("sanctuary_rest_cd_until", None)
+    _tick_resolve(ch)
     # Always expose racial HP regen rate to frontend
     _race = get_race(ch.get("race", ""))
     ch["hp_regen_per_min"] = (_race or {}).get("hp_regen_per_min", 0)
@@ -450,6 +468,10 @@ def _recompute_stats(ch: dict) -> None:
     else:
         ch.pop("paladin_faith_tier", None)
         ch.pop("paladin_faith_bonuses", None)
+    # Study perks: permanent bonuses + active daily buff
+    from game_engine import _apply_study_perks_to_stats, _apply_study_buff_to_stats
+    _apply_study_perks_to_stats(ch)
+    _apply_study_buff_to_stats(ch)
 
 
 def _today_str() -> str:
@@ -554,6 +576,10 @@ def _level_up_if_needed(character: dict, rewards: dict) -> None:
     events = apply_level_ups(character)
     if events:
         rewards["level_ups"] = events
+        # Resolve gain on level-up
+        from game_engine import _award_resolve
+        for _ev in events:
+            _award_resolve(character, 3, "level_up")
     _recompute_stats(character)
 
 
@@ -1192,7 +1218,9 @@ async def create_character(payload: CreateCharacterPayload, user: dict = Depends
         "_biomes_today": [],
         # racial resources
         "exhaustion": 0,
-        "resolve": 100,
+        "resolve": 50,
+        "last_resolve_update": datetime.now(timezone.utc).isoformat(),
+        "sanctuary_rest_cd_until": None,
         "heritage_rank": 1,
         "heritage_surge_active": 0,
         "heritage_surge_last_used": None,
@@ -1445,8 +1473,18 @@ async def do_action(payload: ActionPayload, user: dict = Depends(_get_current_us
             "magnitude": 1,
         })
 
+    # Study perks: bonus XP for hunting/gathering during active buff
+    from game_engine import study_xp_bonus_for_action
+    study_xp_mult = study_xp_bonus_for_action(ch, payload.action_id)
+    if study_xp_mult > 1.0 and result["rewards"].get("xp", 0) > 0:
+        result["rewards"]["xp"] = int(result["rewards"]["xp"] * study_xp_mult)
+
     _apply_rewards_to_character(ch, result["rewards"], log=result.get("log"))
     _level_up_if_needed(ch, result["rewards"])
+    # Resolve gain on critical success (outcome 5-6) for gather/fish
+    if payload.action_id in ("gather", "fish") and result["outcome"] >= 5:
+        from game_engine import _award_resolve
+        _award_resolve(ch, 1, "gather_critical")
     if result.get("monster_slain"):
         ch["kills"] = ch.get("kills", 0) + 1
         _update_daily_mission_progress(ch, {"kind": "kill", "id": result["monster_slain"], "count": 1})
@@ -1624,7 +1662,8 @@ async def do_action(payload: ActionPayload, user: dict = Depends(_get_current_us
         "_biomes_today": ch.get("_biomes_today", []),
         "active_quests": ch.get("active_quests", []),
         "exhaustion": ch.get("exhaustion", 0),
-        "resolve": ch.get("resolve", 100),
+        "resolve": ch.get("resolve", 50),
+        "last_resolve_update": ch.get("last_resolve_update"),
         "oath_progress": ch.get("oath_progress", 0),
         "celestial_charge": ch.get("celestial_charge", 0),
         "stoneguard": ch.get("stoneguard", 0),
@@ -1763,8 +1802,16 @@ async def combat_start(payload: CombatStartPayload, user: dict = Depends(_get_cu
     state["combat_id"] = str(r.inserted_id)
     resp = {"state": state, "character": ch}
     if abandoned:
+        # Resolve penalty for auto-forfeited stale combat
+        from game_engine import _award_resolve
+        _award_resolve(ch, -3, "combat_auto_forfeit")
+        await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+            "resolve": ch.get("resolve", 50),
+            "last_resolve_update": ch.get("last_resolve_update"),
+        }})
         resp["abandoned_combat"] = {
             "monster_name": (abandoned.get("state") or {}).get("monster_name", "a previous foe"),
+            "resolve_change": -3,
         }
     return resp
 
@@ -1783,9 +1830,18 @@ async def combat_abandon(user: dict = Depends(_get_current_user)):
     )
     if not result:
         return {"abandoned": False}
+    # Resolve penalty for abandoning
+    ch = await _get_character_or_404(user["_id"])
+    from game_engine import _award_resolve
+    _award_resolve(ch, -5, "combat_abandon")
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "resolve": ch.get("resolve", 50),
+        "last_resolve_update": ch.get("last_resolve_update"),
+    }})
     return {
         "abandoned": True,
         "monster_name": (result.get("state") or {}).get("monster_name", "a foe"),
+        "resolve_change": -5,
     }
 
 
@@ -1806,6 +1862,11 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
         "item_instances": ch.get("item_instances", []),
     }
     if result.get("victory"):
+        # Study perks: bonus XP for hunting during active buff
+        from game_engine import study_xp_bonus_for_action
+        study_xp_mult = study_xp_bonus_for_action(ch, "hunt")
+        if study_xp_mult > 1.0 and result["rewards"].get("xp", 0) > 0:
+            result["rewards"]["xp"] = int(result["rewards"]["xp"] * study_xp_mult)
         _apply_rewards_to_character(ch, result["rewards"], log=result.get("log"))
         _level_up_if_needed(ch, result["rewards"])
         ch["kills"] = ch.get("kills", 0) + 1
@@ -1813,6 +1874,14 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
         consume_stock("monster", biome, combat["state"]["monster_id"])
         _update_daily_mission_progress(ch, {"kind": "kill", "id": combat["state"]["monster_id"], "count": 1})
         _update_quest_progress(ch, {"kind": "kill", "id": combat["state"]["monster_id"], "count": 1})
+        # Resolve gain on victory — based on monster threat / player rating
+        from game_engine import _resolve_combat_gain, _award_resolve, compute_monster_threat
+        _monster = next((m for m in MONSTERS if m["id"] == combat["state"]["monster_id"]), None)
+        _threat = compute_monster_threat(_monster) if _monster else 0
+        _resolve_gain = _resolve_combat_gain(ch, _threat)
+        if _resolve_gain > 0:
+            _award_resolve(ch, _resolve_gain, "combat_victory")
+        result["resolve_gain"] = _resolve_gain
         # Hunting profession XP on victory
         hunt_prof = next((p for p in ch.get("professions", []) if p.get("id") == "hunting"), None)
         if hunt_prof:
@@ -1838,6 +1907,8 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
             "active_quests": ch.get("active_quests", []),
             "inner_blood": ch.get("inner_blood", 0),
             "exhaustion": ch.get("exhaustion", 0),
+            "resolve": ch.get("resolve", 50),
+            "last_resolve_update": ch.get("last_resolve_update"),
         })
         monster = next((m for m in MONSTERS if m["id"] == combat["state"]["monster_id"]), None)
         m_name = monster["name"] if monster else combat["state"].get("monster_name", "a beast")
@@ -1861,6 +1932,10 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
         loss = min(ch.get("gold", 0), 20)
         ch["gold"] -= loss
         updates["gold"] = ch["gold"]
+        # Resolve penalty on death
+        from game_engine import _award_resolve
+        _award_resolve(ch, -10, "combat_death")
+        result["resolve_change"] = -10
         # Death → Sanctuary teleport
         from world_data import HOMETOWN_BY_CONTINENT
         sanctuary_town = ch.get("last_sanctuary_town") or ch.get("home_town") or \
@@ -1895,6 +1970,8 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
             "last_death": ch["last_death"],
             "statuses": ch["statuses"],
             "visited_towns": ch["visited_towns"],
+            "resolve": ch.get("resolve", 50),
+            "last_resolve_update": ch.get("last_resolve_update"),
         })
         result["sanctuary_teleport"] = {
             "town": sanctuary_town,
@@ -2281,10 +2358,17 @@ async def craft(payload: CraftPayload, user: dict = Depends(_get_current_user)):
 
     _apply_rewards_to_character(ch, {"gold": 0, "xp": 10, "items": []})
 
+    # Resolve gain on masterwork (outcome 6)
+    if result["outcome"] == 6:
+        from game_engine import _award_resolve
+        _award_resolve(ch, 2, "craft_masterwork")
+
     await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
         "inventory": ch["inventory"], "gold": ch["gold"], "xp": ch["xp"], "level": ch["level"],
         "base_stats": ch.get("base_stats", ch["stats"]), "stats": ch["stats"], "max_hp": ch["max_hp"], "crafts": ch["crafts"],
         "daily_missions": ch.get("daily_missions", []),
+        "resolve": ch.get("resolve", 50),
+        "last_resolve_update": ch.get("last_resolve_update"),
     }})
 
     if result["outcome"] == 6:
@@ -2335,6 +2419,11 @@ async def claim_craft(request: Request, user: dict = Depends(_get_current_user))
 
     _apply_rewards_to_character(ch, {"gold": 0, "xp": 10, "items": []})
 
+    # Resolve gain on masterwork (outcome 6)
+    if result["outcome"] == 6:
+        from game_engine import _award_resolve
+        _award_resolve(ch, 2, "craft_masterwork")
+
     # Remove completed entry from queue
     ch["crafting_queue"] = [q for q in queue if q is not entry]
 
@@ -2344,6 +2433,8 @@ async def claim_craft(request: Request, user: dict = Depends(_get_current_user))
         "crafting_queue": ch["crafting_queue"],
         "daily_missions": ch.get("daily_missions", []),
         "professions": ch.get("professions", []),
+        "resolve": ch.get("resolve", 50),
+        "last_resolve_update": ch.get("last_resolve_update"),
     }})
 
     if result["outcome"] == 6:
@@ -2564,6 +2655,338 @@ async def unassign_skill(request: Request, user: dict = Depends(_get_current_use
     bar[slot] = None
     await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {"skill_bar": bar}})
     return {"character": ch}
+
+
+# ---------------- STAT TRAINING (The Gym) ----------------
+
+@api.get("/game/training/status")
+async def training_status(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    from game_engine import (
+        MAIN_STATS, LIFE_STATS, TRAINER_SHOP_ITEMS,
+        _training_time_per_point, _training_gold_per_point,
+        _training_stat_cap, _training_daily_budget,
+        _training_reset_if_needed,
+    )
+    _training_reset_if_needed(ch)
+    budget = _training_daily_budget(ch)
+    trained = ch.get("trained_stats", {})
+    base_stats = ch.get("base_stats", {})
+
+    def _stat_info(stat):
+        current_trained = trained.get(stat, 0)
+        current_total = base_stats.get(stat, 0) + current_trained
+        cap = _training_stat_cap(stat)
+        return {
+            "stat": stat,
+            "base": base_stats.get(stat, 0),
+            "trained": current_trained,
+            "total": current_total,
+            "cap": cap,
+            "time_per_point": _training_time_per_point(current_total),
+            "gold_per_point": _training_gold_per_point(),
+        }
+
+    return {
+        "main_stats": [_stat_info(s) for s in MAIN_STATS],
+        "life_stats": [_stat_info(s) for s in LIFE_STATS],
+        "daily_budget_min": budget,
+        "time_used_main": ch.get("training_time_used_main", 0),
+        "time_used_life": ch.get("training_time_used_life", 0),
+        "queue_main": ch.get("training_queue_main"),
+        "queue_life": ch.get("training_queue_life"),
+        "login_streak": ch.get("login_streak", 0),
+        "bonus_purchased": ch.get("training_bonus_purchased", 0),
+        "whetstone_active": ch.get("training_whetstone_active", False),
+        "carry_over_main": ch.get("training_carry_over_main", 0),
+        "carry_over_life": ch.get("training_carry_over_life", 0),
+    }
+
+
+@api.post("/game/training/start")
+async def training_start(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    trainer_type = body.get("trainer_type")
+    stat = body.get("stat")
+    amount = int(body.get("amount", 0))
+    if trainer_type not in ("main", "life"):
+        raise HTTPException(status_code=400, detail="trainer_type must be 'main' or 'life'")
+    if not stat:
+        raise HTTPException(status_code=400, detail="stat is required")
+    ch = await _get_character_or_404(user["_id"])
+    from game_engine import start_training
+    result = start_training(ch, trainer_type, stat, amount)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    # Persist
+    await db.characters.update_one(
+        {"_id": ObjectId(ch["id"])},
+        {"$set": {
+            "gold": ch["gold"],
+            f"training_time_used_{trainer_type}": ch[f"training_time_used_{trainer_type}"],
+            f"training_queue_{trainer_type}": ch[f"training_queue_{trainer_type}"],
+        }},
+    )
+    return {"character": ch, "training_result": result}
+
+
+@api.post("/game/training/collect")
+async def training_collect(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    trainer_type = body.get("trainer_type", "main")
+    if trainer_type not in ("main", "life"):
+        raise HTTPException(status_code=400, detail="trainer_type must be 'main' or 'life'")
+    ch = await _get_character_or_404(user["_id"])
+    from game_engine import collect_training
+    result = collect_training(ch, trainer_type)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    # Persist trained stats and clear queue
+    update_fields = {
+        "trained_stats": ch.get("trained_stats", {}),
+        f"training_queue_{trainer_type}": None,
+    }
+    # Update life stat fields if needed
+    if result.get("stat") in ("max_hp", "max_mp", "max_stamina", "vitality"):
+        for field in ("max_hp", "hp", "max_mp", "mp", "max_stamina", "stamina"):
+            if field in ch:
+                update_fields[field] = ch[field]
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": update_fields})
+    return {"character": ch, "training_result": result}
+
+
+@api.get("/game/training/shop")
+async def training_shop(user: dict = Depends(_get_current_user)):
+    from game_engine import TRAINER_SHOP_ITEMS
+    ch = await _get_character_or_404(user["_id"])
+    uses_today = ch.get("training_shop_uses_today", {})
+    bonus_purchased = ch.get("training_bonus_purchased", 0)
+    items = []
+    for item in TRAINER_SHOP_ITEMS:
+        info = dict(item)
+        info["uses_today"] = uses_today.get(item["id"], 0)
+        if item.get("max_purchases"):
+            info["purchased"] = bonus_purchased
+        items.append(info)
+    return {"items": items, "gold": ch.get("gold", 0)}
+
+
+@api.post("/game/training/shop/buy")
+async def training_shop_buy(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    item_id = body.get("item_id")
+    if not item_id:
+        raise HTTPException(status_code=400, detail="item_id is required")
+    ch = await _get_character_or_404(user["_id"])
+    from game_engine import buy_trainer_item
+    result = buy_trainer_item(ch, item_id)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    # Persist all possibly affected fields
+    update_fields = {"gold": ch["gold"]}
+    for field in ("training_bonus_time_today", "training_whetstone_active",
+                   "training_bonus_purchased", "training_carry_over_pending",
+                   "training_shop_uses_today", "trained_stats",
+                   "training_queue_main", "training_queue_life",
+                   "max_hp", "hp", "max_mp", "mp", "max_stamina", "stamina"):
+        if field in ch:
+            update_fields[field] = ch[field]
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": update_fields})
+    return {"character": ch, "purchase_result": result}
+
+
+# ---------------- STUDY PERKS (Atlantyrion Academy) ----------------
+
+@api.get("/game/study/status")
+async def study_status(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    from game_engine import get_study_status
+    status = get_study_status(ch)
+    status["gold"] = ch.get("gold", 0)
+    return status
+
+
+@api.post("/game/study/enroll")
+async def study_enroll(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    course_id = body.get("course_id")
+    if not course_id:
+        raise HTTPException(status_code=400, detail="course_id is required")
+    ch = await _get_character_or_404(user["_id"])
+    from game_engine import enroll_study
+    result = enroll_study(ch, course_id)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "gold": ch["gold"],
+        "study_enrollment": ch.get("study_enrollment"),
+        "study_buff": ch.get("study_buff"),
+    }})
+    _recompute_stats(ch)
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "stats": ch.get("stats", {}),
+    }})
+    return {"character": ch, "enroll_result": result}
+
+
+@api.post("/game/study/checkin")
+async def study_checkin(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    from game_engine import study_daily_checkin
+    result = study_daily_checkin(ch)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    update_fields = {
+        "study_enrollment": ch.get("study_enrollment"),
+        "study_buff": ch.get("study_buff"),
+        "study_perks": ch.get("study_perks", {}),
+    }
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": update_fields})
+    _recompute_stats(ch)
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "stats": ch.get("stats", {}),
+    }})
+    return {"character": ch, "checkin_result": result}
+
+
+@api.post("/game/study/abandon")
+async def study_abandon(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    from game_engine import abandon_study
+    result = abandon_study(ch)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "study_enrollment": None,
+        "study_buff": None,
+    }})
+    _recompute_stats(ch)
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
+        "stats": ch.get("stats", {}),
+    }})
+    return {"character": ch, "abandon_result": result}
+
+
+# ---------------- MERCENARY EXPEDITIONS ----------------
+
+@api.get("/game/resolve/status")
+async def resolve_status(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    from game_engine import _resolve_tier, RESOLVE_FLOOR, RESOLVE_RESTED, RESOLVE_PEAK
+    r = ch.get("resolve", 50)
+    tier = _resolve_tier(ch)
+    # Determine regen direction
+    if r < RESOLVE_FLOOR:
+        direction = "regenerating"
+        rate = "+2/hr"
+    elif r > RESOLVE_RESTED:
+        direction = "decaying"
+        rate = "-1/hr"
+    else:
+        direction = "equilibrium"
+        rate = "0"
+    # Sanctuary cooldown
+    cd_until = ch.get("sanctuary_rest_cd_until")
+    cd_remaining = 0
+    if cd_until:
+        try:
+            cd_dt = datetime.fromisoformat(cd_until)
+            if cd_dt.tzinfo is None:
+                cd_dt = cd_dt.replace(tzinfo=timezone.utc)
+            cd_remaining = max(0, int((cd_dt - datetime.now(timezone.utc)).total_seconds()))
+        except (ValueError, TypeError):
+            cd_until = None
+    return {
+        "resolve": r,
+        "tier": tier,
+        "direction": direction,
+        "rate": rate,
+        "sanctuary_cd_remaining": cd_remaining,
+        "sanctuary_cd_until": cd_until,
+        "thresholds": {
+            "demoralized": 0,
+            "stable": 25,
+            "focused": 65,
+            "peak": 85,
+        },
+        "multipliers": {
+            "training": 0.75 if r < 25 else (1.0 if r < 65 else (1.10 if r < 85 else 1.25)),
+            "combat_damage": 0.90 if r < 25 else (1.05 if r >= 85 else 1.0),
+        },
+    }
+
+
+# ---------------- MERCENARY EXPEDITIONS ----------------
+
+@api.get("/game/expedition/merc/{biome_id}")
+async def expedition_merc(biome_id: str, user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    from game_engine import get_expedition_merc_info, EXPEDITION_MIN_EXPLORATION
+    info = get_expedition_merc_info(ch, biome_id)
+    if not info:
+        raise HTTPException(status_code=404, detail="No mercenary is stationed in this biome")
+    exploration = ch.get("exploration_progress", {}).get(biome_id, 0)
+    return {
+        "merc": info,
+        "exploration_pct": exploration,
+        "min_exploration": EXPEDITION_MIN_EXPLORATION,
+        "queue": ch.get("expedition_queue"),
+        "cooldown_until": ch.get("expedition_cooldown_until"),
+        "gold": ch.get("gold", 0),
+    }
+
+
+@api.get("/game/expedition/status")
+async def expedition_status(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    return {
+        "queue": ch.get("expedition_queue"),
+        "cooldown_until": ch.get("expedition_cooldown_until"),
+        "merc_loyalty": ch.get("merc_loyalty", {}),
+    }
+
+
+@api.post("/game/expedition/start")
+async def expedition_start(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    biome_id = body.get("biome_id")
+    hours = int(body.get("hours", 0))
+    if not biome_id:
+        raise HTTPException(status_code=400, detail="biome_id is required")
+    ch = await _get_character_or_404(user["_id"])
+    from game_engine import start_expedition
+    result = start_expedition(ch, biome_id, hours)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    await db.characters.update_one(
+        {"_id": ObjectId(ch["id"])},
+        {"$set": {
+            "gold": ch["gold"],
+            "expedition_queue": ch["expedition_queue"],
+        }},
+    )
+    return {"character": ch, "expedition_result": result}
+
+
+@api.post("/game/expedition/collect")
+async def expedition_collect(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    from game_engine import collect_expedition
+    result = collect_expedition(ch)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    await db.characters.update_one(
+        {"_id": ObjectId(ch["id"])},
+        {"$set": {
+            "inventory": ch.get("inventory", []),
+            "xp": ch.get("xp", 0),
+            "exploration_progress": ch.get("exploration_progress", {}),
+            "merc_loyalty": ch.get("merc_loyalty", {}),
+            "expedition_queue": None,
+            "expedition_cooldown_until": ch.get("expedition_cooldown_until"),
+        }},
+    )
+    return {"character": ch, "expedition_result": result}
 
 
 @api.post("/game/rogue/innate/equip")
@@ -3596,6 +4019,9 @@ async def claim_quest(quest_id: str, user: dict = Depends(_get_current_user)):
         "xp": reward.get("xp", 0),
         "items": items_out,
     }, reduce=False)
+    # Resolve gain on quest completion
+    from game_engine import _award_resolve
+    _award_resolve(ch, 5, "quest_claim")
     ch["active_quests"] = [a for a in ch["active_quests"] if a["quest_id"] != quest_id]
     ch.setdefault("completed_quests", []).append(quest_id)
     await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
@@ -3604,6 +4030,8 @@ async def claim_quest(quest_id: str, user: dict = Depends(_get_current_user)):
         "gold": ch["gold"], "xp": ch["xp"], "level": ch["level"],
         "base_stats": ch.get("base_stats", ch["stats"]), "stats": ch["stats"], "max_hp": ch["max_hp"], "inventory": ch["inventory"],
         "item_instances": ch.get("item_instances", []),
+        "resolve": ch.get("resolve", 50),
+        "last_resolve_update": ch.get("last_resolve_update"),
     }})
     await _push_world_event(ch["name"], f"{ch['name']} completed \"{q['title'] if 'title' in q else q['name']}\".", "quest")
     return {"character": ch, "claimed": {"gold": reward.get("gold", 0), "xp": reward.get("xp", 0), "items": items_out}}
@@ -3703,7 +4131,27 @@ async def rest_at_sanctuary(request: Request, user: dict = Depends(_get_current_
         ch["hp"] = ch["max_hp"]
         ch["statuses"] = [s for s in ch.get("statuses", []) if s.get("kind") != "debuff"]
         ch["exhaustion"] = max(0, ch.get("exhaustion", 0) - 20)
-        ch["resolve"] = min(100, ch.get("resolve", 100) + 10)
+        # Resolve: set to 65 if below 65 (with 2hr cooldown on the resolve portion)
+        from game_engine import _award_resolve, RESOLVE_RESTED
+        resolve_before = ch.get("resolve", 50)
+        resolve_cd_until = ch.get("sanctuary_rest_cd_until")
+        resolve_cd_active = False
+        if resolve_cd_until:
+            try:
+                cd_dt = datetime.fromisoformat(resolve_cd_until)
+                if cd_dt.tzinfo is None:
+                    cd_dt = cd_dt.replace(tzinfo=timezone.utc)
+                if cd_dt > datetime.now(timezone.utc):
+                    resolve_cd_active = True
+            except (ValueError, TypeError):
+                pass
+        if resolve_before < RESOLVE_RESTED and not resolve_cd_active:
+            _award_resolve(ch, RESOLVE_RESTED - resolve_before, "sanctuary_rest")
+            ch["sanctuary_rest_cd_until"] = (
+                datetime.now(timezone.utc) + timedelta(hours=2)
+            ).isoformat()
+        elif resolve_before < RESOLVE_RESTED and resolve_cd_active:
+            pass  # CD active — resolve not boosted, but heal/cleanse still happens
     elif service == "cleanse":
         ch["statuses"] = [s for s in ch.get("statuses", []) if s.get("id") != "recovering"]
     elif service == "blessing":
@@ -3718,6 +4166,8 @@ async def rest_at_sanctuary(request: Request, user: dict = Depends(_get_current_
     await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
         "gold": ch["gold"], "hp": ch["hp"], "statuses": ch["statuses"],
         "exhaustion": ch["exhaustion"], "resolve": ch["resolve"],
+        "last_resolve_update": ch.get("last_resolve_update"),
+        "sanctuary_rest_cd_until": ch.get("sanctuary_rest_cd_until"),
         "last_sanctuary_town": ch["last_sanctuary_town"],
     }})
     # Narrative text for each service
@@ -3727,8 +4177,18 @@ async def rest_at_sanctuary(request: Request, user: dict = Depends(_get_current_
         "cleanse": f"You kneel before the sanctum's altar. The keeper pours water over your brow, tracing old sigils across your shoulders. A warmth spreads through your limbs — the shadow of death loosens its grip and fades like morning mist. \"You are clean of it now. Go forward unburdened,\" they whisper.",
         "blessing": f"The keeper anoints your brow with sacred oil, pressing a thumb to the old mark above your eyes. Golden light pulses through the sanctuary's vaulted ceiling, and for a moment you hear distant chanting. \"Carry the Sanctuary's favor with you. May your blade strike true and your spirit grow swift.\"",
     }
+    resolve_info = None
+    if service == "rest":
+        resolve_after = ch.get("resolve", 50)
+        resolve_info = {
+            "before": resolve_before,
+            "after": resolve_after,
+            "boosted": resolve_after > resolve_before,
+            "cd_until": ch.get("sanctuary_rest_cd_until"),
+        }
     return {"character": ch, "cost": cost, "service": service,
-            "narrative": narratives.get(service, ""), "sanctuary_name": sanctuary_name}
+            "narrative": narratives.get(service, ""), "sanctuary_name": sanctuary_name,
+            "resolve_info": resolve_info}
 
 
 @api.get("/game/town/sanctuary/roster")

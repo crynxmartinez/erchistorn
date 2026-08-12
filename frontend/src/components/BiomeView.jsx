@@ -3,6 +3,7 @@ import { api, extractError } from "@/lib/api";
 import { toast } from "sonner";
 import { Compass, Swords, Sprout, Fish, Skull, Clock, Wrench, Crown } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import ExpeditionPanel from "@/components/ExpeditionPanel";
 
 const RANK_LABELS = ["Novice", "Apprentice", "Journeyman", "Expert", "Master", "Grandmaster"];
 const POINTS_PER_TIER = 10;
@@ -33,7 +34,7 @@ const RARITY_LABEL = {
     exotic: "Exotic",
 };
 
-export default function BiomeView({ character, continent, onBiomeChange, onActionResult, onCombatStart }) {
+export default function BiomeView({ character, continent, onBiomeChange, onActionResult, onCombatStart, onCharacterUpdate }) {
     const [actions, setActions] = useState([]);
     const [tools, setTools] = useState([]);
     const [exploration, setExploration] = useState(null);
@@ -459,6 +460,13 @@ export default function BiomeView({ character, continent, onBiomeChange, onActio
                     );
                 })}
             </div>
+
+            {/* Mercenary expedition camp */}
+            <ExpeditionPanel
+                character={character}
+                biomeId={biome}
+                onCharacterUpdate={onCharacterUpdate}
+            />
         </div>
         </TooltipProvider>
     );

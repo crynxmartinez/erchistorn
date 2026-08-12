@@ -7109,6 +7109,11 @@ def apply_enchantments_to_stats(character: dict) -> dict[str, int]:
     """
     from game_data import EQUIP_SLOTS
     base_stats = dict(character.get("base_stats") or character.get("stats") or {})
+    # Trained stats (from the gym/training system) are added to base
+    trained = character.get("trained_stats") or {}
+    for stat, val in trained.items():
+        if val:
+            base_stats[stat] = base_stats.get(stat, 0) + val
     equipped = character.get("equipped", {})
     seen_items = set()
     for slot in EQUIP_SLOTS:
@@ -8030,6 +8035,12 @@ def combat_turn(character: dict, state: dict, manual_skill_id: str | None = None
             total_dmg -= absorbed
             if absorbed > 0:
                 log.append({"kind": "shield_absorb", "text": f"The {monster['name']}'s shield absorbs {absorbed} damage."})
+
+        # Resolve damage modifier
+        if total_dmg > 0:
+            _rmod = _resolve_combat_damage_mod(character)
+            if _rmod != 1.0:
+                total_dmg = max(1, int(total_dmg * _rmod))
 
         state["monster_hp"] = max(0, state["monster_hp"] - total_dmg)
 
@@ -8991,3 +9002,1171 @@ def start_enchant(character: dict, recipe_id: str, target_item_id: str) -> dict:
             result["profession_points_gain"] = points
 
     return result
+
+
+# ============================================================
+# STAT TRAINING SYSTEM (The Gym — Torn-style real-time training)
+# ============================================================
+
+MAIN_STATS = ["might", "grace", "cognition", "insight", "essence", "durability"]
+LIFE_STATS = ["vitality", "max_hp", "max_mp", "max_stamina"]
+
+TRAINING_DAILY_BUDGET_MIN = 180  # 3 hours
+TRAINING_STREAK_BONUS_MIN = 60   # +1 hour at 7-day streak
+TRAINING_GOLD_PER_POINT = 500    # flat gold cost per +1
+TRAINING_BASE_TIME_MIN = 30      # base time per +1
+TRAINING_TIME_SCALE_MIN = 5      # extra minutes per stat point above 10
+TRAINING_MAIN_CAP = 50           # max trained points per main stat
+# Life stats: no cap
+
+TRAINER_SHOP_ITEMS = [
+    {
+        "id": "hourglass_of_focus",
+        "name": "Hourglass of Focus",
+        "price": 800,
+        "desc": "+1 hr training time today (one-time use).",
+        "effect": "bonus_time",
+        "effect_value": 60,
+        "max_uses_per_day": 1,
+    },
+    {
+        "id": "trainers_whetstone",
+        "name": "Trainer's Whetstone",
+        "price": 1200,
+        "desc": "Halves time cost for next training session (one-time use).",
+        "effect": "half_time",
+        "max_uses_per_day": 1,
+    },
+    {
+        "id": "surge_token",
+        "name": "Surge Token",
+        "price": 2000,
+        "desc": "Instantly completes current training queue (one-time use).",
+        "effect": "instant_complete",
+        "max_uses_per_day": 3,
+    },
+    {
+        "id": "mentors_blessing",
+        "name": "Mentor's Blessing",
+        "price": 3000,
+        "desc": "+30 min training time permanently (max 3 purchases).",
+        "effect": "permanent_bonus",
+        "effect_value": 30,
+        "max_purchases": 3,
+    },
+    {
+        "id": "rest_day_pass",
+        "name": "Rest Day Pass",
+        "price": 500,
+        "desc": "Carry over up to 1 hr unused training time to tomorrow (one-time use).",
+        "effect": "carry_over",
+        "effect_value": 60,
+        "max_uses_per_day": 1,
+    },
+]
+
+TRAINER_SHOP_BY_ID = {item["id"]: item for item in TRAINER_SHOP_ITEMS}
+
+
+def _training_time_per_point(current_total_stat: int) -> int:
+    """Time in minutes to train one +1 to a stat, given its current total value."""
+    return TRAINING_BASE_TIME_MIN + max(0, current_total_stat - 10) * TRAINING_TIME_SCALE_MIN
+
+
+def _training_gold_per_point() -> int:
+    """Flat gold cost per +1 trained stat."""
+    return TRAINING_GOLD_PER_POINT
+
+
+def _training_stat_cap(stat: str) -> int | None:
+    """Returns the trained-point cap for a stat, or None if uncapped."""
+    if stat in MAIN_STATS:
+        return TRAINING_MAIN_CAP
+    return None  # life stats: no cap
+
+
+def _training_trainer_type(stat: str) -> str | None:
+    """Returns 'main' or 'life' for the stat, or None if not trainable."""
+    if stat in MAIN_STATS:
+        return "main"
+    if stat in LIFE_STATS:
+        return "life"
+    return None
+
+
+def _training_daily_budget(character: dict) -> int:
+    """Compute today's training time budget in minutes for a character."""
+    budget = TRAINING_DAILY_BUDGET_MIN
+    # Streak bonus
+    if character.get("login_streak", 0) >= 7:
+        budget += TRAINING_STREAK_BONUS_MIN
+    # Permanent bonus from Mentor's Blessing
+    bonus_count = character.get("training_bonus_purchased", 0)
+    budget += bonus_count * 30
+    # Bonus time from Hourglass of Focus purchased today
+    budget += character.get("training_bonus_time_today", 0)
+    return budget
+
+
+def _training_reset_if_needed(character: dict) -> None:
+    """Reset daily training time tracking if it's a new day."""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if character.get("last_training_reset") != today:
+        character["training_time_used_main"] = 0
+        character["training_time_used_life"] = 0
+        character["last_training_reset"] = today
+        # Reset daily-use tracker for shop items
+        character["training_shop_uses_today"] = {}
+        # Clear bonus time from Hourglass
+        character.pop("training_bonus_time_today", None)
+        # Apply carry-over from Rest Day Pass
+        carry_pending = character.pop("training_carry_over_pending", 0)
+        if carry_pending:
+            character["training_carry_over_main"] = carry_pending
+            character["training_carry_over_life"] = carry_pending
+
+
+def _tick_training(character: dict) -> list[dict]:
+    """Check if any training queues have finished. Apply stat gains for completed ones.
+    Returns list of completed training results for frontend notification."""
+    completed = []
+    for trainer_type in ("main", "life"):
+        queue_key = f"training_queue_{trainer_type}"
+        queue = character.get(queue_key)
+        if not queue:
+            continue
+        finishes_at = queue.get("finishes_at")
+        if not finishes_at:
+            continue
+        try:
+            finish_dt = datetime.fromisoformat(finishes_at)
+        except (ValueError, TypeError):
+            character[queue_key] = None
+            continue
+        if datetime.now(timezone.utc) >= finish_dt:
+            # Training complete — apply stat gains
+            stat = queue["stat"]
+            amount = queue["amount"]
+            trained = character.setdefault("trained_stats", {})
+            trained[stat] = trained.get(stat, 0) + amount
+            # Recompute max_hp / max_mp / max_stamina if life stats
+            if stat in LIFE_STATS:
+                _recompute_life_stat(character, stat)
+            completed.append({
+                "trainer_type": trainer_type,
+                "stat": stat,
+                "amount": amount,
+            })
+            character[queue_key] = None
+    return completed
+
+
+def _recompute_life_stat(character: dict, stat: str) -> None:
+    """Recompute derived HP/MP/Stamina after a life stat training completion."""
+    if stat == "vitality":
+        # Vitality adds to max_hp at a 10:1 ratio
+        trained_vit = character.get("trained_stats", {}).get("vitality", 0)
+        base_vit = character.get("base_stats", {}).get("vitality", 0)
+        total_vit = base_vit + trained_vit
+        # Recompute max_hp from vitality
+        old_trained_vit = trained_vit - character.get("_last_vit_trained", 0)
+        if old_trained_vit > 0:
+            hp_add = old_trained_vit * 10
+            character["max_hp"] = character.get("max_hp", 100) + hp_add
+            character["hp"] = min(character.get("hp", 1) + hp_add, character["max_hp"])
+    elif stat == "max_hp":
+        trained_hp = character.get("trained_stats", {}).get("max_hp", 0)
+        base_max = character.get("base_max_hp", 100)
+        character["max_hp"] = base_max + trained_hp
+        character["hp"] = min(character.get("hp", 1), character["max_hp"])
+    elif stat == "max_mp":
+        trained_mp = character.get("trained_stats", {}).get("max_mp", 0)
+        base_max = character.get("base_max_mp", 50)
+        character["max_mp"] = base_max + trained_mp
+        character["mp"] = min(character.get("mp", 0), character["max_mp"])
+    elif stat == "max_stamina":
+        trained_stam = character.get("trained_stats", {}).get("max_stamina", 0)
+        base_max = character.get("base_max_stamina", 50)
+        character["max_stamina"] = base_max + trained_stam
+        character["stamina"] = min(character.get("stamina", 0), character["max_stamina"])
+
+
+def start_training(character: dict, trainer_type: str, stat: str, amount: int) -> dict:
+    """Start a training session. Validates time budget, gold, and stat cap.
+    Returns dict with success/error info and queue details."""
+    if amount <= 0:
+        return {"error": "Amount must be at least 1."}
+    if amount > 20:
+        return {"error": "Cannot train more than 20 points at once."}
+
+    actual_trainer = _training_trainer_type(stat)
+    if actual_trainer != trainer_type:
+        return {"error": f"{stat} is not trained by the {trainer_type} trainer."}
+
+    # Check if queue is already occupied
+    queue_key = f"training_queue_{trainer_type}"
+    if character.get(queue_key):
+        return {"error": "You already have a training session in progress. Collect it first."}
+
+    # Reset daily tracking if needed
+    _training_reset_if_needed(character)
+
+    # Check stat cap
+    cap = _training_stat_cap(stat)
+    trained = character.get("trained_stats", {})
+    current_trained = trained.get(stat, 0)
+    if cap is not None and current_trained + amount > cap:
+        remaining = cap - current_trained
+        if remaining <= 0:
+            return {"error": f"{stat} has reached the training cap of +{cap}."}
+        return {"error": f"You can only train {remaining} more {stat} (cap: +{cap})."}
+
+    # Compute total time and gold cost
+    base_stats = character.get("base_stats", {})
+    current_total = base_stats.get(stat, 0) + current_trained
+    total_time_min = 0
+    total_gold = 0
+    for i in range(amount):
+        stat_at = current_total + i
+        point_time = _training_time_per_point(stat_at)
+        # Check for Trainer's Whetstone effect (halves time)
+        if character.get("training_whetstone_active"):
+            point_time = max(1, point_time // 2)
+        total_time_min += point_time
+        total_gold += _training_gold_per_point()
+
+    # Clear whetstone after computing (one-time use)
+    character.pop("training_whetstone_active", None)
+
+    # Check time budget
+    used_key = f"training_time_used_{trainer_type}"
+    used = character.get(used_key, 0)
+    budget = _training_daily_budget(character)
+    # Add carry-over from Rest Day Pass
+    carry_over = character.get(f"training_carry_over_{trainer_type}", 0)
+    available = budget + carry_over - used
+    if total_time_min > available:
+        return {
+            "error": f"Not enough training time. Need {total_time_min} min, have {available} min available today.",
+            "time_needed": total_time_min,
+            "time_available": available,
+        }
+
+    # Check gold
+    if character.get("gold", 0) < total_gold:
+        return {
+            "error": f"Not enough gold. Need {total_gold}g, have {character.get('gold', 0)}g.",
+            "gold_needed": total_gold,
+            "gold_available": character.get("gold", 0),
+        }
+
+    # Deduct gold and time
+    character["gold"] = character.get("gold", 0) - total_gold
+    character[used_key] = used + total_time_min
+
+    # Set up queue
+    now = datetime.now(timezone.utc)
+    finishes_at = now + timedelta(minutes=total_time_min)
+
+    queue = {
+        "stat": stat,
+        "amount": amount,
+        "started_at": now.isoformat(),
+        "finishes_at": finishes_at.isoformat(),
+        "duration_min": total_time_min,
+        "gold_cost": total_gold,
+    }
+    character[queue_key] = queue
+
+    return {
+        "success": True,
+        "queue": queue,
+        "gold_spent": total_gold,
+        "time_spent": total_time_min,
+    }
+
+
+def collect_training(character: dict, trainer_type: str) -> dict:
+    """Collect a finished training session. Returns the stat gains or error."""
+    queue_key = f"training_queue_{trainer_type}"
+    queue = character.get(queue_key)
+    if not queue:
+        return {"error": "No training session to collect."}
+
+    finishes_at = queue.get("finishes_at")
+    if not finishes_at:
+        return {"error": "Training queue is corrupted."}
+
+    try:
+        finish_dt = datetime.fromisoformat(finishes_at)
+    except (ValueError, TypeError):
+        character[queue_key] = None
+        return {"error": "Training queue timestamp was corrupted. Queue cleared."}
+
+    if datetime.now(timezone.utc) < finish_dt:
+        remaining = (finish_dt - datetime.now(timezone.utc)).total_seconds()
+        return {
+            "error": "Training not yet complete.",
+            "remaining_seconds": int(remaining),
+            "finishes_at": finishes_at,
+        }
+
+    # Apply gains
+    stat = queue["stat"]
+    amount = queue["amount"]
+    # Resolve multiplier — checked at collection time
+    mult = _resolve_multiplier(character)
+    if mult != 1.0:
+        amount = max(1, int(amount * mult))
+    trained = character.setdefault("trained_stats", {})
+    trained[stat] = trained.get(stat, 0) + amount
+
+    # Recompute life stats if needed
+    if stat in LIFE_STATS:
+        _recompute_life_stat(character, stat)
+
+    character[queue_key] = None
+
+    return {
+        "success": True,
+        "stat": stat,
+        "amount": amount,
+        "new_trained_total": trained[stat],
+        "resolve_mult": mult,
+    }
+
+
+def buy_trainer_item(character: dict, item_id: str) -> dict:
+    """Purchase and apply a trainer shop item."""
+    item = TRAINER_SHOP_BY_ID.get(item_id)
+    if not item:
+        return {"error": "Unknown item."}
+
+    # Check max purchases for permanent items
+    if item.get("max_purchases"):
+        purchased = character.get("training_bonus_purchased", 0)
+        if purchased >= item["max_purchases"]:
+            return {"error": f"You have already purchased the maximum of {item['name']}."}
+
+    # Check daily use limits
+    if item.get("max_uses_per_day"):
+        uses_today = character.get("training_shop_uses_today", {}).get(item_id, 0)
+        if uses_today >= item["max_uses_per_day"]:
+            return {"error": f"You have used all {item['name']} for today."}
+
+    # Check gold
+    price = item["price"]
+    if character.get("gold", 0) < price:
+        return {"error": f"Not enough gold. Need {price}g, have {character.get('gold', 0)}g."}
+
+    # Deduct gold
+    character["gold"] = character.get("gold", 0) - price
+
+    # Apply effect
+    effect = item["effect"]
+    if effect == "bonus_time":
+        character["training_bonus_time_today"] = character.get("training_bonus_time_today", 0) + item["effect_value"]
+    elif effect == "half_time":
+        character["training_whetstone_active"] = True
+    elif effect == "instant_complete":
+        completed = None
+        for tt in ("main", "life"):
+            qk = f"training_queue_{tt}"
+            if character.get(qk):
+                queue = character[qk]
+                stat = queue["stat"]
+                amount = queue["amount"]
+                trained = character.setdefault("trained_stats", {})
+                trained[stat] = trained.get(stat, 0) + amount
+                if stat in LIFE_STATS:
+                    _recompute_life_stat(character, stat)
+                character[qk] = None
+                completed = {"trainer_type": tt, "stat": stat, "amount": amount}
+                break
+        if not completed:
+            return {"error": "No active training queue to complete.", "gold_refund": price}
+    elif effect == "permanent_bonus":
+        character["training_bonus_purchased"] = character.get("training_bonus_purchased", 0) + 1
+    elif effect == "carry_over":
+        character["training_carry_over_pending"] = item["effect_value"]
+
+    # Track daily uses
+    if item.get("max_uses_per_day"):
+        uses = character.setdefault("training_shop_uses_today", {})
+        uses[item_id] = uses.get(item_id, 0) + 1
+
+    return {
+        "success": True,
+        "item": item_id,
+        "effect": effect,
+        "gold_spent": price,
+    }
+
+
+# ============================================================
+# MERCENARY EXPEDITIONS — hire a biome merc, collect loot later
+# ============================================================
+
+EXPEDITION_MIN_HOURS = 1
+EXPEDITION_MAX_HOURS = 8
+EXPEDITION_COOLDOWN_MIN = 30       # minutes after collect before next hire
+EXPEDITION_MIN_EXPLORATION = 10    # biome exploration % required to hire
+
+# Loyalty thresholds: hires → efficiency multiplier
+LOYALTY_TIERS = [(10, 1.10), (5, 1.05)]
+
+
+def _merc_loyalty_mult(character: dict, merc_id: str) -> float:
+    hires = character.get("merc_loyalty", {}).get(merc_id, 0)
+    for threshold, mult in LOYALTY_TIERS:
+        if hires >= threshold:
+            return mult
+    return 1.0
+
+
+def _expedition_cost(merc: dict, hours: int) -> int:
+    from game_data_p2 import MERC_RANKS
+    rate = MERC_RANKS[merc["rank"]]["rate"]
+    cost = rate * hours
+    if merc.get("quirk") == "greedy":
+        cost = int(cost * 1.5)
+    return cost
+
+
+def _expedition_yield_points(character: dict, merc: dict, hours: int, biome_id: str) -> float:
+    from game_data_p2 import MERC_RANKS
+    efficiency = MERC_RANKS[merc["rank"]]["efficiency"]
+    exploration = character.get("exploration_progress", {}).get(biome_id, 0)
+    exploration_factor = max(0.1, exploration / 100.0)
+    points = hours * efficiency * exploration_factor
+    points *= _merc_loyalty_mult(character, merc["id"])
+    quirk = merc.get("quirk")
+    if quirk == "greedy":
+        points *= 1.2
+    if quirk == "night_owl" and hours >= 4:
+        points *= 1.3
+    return points
+
+
+def _expedition_loot_pool(biome_id: str, specialty: str) -> tuple[list[str], list[str]]:
+    """Returns (common_pool, rare_pool) of item_ids for a biome + specialty."""
+    common_pool: list[str] = []
+    rare_pool: list[str] = []
+    if specialty == "hunting":
+        from game_data import MONSTERS
+        for m in MONSTERS:
+            if m.get("biome") != biome_id:
+                continue
+            drops = m.get("drops", {})
+            if isinstance(drops, dict):
+                for d in drops.get("common", []):
+                    if isinstance(d, dict) and d.get("id"):
+                        common_pool.append(d["id"])
+                for d in drops.get("rare", []):
+                    if isinstance(d, dict) and d.get("id"):
+                        rare_pool.append(d["id"])
+            elif isinstance(drops, list):
+                # legacy format: flat list of drop dicts or item-id strings
+                for d in drops:
+                    if isinstance(d, dict) and d.get("id"):
+                        common_pool.append(d["id"])
+                    elif isinstance(d, str):
+                        common_pool.append(d)
+    else:
+        from regional_resources import RESOURCE_NODES
+        nodes = RESOURCE_NODES.get(biome_id, [])
+        if specialty == "fishing":
+            wanted = [n for n in nodes if n.get("profession") == "fishing"]
+            if not wanted:
+                wanted = nodes  # fallback: any node in the biome
+        else:  # gathering — everything except fishing
+            wanted = [n for n in nodes if n.get("profession") != "fishing"]
+            if not wanted:
+                wanted = nodes
+        for n in wanted:
+            if n.get("rarity") in ("rare", "epic", "legendary"):
+                rare_pool.append(n["item_id"])
+            else:
+                common_pool.append(n["item_id"])
+        # Starter biomes may have no resource nodes at all —
+        # fall back to monster drops so the merc always has something to bring back.
+        if not common_pool and not rare_pool:
+            return _expedition_loot_pool(biome_id, "hunting")
+    return common_pool, rare_pool
+
+
+def start_expedition(character: dict, biome_id: str, hours: int) -> dict:
+    """Hire the biome's merc for N hours. Validates gold, exploration, cooldown."""
+    from game_data_p2 import BIOME_MERCS
+
+    if not isinstance(hours, int) or hours < EXPEDITION_MIN_HOURS or hours > EXPEDITION_MAX_HOURS:
+        return {"error": f"Hours must be between {EXPEDITION_MIN_HOURS} and {EXPEDITION_MAX_HOURS}."}
+
+    merc = BIOME_MERCS.get(biome_id)
+    if not merc:
+        return {"error": "No mercenary is stationed in this biome."}
+
+    if character.get("expedition_queue"):
+        return {"error": "You already have a mercenary on expedition. Collect them first."}
+
+    # Cooldown check
+    cooldown_until = character.get("expedition_cooldown_until")
+    if cooldown_until:
+        try:
+            cd = datetime.fromisoformat(cooldown_until)
+            if datetime.now(timezone.utc) < cd:
+                remaining = int((cd - datetime.now(timezone.utc)).total_seconds())
+                return {"error": f"Mercenaries need a break. Try again in {remaining // 60}m {remaining % 60}s.",
+                        "cooldown_seconds": remaining}
+        except (ValueError, TypeError):
+            pass
+
+    # Exploration requirement
+    exploration = character.get("exploration_progress", {}).get(biome_id, 0)
+    if exploration < EXPEDITION_MIN_EXPLORATION:
+        return {"error": f"You need at least {EXPEDITION_MIN_EXPLORATION}% exploration in this biome to hire a merc (have {exploration}%)."}
+
+    # Gold check
+    cost = _expedition_cost(merc, hours)
+    if character.get("gold", 0) < cost:
+        return {"error": f"Not enough gold. {merc['name']} charges {cost}g for {hours}hr.",
+                "gold_needed": cost}
+
+    character["gold"] = character.get("gold", 0) - cost
+
+    now = datetime.now(timezone.utc)
+    finishes_at = now + timedelta(hours=hours)
+    queue = {
+        "biome_id": biome_id,
+        "merc_id": merc["id"],
+        "merc_name": merc["name"],
+        "specialty": merc["specialty"],
+        "hours": hours,
+        "started_at": now.isoformat(),
+        "finishes_at": finishes_at.isoformat(),
+        "cost": cost,
+        "resolve_at_hire": character.get("resolve", 50),
+    }
+    character["expedition_queue"] = queue
+
+    return {"success": True, "queue": queue, "gold_spent": cost}
+
+
+def collect_expedition(character: dict) -> dict:
+    """Collect a finished expedition. Rolls loot, updates loyalty, sets cooldown."""
+    queue = character.get("expedition_queue")
+    if not queue:
+        return {"error": "No expedition to collect."}
+
+    try:
+        finish_dt = datetime.fromisoformat(queue["finishes_at"])
+    except (ValueError, TypeError, KeyError):
+        character["expedition_queue"] = None
+        return {"error": "Expedition record was corrupted. Cleared."}
+
+    if datetime.now(timezone.utc) < finish_dt:
+        remaining = int((finish_dt - datetime.now(timezone.utc)).total_seconds())
+        return {"error": "Expedition not yet complete.", "remaining_seconds": remaining}
+
+    from game_data_p2 import BIOME_MERCS
+    biome_id = queue["biome_id"]
+    hours = queue["hours"]
+    merc = BIOME_MERCS.get(biome_id, {})
+    merc_id = queue.get("merc_id", merc.get("id", ""))
+    specialty = queue.get("specialty", merc.get("specialty", "gathering"))
+    quirk = merc.get("quirk")
+
+    # Yield
+    points = _expedition_yield_points(character, merc, hours, biome_id) if merc else float(hours)
+    # Resolve modifier — snapshot at hire time
+    resolve_at_hire = queue.get("resolve_at_hire", 50)
+    resolve_mod = _resolve_expedition_mod({"resolve": resolve_at_hire})
+    points *= resolve_mod["yield_mult"]
+    guaranteed = max(1, int(points))  # always at least 1 item — no failure
+    extra_chance = points - int(points)
+    total_items = guaranteed + (1 if random.random() < extra_chance else 0)
+
+    common_pool, rare_pool = _expedition_loot_pool(biome_id, specialty)
+    loot: dict[str, int] = {}
+    if common_pool:
+        for _ in range(total_items):
+            item_id = random.choice(common_pool)
+            loot[item_id] = loot.get(item_id, 0) + 1
+
+    # Lucky quirk: chance at a rare item
+    # Resolve good outcome: extra rare chance at Peak/Focused
+    rare_found = None
+    if rare_pool:
+        rare_chance = 0.05 + (0.10 if quirk == "lucky" else 0.0)
+        rare_chance += resolve_mod["good_chance"]
+        if random.random() < rare_chance:
+            rare_found = random.choice(rare_pool)
+            loot[rare_found] = loot.get(rare_found, 0) + 1
+
+    # Add loot to inventory
+    inv = character.setdefault("inventory", [])
+    for item_id, qty in loot.items():
+        for slot in inv:
+            if slot.get("item_id") == item_id:
+                slot["quantity"] = slot.get("quantity", 0) + qty
+                break
+        else:
+            inv.append({"item_id": item_id, "quantity": qty})
+
+    # Hunting expeditions also give XP
+    xp_gain = 0
+    if specialty == "hunting":
+        xp_gain = hours * 15
+        character["xp"] = character.get("xp", 0) + xp_gain
+
+    # Scout quirk: biome exploration
+    exploration_gain = 0
+    if quirk == "scout":
+        ep = character.setdefault("exploration_progress", {})
+        old = int(ep.get(biome_id, 0))
+        exploration_gain = min(5, 100 - old)
+        ep[biome_id] = old + exploration_gain
+
+    # Loyalty
+    loyalty = character.setdefault("merc_loyalty", {})
+    loyalty[merc_id] = loyalty.get(merc_id, 0) + 1
+
+    # Clear queue + set cooldown
+    character["expedition_queue"] = None
+    character["expedition_cooldown_until"] = (
+        datetime.now(timezone.utc) + timedelta(minutes=EXPEDITION_COOLDOWN_MIN)
+    ).isoformat()
+
+    return {
+        "success": True,
+        "loot": [{"item_id": k, "quantity": v} for k, v in loot.items()],
+        "rare_found": rare_found,
+        "xp_gain": xp_gain,
+        "exploration_gain": exploration_gain,
+        "merc_name": queue.get("merc_name", "The merc"),
+        "loyalty_hires": loyalty[merc_id],
+    }
+
+
+def get_expedition_merc_info(character: dict, biome_id: str) -> dict | None:
+    """Full merc info for a biome including player-specific loyalty and rates."""
+    from game_data_p2 import BIOME_MERCS, MERC_RANKS
+    merc = BIOME_MERCS.get(biome_id)
+    if not merc:
+        return None
+    rank_info = MERC_RANKS[merc["rank"]]
+    hires = character.get("merc_loyalty", {}).get(merc["id"], 0)
+    common_pool, rare_pool = _expedition_loot_pool(biome_id, merc["specialty"])
+    hourly_rate = rank_info["rate"]
+    if merc.get("quirk") == "greedy":
+        hourly_rate = int(hourly_rate * 1.5)
+    return {
+        **merc,
+        "biome_id": biome_id,
+        "hourly_rate": hourly_rate,
+        "base_rate": rank_info["rate"],
+        "efficiency": rank_info["efficiency"],
+        "loyalty_hires": hires,
+        "loyalty_mult": _merc_loyalty_mult(character, merc["id"]),
+        "loot_preview": common_pool[:8],
+        "rare_preview": rare_pool[:4],
+    }
+
+
+# ============================================================
+# STUDY PERKS SYSTEM — Atlantyrion Academy
+# ============================================================
+
+from game_data_p2 import (
+    STUDY_COURSES, STUDY_TIER_COSTS, STUDY_TIER_DAYS,
+    STUDY_BONUS_PER_TIER, STUDY_XP_BONUS_PCT,
+    STUDY_BUFF_BASE_HOURS, STUDY_STREAK_BONUS,
+)
+
+
+def _today_utc() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def _study_buff_hours(streak: int) -> int:
+    """Compute buff duration in hours based on login streak."""
+    hours = STUDY_BUFF_BASE_HOURS
+    for threshold, bonus in sorted(STUDY_STREAK_BONUS.items()):
+        if streak >= threshold:
+            hours = STUDY_BUFF_BASE_HOURS + bonus
+    return hours
+
+
+def _study_is_exam_day(enrollment: dict) -> bool:
+    """True if the next check-in will complete the current tier."""
+    if not enrollment:
+        return False
+    tier = enrollment.get("current_tier", 1)
+    required = STUDY_TIER_DAYS[tier - 1]
+    completed = enrollment.get("login_days_completed", 0)
+    return completed + 1 >= required
+
+
+def _study_active_buff(character: dict) -> dict | None:
+    """Return the active study buff dict if it hasn't expired, else None."""
+    buff = character.get("study_buff")
+    if not buff:
+        return None
+    expires_at = buff.get("expires_at")
+    if expires_at and datetime.now(timezone.utc).timestamp() < datetime.fromisoformat(expires_at).timestamp():
+        return buff
+    return None
+
+
+def _study_completed_tiers(character: dict, stat: str) -> int:
+    """Return the number of completed tiers for a given stat."""
+    perks = character.get("study_perks", {})
+    return perks.get(stat, 0)
+
+
+def _study_permanent_bonus_pct(character: dict, stat: str) -> int:
+    """Return the permanent bonus percentage for a stat from completed study tiers."""
+    return _study_completed_tiers(character, stat) * STUDY_BONUS_PER_TIER
+
+
+def _study_buff_bonus_pct(character: dict, stat: str) -> int:
+    """Return the active buff bonus percentage for a stat (0 if no active buff)."""
+    buff = _study_active_buff(character)
+    if buff and buff.get("stat") == stat:
+        return buff.get("bonus_pct", 0)
+    return 0
+
+
+def _apply_study_perks_to_stats(character: dict) -> None:
+    """Apply permanent study perks to character stats. Called during _recompute_stats."""
+    perks = character.get("study_perks", {})
+    if not perks:
+        return
+    base = character.get("base_stats", {})
+    stats = character.get("stats", {})
+    for stat, completed_tiers in perks.items():
+        if completed_tiers <= 0:
+            continue
+        bonus_pct = completed_tiers * STUDY_BONUS_PER_TIER
+        base_val = base.get(stat, 0)
+        if base_val > 0:
+            bonus = int(base_val * bonus_pct / 100)
+            if bonus > 0:
+                stats[stat] = stats.get(stat, 0) + bonus
+
+
+def _apply_study_buff_to_stats(character: dict) -> None:
+    """Apply active study buff to character stats. Called during _recompute_stats after perks."""
+    buff = _study_active_buff(character)
+    if not buff:
+        return
+    stat = buff.get("stat")
+    bonus_pct = buff.get("bonus_pct", 0)
+    if not stat or bonus_pct <= 0:
+        return
+    base = character.get("base_stats", {})
+    base_val = base.get(stat, 0)
+    if base_val > 0:
+        bonus = int(base_val * bonus_pct / 100)
+        if bonus > 0:
+            character["stats"][stat] = character["stats"].get(stat, 0) + bonus
+
+
+def _tick_study(character: dict) -> dict | None:
+    """Check if study buff expired; clear it if so. Returns completion info if a tier just completed."""
+    buff = character.get("study_buff")
+    if buff:
+        expires_at = buff.get("expires_at")
+        if expires_at and datetime.now(timezone.utc).timestamp() >= datetime.fromisoformat(expires_at).timestamp():
+            character["study_buff"] = None
+
+    # Check if tier completed (login_days_completed >= required)
+    enrollment = character.get("study_enrollment")
+    if not enrollment:
+        return None
+
+    tier = enrollment.get("current_tier", 1)
+    required = STUDY_TIER_DAYS[tier - 1]
+    completed = enrollment.get("login_days_completed", 0)
+
+    if completed >= required:
+        # Tier complete!
+        stat = enrollment.get("stat")
+        course_id = enrollment.get("course_id")
+        perks = character.setdefault("study_perks", {})
+        perks[stat] = tier  # set to the completed tier level
+        character["study_enrollment"] = None
+        return {
+            "completed": True,
+            "course_id": course_id,
+            "stat": stat,
+            "tier": tier,
+            "permanent_bonus_pct": tier * STUDY_BONUS_PER_TIER,
+        }
+    return None
+
+
+def enroll_study(character: dict, course_id: str) -> dict:
+    """Enroll in a study course tier. Validates gold, prerequisites, and existing enrollment."""
+    course = STUDY_COURSES.get(course_id)
+    if not course:
+        return {"error": "Unknown course"}
+
+    stat = course["stat"]
+    completed_tiers = _study_completed_tiers(character, stat)
+
+    # Determine which tier to enroll in
+    next_tier = completed_tiers + 1
+    if next_tier > 5:
+        return {"error": "All tiers of this course are already completed"}
+
+    # Check if already enrolled in a different course
+    existing = character.get("study_enrollment")
+    if existing:
+        if existing.get("course_id") == course_id:
+            return {"error": "Already enrolled in this course"}
+        # Abandoning current course — no refund, progress lost
+        character["study_enrollment"] = None
+        character["study_buff"] = None
+
+    # Check gold
+    cost = STUDY_TIER_COSTS[next_tier - 1]
+    if character.get("gold", 0) < cost:
+        return {"error": f"Need {cost} gold to enroll in tier {next_tier}"}
+
+    character["gold"] = character.get("gold", 0) - cost
+    character["study_enrollment"] = {
+        "course_id": course_id,
+        "stat": stat,
+        "category": course["category"],
+        "current_tier": next_tier,
+        "login_days_completed": 0,
+        "last_checkin_date": None,
+        "streak": 0,
+        "enrolled_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    return {
+        "success": True,
+        "course_id": course_id,
+        "course_name": course["name"],
+        "tier": next_tier,
+        "cost": cost,
+        "required_days": STUDY_TIER_DAYS[next_tier - 1],
+    }
+
+
+def study_daily_checkin(character: dict) -> dict:
+    """Daily check-in for the enrolled study course. Grants buff and increments progress."""
+    enrollment = character.get("study_enrollment")
+    if not enrollment:
+        return {"error": "Not enrolled in any course"}
+
+    today = _today_utc()
+    if enrollment.get("last_checkin_date") == today:
+        return {"error": "Already checked in today. Come back tomorrow!"}
+
+    # Update streak
+    yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
+    last_date = enrollment.get("last_checkin_date")
+    if last_date and last_date == yesterday:
+        enrollment["streak"] = enrollment.get("streak", 0) + 1
+    else:
+        enrollment["streak"] = 1
+
+    enrollment["last_checkin_date"] = today
+    enrollment["login_days_completed"] = enrollment.get("login_days_completed", 0) + 1
+
+    tier = enrollment.get("current_tier", 1)
+    stat = enrollment.get("stat")
+    category = enrollment.get("category")
+    course_id = enrollment.get("course_id")
+    streak = enrollment.get("streak", 1)
+
+    # Compute buff
+    is_exam_day = _study_is_exam_day(enrollment)
+    bonus_pct = tier * STUDY_BONUS_PER_TIER
+    if is_exam_day:
+        bonus_pct *= 2  # Exam day: doubled buff
+
+    buff_hours = _study_buff_hours(streak)
+    # Resolve bonus: extends buff duration
+    buff_hours = _resolve_study_buff_hours(character, buff_hours)
+    expires_at = (datetime.now(timezone.utc) + timedelta(hours=buff_hours)).isoformat()
+
+    xp_bonus_type = "hunting" if category == "main" else "gathering"
+
+    character["study_buff"] = {
+        "stat": stat,
+        "bonus_pct": bonus_pct,
+        "expires_at": expires_at,
+        "xp_bonus_type": xp_bonus_type,
+        "xp_bonus_pct": STUDY_XP_BONUS_PCT,
+        "is_exam_day": is_exam_day,
+    }
+
+    # Check if tier completed
+    required = STUDY_TIER_DAYS[tier - 1]
+    completed = enrollment["login_days_completed"]
+    tier_completed = completed >= required
+
+    if tier_completed:
+        perks = character.setdefault("study_perks", {})
+        perks[stat] = tier
+        character["study_enrollment"] = None
+
+    return {
+        "success": True,
+        "course_id": course_id,
+        "stat": stat,
+        "tier": tier,
+        "bonus_pct": bonus_pct,
+        "buff_hours": buff_hours,
+        "expires_at": expires_at,
+        "xp_bonus_type": xp_bonus_type,
+        "xp_bonus_pct": STUDY_XP_BONUS_PCT,
+        "is_exam_day": is_exam_day,
+        "streak": streak,
+        "login_days_completed": completed,
+        "required_days": required,
+        "tier_completed": tier_completed,
+        "permanent_bonus_pct": tier * STUDY_BONUS_PER_TIER if tier_completed else None,
+    }
+
+
+def abandon_study(character: dict) -> dict:
+    """Abandon current study course. No refund, progress lost."""
+    enrollment = character.get("study_enrollment")
+    if not enrollment:
+        return {"error": "Not enrolled in any course"}
+
+    course_id = enrollment.get("course_id")
+    character["study_enrollment"] = None
+    character["study_buff"] = None
+
+    return {"success": True, "abandoned_course": course_id}
+
+
+def get_study_status(character: dict) -> dict:
+    """Return full study status for the frontend."""
+    enrollment = character.get("study_enrollment")
+    buff = _study_active_buff(character)
+    perks = character.get("study_perks", {})
+
+    courses_info = []
+    for course_id, course in STUDY_COURSES.items():
+        stat = course["stat"]
+        completed = perks.get(stat, 0)
+        next_tier = completed + 1
+        can_enroll = next_tier <= 5
+        cost = STUDY_TIER_COSTS[next_tier - 1] if can_enroll else None
+        required_days = STUDY_TIER_DAYS[next_tier - 1] if can_enroll else None
+        is_enrolled = enrollment and enrollment.get("course_id") == course_id
+
+        courses_info.append({
+            "id": course_id,
+            "name": course["name"],
+            "stat": stat,
+            "category": course["category"],
+            "desc": course["desc"],
+            "completed_tiers": completed,
+            "permanent_bonus_pct": completed * STUDY_BONUS_PER_TIER,
+            "next_tier": next_tier if can_enroll else None,
+            "next_tier_cost": cost,
+            "next_tier_days": required_days,
+            "is_enrolled": bool(is_enrolled),
+        })
+
+    enrollment_info = None
+    if enrollment:
+        tier = enrollment.get("current_tier", 1)
+        required = STUDY_TIER_DAYS[tier - 1]
+        completed_days = enrollment.get("login_days_completed", 0)
+        enrollment_info = {
+            "course_id": enrollment.get("course_id"),
+            "stat": enrollment.get("stat"),
+            "category": enrollment.get("category"),
+            "current_tier": tier,
+            "login_days_completed": completed_days,
+            "required_days": required,
+            "streak": enrollment.get("streak", 0),
+            "last_checkin_date": enrollment.get("last_checkin_date"),
+            "is_exam_day": _study_is_exam_day(enrollment),
+            "buff_hours": _study_buff_hours(enrollment.get("streak", 0)),
+            "today_checked_in": enrollment.get("last_checkin_date") == _today_utc(),
+        }
+
+    buff_info = None
+    if buff:
+        buff_info = {
+            "stat": buff.get("stat"),
+            "bonus_pct": buff.get("bonus_pct"),
+            "expires_at": buff.get("expires_at"),
+            "xp_bonus_type": buff.get("xp_bonus_type"),
+            "xp_bonus_pct": buff.get("xp_bonus_pct"),
+            "is_exam_day": buff.get("is_exam_day", False),
+        }
+
+    return {
+        "courses": courses_info,
+        "enrollment": enrollment_info,
+        "buff": buff_info,
+        "perks": perks,
+    }
+
+
+def study_xp_bonus_for_action(character: dict, action_id: str) -> float:
+    """Return XP multiplier (1.0 = no bonus) for hunting/gathering actions based on active study buff."""
+    buff = _study_active_buff(character)
+    if not buff:
+        return 1.0
+
+    xp_type = buff.get("xp_bonus_type")
+    if xp_type == "hunting" and action_id == "hunt":
+        return 1.0 + buff.get("xp_bonus_pct", 0) / 100.0
+    if xp_type == "gathering" and action_id in ("gather", "fish"):
+        return 1.0 + buff.get("xp_bonus_pct", 0) / 100.0
+
+    return 1.0
+
+
+# ============================================================
+# RESOLVE SYSTEM — global progression multiplier
+# ============================================================
+
+RESOLVE_FLOOR   = 50   # natural regen ceiling and equilibrium
+RESOLVE_RESTED  = 65   # sanctuary rest target; decay floor above this
+RESOLVE_DEMORALIZED = 25  # below this = penalty tier
+RESOLVE_FOCUSED = 65   # at/above this = bonus tier
+RESOLVE_PEAK    = 85   # at/above this = max bonus tier
+REGEN_PER_HOUR  = 2
+DECAY_PER_HOUR  = 1
+
+
+def _tick_resolve(ch: dict) -> None:
+    """Advance Resolve toward equilibrium. Pure function of stored state.
+
+    Charges only the whole hours it actually applies and advances the timestamp
+    by exactly that much, so sub-hour remainders are preserved for the next tick.
+    """
+    now = datetime.now(timezone.utc)
+    last_raw = ch.get("last_resolve_update")
+    if last_raw is None:
+        ch["last_resolve_update"] = now.isoformat()
+        return
+
+    try:
+        last = datetime.fromisoformat(last_raw)
+    except (ValueError, TypeError):
+        ch["last_resolve_update"] = now.isoformat()
+        return
+
+    if last.tzinfo is None:
+        last = last.replace(tzinfo=timezone.utc)
+
+    hours = int((now - last).total_seconds() // 3600)
+    if hours <= 0:
+        return
+
+    r = int(ch.get("resolve", RESOLVE_FLOOR))
+    if r < RESOLVE_FLOOR:
+        r = min(RESOLVE_FLOOR, r + hours * REGEN_PER_HOUR)
+    elif r > RESOLVE_RESTED:
+        r = max(RESOLVE_RESTED, r - hours * DECAY_PER_HOUR)
+    # 50..65 inclusive: equilibrium, no change
+
+    ch["resolve"] = max(0, min(100, r))
+    ch["last_resolve_update"] = (last + timedelta(hours=hours)).isoformat()
+
+
+def _resolve_tier(ch: dict) -> str:
+    """Return the tier name for the current Resolve value."""
+    r = ch.get("resolve", RESOLVE_FLOOR)
+    if r < RESOLVE_DEMORALIZED:
+        return "Demoralized"
+    if r < RESOLVE_FOCUSED:
+        return "Stable"
+    if r < RESOLVE_PEAK:
+        return "Focused"
+    return "Peak"
+
+
+def _resolve_multiplier(ch: dict) -> float:
+    """Training gain multiplier based on Resolve."""
+    r = ch.get("resolve", RESOLVE_FLOOR)
+    if r < RESOLVE_DEMORALIZED:
+        return 0.75
+    if r < RESOLVE_FOCUSED:
+        return 1.0
+    if r < RESOLVE_PEAK:
+        return 1.10
+    return 1.25
+
+
+def _resolve_study_buff_hours(ch: dict, base_hours: float) -> float:
+    """Study buff duration with Resolve bonus."""
+    r = ch.get("resolve", RESOLVE_FLOOR)
+    if r < RESOLVE_DEMORALIZED:
+        return base_hours * 0.5
+    if r < RESOLVE_FOCUSED:
+        return float(base_hours)
+    if r < RESOLVE_PEAK:
+        return base_hours + 1.0
+    return base_hours + 2.0
+
+
+def _resolve_combat_damage_mod(ch: dict) -> float:
+    """Combat damage modifier based on Resolve."""
+    r = ch.get("resolve", RESOLVE_FLOOR)
+    if r < RESOLVE_DEMORALIZED:
+        return 0.90
+    if r >= RESOLVE_PEAK:
+        return 1.05
+    return 1.0
+
+
+def _resolve_expedition_mod(ch: dict) -> dict:
+    """Expedition yield + outcome modifiers based on Resolve."""
+    r = ch.get("resolve", RESOLVE_FLOOR)
+    if r < RESOLVE_DEMORALIZED:
+        return {"yield_mult": 0.85, "good_chance": 0.0, "poor_chance": 0.05}
+    if r < RESOLVE_FOCUSED:
+        return {"yield_mult": 1.0, "good_chance": 0.0, "poor_chance": 0.0}
+    if r < RESOLVE_PEAK:
+        return {"yield_mult": 1.10, "good_chance": 0.05, "poor_chance": 0.0}
+    return {"yield_mult": 1.20, "good_chance": 0.10, "poor_chance": 0.0}
+
+
+def _resolve_combat_gain(ch: dict, monster_threat: int) -> int:
+    """Resolve gain for winning a battle, based on threat/rating ratio."""
+    from game_data import compute_action_rating
+    rating = compute_action_rating(ch)
+    if rating <= 0:
+        return 0
+    ratio = monster_threat / rating
+    if ratio < 0.10:
+        return 0
+    if ratio < 0.50:
+        return 1
+    if ratio < 1.00:
+        return 2
+    return 3
+
+
+def _award_resolve(ch: dict, delta: int, reason: str = "") -> int:
+    """Apply a Resolve change, clamping to 0-100. Returns the new value."""
+    r = ch.get("resolve", RESOLVE_FLOOR)
+    r = max(0, min(100, r + delta))
+    ch["resolve"] = r
+    history = ch.setdefault("resolve_history", [])
+    history.insert(0, {"delta": delta, "reason": reason, "at": datetime.now(timezone.utc).isoformat()})
+    ch["resolve_history"] = history[:10]
+    return r
+
+
+def _resolve_fields(ch: dict) -> dict:
+    """Always write resolve + last_resolve_update together."""
+    return {
+        "resolve": ch.get("resolve", RESOLVE_FLOOR),
+        "last_resolve_update": ch.get("last_resolve_update"),
+    }

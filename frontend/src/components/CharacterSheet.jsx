@@ -1,4 +1,4 @@
-import { Heart, Zap, Coins, Star, Trash2, Activity } from "lucide-react";
+import { Heart, Zap, Coins, Star, Trash2, Activity, Sparkles } from "lucide-react";
 import { useState } from "react";
 import RacialPanel from "@/components/RacialPanel";
 import PixelSprite from "@/components/PixelSprite";
@@ -138,6 +138,48 @@ export default function CharacterSheet({ character, portraits, race, role, maste
                     </Tooltip>
                 )}
             </div>
+
+            {/* Resolve bar */}
+            {(() => {
+                const rv = character.resolve ?? 50;
+                const resolvePct = Math.max(0, Math.min(100, rv));
+                let tierName = "Stable", tierColor = "text-slate-400", barColor = "bg-slate-500";
+                if (rv < 25) { tierName = "Demoralized"; tierColor = "text-red-400"; barColor = "bg-red-500"; }
+                else if (rv < 65) { tierName = "Stable"; tierColor = "text-slate-400"; barColor = "bg-slate-500"; }
+                else if (rv < 85) { tierName = "Focused"; tierColor = "text-blue-400"; barColor = "bg-blue-500"; }
+                else { tierName = "Peak"; tierColor = "text-cyan-300"; barColor = "bg-cyan-400"; }
+                let regenText = "\u2192 equilibrium", regenColor = "text-muted-foreground";
+                if (rv < 50) { regenText = "\u2191 +2/hr"; regenColor = "text-green-400"; }
+                else if (rv > 65) { regenText = "\u2193 \u22121/hr to 65"; regenColor = "text-orange-400"; }
+                return (
+                    <div>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className="flex justify-between stat-label mb-1 cursor-help">
+                                    <span className={`flex items-center gap-1 ${tierColor}`}><Sparkles size={10} /> RESOLVE</span>
+                                    <span className="text-foreground">{rv}/100</span>
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">
+                                <div className="font-pixel text-xs leading-snug max-w-[240px]">
+                                    Resolve is your readiness multiplier. {tierName} tier.
+                                    {rv < 25 && " \u221210% combat damage, \u00d70.75 training, halved study buffs, \u221215% expedition yield."}
+                                    {rv >= 65 && rv < 85 && " \u00d71.10 training, +1hr study buff, +10% expedition yield."}
+                                    {rv >= 85 && " \u00d71.25 training, +2hr study buff, +20% expedition yield, +5% combat damage."}
+                                    {rv >= 25 && rv < 65 && " Normal bonuses \u2014 rest at a Sanctuary to boost."}
+                                </div>
+                            </TooltipContent>
+                        </Tooltip>
+                        <div className="h-2 bg-background border border-border relative">
+                            <div className={`h-full ${barColor} transition-all`} style={{ width: `${resolvePct}%` }} />
+                        </div>
+                        <div className={`flex items-center justify-between stat-label mt-0.5 ${regenColor}`}>
+                            <span>{tierName}</span>
+                            <span>{regenText}</span>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* XP bar */}
             <div>

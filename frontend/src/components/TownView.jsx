@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { api, extractError } from "@/lib/api";
 import { useGameData, RARITY_TEXT, RARITY_CLASS } from "@/data/gameData";
 import { toast } from "sonner";
-import { BedDouble, ShoppingBag, ScrollText, Users, ArrowLeft, Coins, MessageCircle, Wrench, Swords, MapPin, TrendingUp, TrendingDown, Minus, Clock, Crown, CheckCircle2, Circle, Trophy, XCircle, Sparkles, HeartPulse, Shield, Gem } from "lucide-react";
+import { BedDouble, ShoppingBag, ScrollText, Users, ArrowLeft, Coins, MessageCircle, Wrench, Swords, MapPin, TrendingUp, TrendingDown, Minus, Clock, Crown, CheckCircle2, Circle, Trophy, XCircle, Sparkles, HeartPulse, Shield, Gem, Dumbbell, GraduationCap } from "lucide-react";
 import NpcPanel from "@/components/NpcPanel";
 import QuestModal from "@/components/QuestModal";
 import WaypointPanel from "@/components/WaypointPanel";
@@ -10,6 +10,8 @@ import Inventory from "@/components/Inventory";
 import TradeNpcPanel from "@/components/TradeNpcPanel";
 import RunesmithPanel from "@/components/RunesmithPanel";
 import GemsmithPanel from "@/components/GemsmithPanel";
+import TrainingPanel from "@/components/TrainingPanel";
+import StudyPanel from "@/components/StudyPanel";
 import PixelSprite from "@/components/PixelSprite";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
@@ -183,7 +185,13 @@ export default function TownView({ townId, character, onCharacterUpdate, onLeave
                 narrative: data.narrative,
                 cost: data.cost,
                 sanctuary_name: data.sanctuary_name,
+                resolve_info: data.resolve_info,
             });
+            if (data.resolve_info?.boosted) {
+                toast.success(`Resolve restored: ${data.resolve_info.before} → ${data.resolve_info.after}`);
+            } else if (data.resolve_info && !data.resolve_info.boosted && data.resolve_info.before < 65) {
+                toast.info("Resolve cooldown active — heal only, no resolve boost");
+            }
         } catch (e) {
             toast.error(extractError(e));
         }
@@ -409,6 +417,9 @@ export default function TownView({ townId, character, onCharacterUpdate, onLeave
         { id: "trainers", label: "Trainers", icon: Users, avail: town.services.includes("trainers") },
         { id: "runesmith", label: "Runesmith", icon: Sparkles, avail: town.services.includes("runesmith") },
         { id: "gemsmith", label: "Gemsmith", icon: Gem, avail: town.services.includes("gemsmith") },
+        { id: "training_main", label: "Gym (Main Stats)", icon: Dumbbell, avail: town.services.includes("training_main") },
+        { id: "training_life", label: "Gym (Life Stats)", icon: HeartPulse, avail: town.services.includes("training_life") },
+        { id: "study", label: "Academy", icon: GraduationCap, avail: town.services.includes("study") },
     ].filter(t => t.avail);
 
     return (
@@ -471,7 +482,7 @@ export default function TownView({ townId, character, onCharacterUpdate, onLeave
                         <div className="flex items-center justify-between border border-border/40 rounded p-3">
                             <div>
                                 <div className="font-pixel text-sm uppercase text-primary">Rest</div>
-                                <div className="text-xs text-muted-foreground">Full HP restore · Clear debuffs · -20 exhaustion · +10 resolve</div>
+                                <div className="text-xs text-muted-foreground">Full HP restore · Clear debuffs · -20 exhaustion · Resolve → 65 (2hr CD)</div>
                             </div>
                             <button
                                 data-testid="sanctuary-rest-btn"
@@ -1344,6 +1355,15 @@ export default function TownView({ townId, character, onCharacterUpdate, onLeave
             )}
             {tab === "gemsmith" && (
                 <GemsmithPanel character={character} onCharacterUpdate={onCharacterUpdate} />
+            )}
+            {tab === "training_main" && (
+                <TrainingPanel character={character} onCharacterUpdate={onCharacterUpdate} trainerType="main" />
+            )}
+            {tab === "training_life" && (
+                <TrainingPanel character={character} onCharacterUpdate={onCharacterUpdate} trainerType="life" />
+            )}
+            {tab === "study" && (
+                <StudyPanel character={character} onCharacterUpdate={onCharacterUpdate} />
             )}
             {questModal && (
                 <QuestModal result={questModal} onClose={() => setQuestModal(null)} />

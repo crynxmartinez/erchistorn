@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Scissors } from "lucide-react";
+import { ArrowLeft, Scissors, Sparkles } from "lucide-react";
 import { api, extractError } from "@/lib/api";
 import { toast } from "sonner";
 import Dice from "@/components/Dice";
@@ -164,6 +164,13 @@ export default function CombatScreen({ combatStart, character, itemsById, skills
             if (data.result.victory === true) {
                 setVictory(true);
                 setRewards(data.result.rewards);
+                if (data.result.resolve_gain !== undefined) {
+                    if (data.result.resolve_gain > 0) {
+                        toast.success(`+${data.result.resolve_gain} Resolve`);
+                    } else {
+                        toast.info(`${data.result.resolve_gain} Resolve — no challenge`);
+                    }
+                }
                 if (data.result.profession_ranks?.length > 0) {
                     for (const [newRank, oldRank] of data.result.profession_ranks) {
                         toast.success(`Profession rank up: ${oldRank} → ${newRank}!`);
@@ -171,6 +178,9 @@ export default function CombatScreen({ combatStart, character, itemsById, skills
                 }
             } else if (data.result.victory === false) {
                 setVictory(false);
+                if (data.result.resolve_change) {
+                    toast.error(`${data.result.resolve_change} Resolve — defeated`);
+                }
                 if (data.result.sanctuary_teleport) {
                     setSanctuaryTeleport(data.result.sanctuary_teleport);
                 }
@@ -403,6 +413,27 @@ export default function CombatScreen({ combatStart, character, itemsById, skills
                             HP {ch.hp}/{ch.max_hp}
                         </div>
                     </div>
+                    {/* Resolve bar */}
+                    {(() => {
+                        const rv = ch.resolve ?? 50;
+                        const resolvePct = Math.max(0, Math.min(100, rv));
+                        let tierName = "Stable", barColor = "bg-slate-500", tierColor = "text-slate-400";
+                        if (rv < 25) { tierName = "Demoralized"; barColor = "bg-red-500"; tierColor = "text-red-400"; }
+                        else if (rv < 65) { tierName = "Stable"; barColor = "bg-slate-500"; tierColor = "text-slate-400"; }
+                        else if (rv < 85) { tierName = "Focused"; barColor = "bg-blue-500"; tierColor = "text-blue-400"; }
+                        else { tierName = "Peak"; barColor = "bg-cyan-400"; tierColor = "text-cyan-300"; }
+                        return (
+                            <div className="mb-2">
+                                <div className="flex justify-between items-center mb-0.5">
+                                    <span className={`flex items-center gap-0.5 stat-label ${tierColor}`}><Sparkles size={8} /> {tierName}</span>
+                                    <span className="font-mono text-[10px] text-muted-foreground">{rv}/100</span>
+                                </div>
+                                <div className="h-1.5 bg-background border border-border relative">
+                                    <div className={`h-full ${barColor} transition-all`} style={{ width: `${resolvePct}%` }} />
+                                </div>
+                            </div>
+                        );
+                    })()}
                     {/* Floating damage numbers on player */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none">
                         {playerDmg.map(d => (

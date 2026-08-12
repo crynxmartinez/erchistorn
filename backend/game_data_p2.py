@@ -79,7 +79,7 @@ TOWNS: list[dict] = [
         "continent": "aetheria",
         "desc": "A soot-blackened town ringing with hammers. Oathspire's smiths forge armor for kings and killers alike.",
         "specialty": "Master Blacksmith — advanced weapon and armor recipes unlockable only here.",
-        "services": ["sanctuary", "market", "trainers", "notice_board", "tavern"],
+        "services": ["sanctuary", "market", "trainers", "notice_board", "tavern", "training_main"],
         "sanctuary_cost": 10,
         "fast_travel_cost": 25,
         "market_items": ["iron_ore", "oak_log", "wild_herb", "bandage", "minor_healing_potion",
@@ -215,7 +215,7 @@ TOWNS: list[dict] = [
         "continent": "zephyria",
         "desc": "A city of silver spires suspended between two suns. Elven choirs guide travellers home.",
         "specialty": "Sun-Moon Sanctum — celestial magic training and star-forged trinkets.",
-        "services": ["sanctuary", "market", "trainers", "notice_board", "tavern", "alchemist", "gemsmith"],
+        "services": ["sanctuary", "market", "trainers", "notice_board", "tavern", "alchemist", "gemsmith", "training_life"],
         "sanctuary_cost": 55,
         "fast_travel_cost": 160,
         "market_items": ["wisp_essence", "relic_shard", "jahra_ingot", "greater_healing_potion",
@@ -301,7 +301,7 @@ TOWNS: list[dict] = [
         "continent": "verdania",
         "desc": "A shell-white pier where pearl divers, tidebound priests, and Hyliondrian envoys pass between worlds.",
         "specialty": "Tide Court — aquatic training, orb-shard trading, and tidebound relics.",
-        "services": ["sanctuary", "market", "trainers", "notice_board", "alchemist"],
+        "services": ["sanctuary", "market", "trainers", "notice_board", "alchemist", "study"],
         "sanctuary_cost": 90,
         "fast_travel_cost": 280,
         "market_items": ["serpent_scale", "serpent_venom", "wisp_essence", "orb_fragment", "greater_healing_potion", "antidote",
@@ -839,3 +839,147 @@ def default_home_biome_for_race(race_id: str) -> str:
 # Apply migration now that TOWNS + QUESTS lists are populated.
 _apply_canon_migration()
 TOWNS_BY_ID = {t["id"]: t for t in TOWNS}
+
+
+# ============================================================
+# BIOME MERCENARIES — one merc per biome for offline expeditions.
+# rank: novice (75g/hr, 60% eff) | skilled (120g/hr, 75% eff)
+#       | veteran (150g/hr, 90% eff) | elite (250g/hr, 110% eff)
+# specialty: hunting | gathering | fishing
+# quirk: lucky (+10% rare drop) | greedy (+50% cost, +20% yield)
+#        | night_owl (+30% yield on 4+ hr) | scout (+5% exploration per trip)
+# ============================================================
+MERC_RANKS = {
+    "novice":  {"rate": 75,  "efficiency": 0.60},
+    "skilled": {"rate": 120, "efficiency": 0.75},
+    "veteran": {"rate": 150, "efficiency": 0.90},
+    "elite":   {"rate": 250, "efficiency": 1.10},
+}
+
+BIOME_MERCS: dict[str, dict] = {
+    # ---------------- VALERIA ----------------
+    "golden_plains":       {"id": "merc_old_bram",        "name": "Old Bram",           "rank": "novice",  "specialty": "hunting",   "quirk": "scout",
+                            "desc": "A grizzled plains hunter who knows every wolf trail between here and the capital."},
+    "crownwood_forest":    {"id": "merc_hazel_thorn",     "name": "Hazel Thornfoot",    "rank": "novice",  "specialty": "gathering", "quirk": "lucky",
+                            "desc": "A halfling herbalist who whistles to the trees. The trees, oddly, seem to answer."},
+    "imperial_riverlands": {"id": "merc_nettie",          "name": "Nettie Riverborn",   "rank": "skilled", "specialty": "fishing",   "quirk": "lucky",
+                            "desc": "Born on a barge, raised on the current. She reads the river like a ledger."},
+    "ashen_border":        {"id": "merc_grim_calloway",   "name": "Grim Calloway",      "rank": "skilled", "specialty": "gathering", "quirk": "night_owl",
+                            "desc": "A relic-digger who works the old battlefields after dark, when the ghasts are calm."},
+    # ---------------- MUSHKARA ----------------
+    "bloodwind_plains":    {"id": "merc_ruga",            "name": "Ruga Sharptooth",    "rank": "novice",  "specialty": "hunting",   "quirk": "greedy",
+                            "desc": "An orc scavenger-turned-tracker. Charges double, delivers triple — usually."},
+    "red_steppe":          {"id": "merc_karg",            "name": "Karg the Patient",   "rank": "skilled", "specialty": "hunting",   "quirk": "scout",
+                            "desc": "He once tracked a war-beast for nine days without sleeping. It was worth it."},
+    "iron_scar":           {"id": "merc_dessa",           "name": "Dessa Vein-Eye",     "rank": "skilled", "specialty": "gathering", "quirk": "lucky",
+                            "desc": "She can smell bloodiron through granite. Miners call her the Scar's daughter."},
+    "ash_barrens":         {"id": "merc_thurzag",         "name": "Thurzag Emberhand",  "rank": "veteran", "specialty": "gathering", "quirk": "night_owl",
+                            "desc": "Works the coal seams when the fire creatures sleep. Mostly they sleep."},
+    "demonfall_crater":    {"id": "merc_vex_hollow",      "name": "Vex Hollow",         "rank": "elite",   "specialty": "hunting",   "quirk": "greedy",
+                            "desc": "The only merc willing to hunt the crater. Her prices reflect her survival rate: perfect, so far."},
+    # ---------------- CONCORDIA ----------------
+    "trade_road_outpost":  {"id": "merc_finn",            "name": "Finn Two-Coins",     "rank": "novice",  "specialty": "hunting",   "quirk": "lucky",
+                            "desc": "A half-elf road warden with a gambler's grin. Everything he finds comes in pairs."},
+    "mosaic_coast":        {"id": "merc_marisol",         "name": "Marisol Tidewalker", "rank": "skilled", "specialty": "fishing",   "quirk": "scout",
+                            "desc": "She maps the shellbeds as she fishes them. Half merchant, half cartographer."},
+    "amber_vineyards":     {"id": "merc_bruno",           "name": "Bruno Goldpetal",    "rank": "skilled", "specialty": "gathering", "quirk": "greedy",
+                            "desc": "A vintner's son who knows where the golden insects nest. His honey costs extra. Worth it."},
+    "silverroad":          {"id": "merc_swift_ella",      "name": "Swift Ella",         "rank": "veteran", "specialty": "hunting",   "quirk": "scout",
+                            "desc": "A caravan guard who hunts bandits between contracts. The road holds no secrets from her."},
+    "diplomats_highlands": {"id": "merc_ambrose",         "name": "Old Ambrose",        "rank": "veteran", "specialty": "gathering", "quirk": "lucky",
+                            "desc": "A retired embassy clerk who learned exactly which cliffs hide what. Discretion included."},
+    # ---------------- KHARDRUM ----------------
+    "stone_ridge":         {"id": "merc_dolli",           "name": "Dolli Copperseek",   "rank": "novice",  "specialty": "gathering", "quirk": "scout",
+                            "desc": "A young dwarf with her first pick and endless enthusiasm. The ridge likes her."},
+    "granite_foothills":   {"id": "merc_borvik",          "name": "Borvik Stonejaw",    "rank": "skilled", "specialty": "gathering", "quirk": "greedy",
+                            "desc": "He bites ore samples to grade them. His teeth are insured for more than your house."},
+    "ember_mines":         {"id": "merc_sylla",           "name": "Sylla Ashveil",      "rank": "veteran", "specialty": "gathering", "quirk": "night_owl",
+                            "desc": "Works the ember seams in the cool hours. The magma creatures know her name and let her pass."},
+    "crystal_caverns":     {"id": "merc_grimnir",         "name": "Grimnir Gemwhisper", "rank": "veteran", "specialty": "gathering", "quirk": "lucky",
+                            "desc": "He hums to the crystal veins and they hum back. Nobody asks how."},
+    "deep_forges":         {"id": "merc_thrainna",        "name": "Thrainna Forgeheart","rank": "elite",   "specialty": "gathering", "quirk": "greedy",
+                            "desc": "A Grandmaster's apprentice who mines the deep veins between forge shifts. Elite rates, elite ore."},
+    # ---------------- HAYA ----------------
+    "verdant_edge":        {"id": "merc_liriel",          "name": "Liriel Dawnstep",    "rank": "novice",  "specialty": "gathering", "quirk": "scout",
+                            "desc": "A young elf gathering herbs where the sunlight still reaches. She never gets lost. Ever."},
+    "sunlit_canopy":       {"id": "merc_soren",           "name": "Soren Lightweaver",  "rank": "veteran", "specialty": "gathering", "quirk": "lucky",
+                            "desc": "He harvests solar herbs at the exact moment they bloom. Timing is everything."},
+    "moonveil_woods":      {"id": "merc_nyx",             "name": "Nyx Silverbough",    "rank": "veteran", "specialty": "hunting",   "quirk": "night_owl",
+                            "desc": "She hunts the moonlit ruins when they surface at midnight. Sleep is for the sun-bound."},
+    "celestial_lake":      {"id": "merc_thalassa",        "name": "Thalassa Songline",  "rank": "veteran", "specialty": "fishing",   "quirk": "lucky",
+                            "desc": "Her song calls the magical fish to the surface. The lake spirits approve — mostly."},
+    "starfall_cliffs":     {"id": "merc_aldaron",         "name": "Aldaron Skyfallen",  "rank": "elite",   "specialty": "hunting",   "quirk": "scout",
+                            "desc": "He hunts the flying monsters that came down with the sky-stones. Vertigo is for others."},
+    # ---------------- GENNEL ----------------
+    "oasis_outskirts":     {"id": "merc_saba",            "name": "Saba Quickpaw",      "rank": "novice",  "specialty": "hunting",   "quirk": "lucky",
+                            "desc": "A wildblood scout with a fox's tail and a fox's luck. The oasis feeds those it favors."},
+    "blooming_desert":     {"id": "merc_zaira",           "name": "Zaira Sandbloom",    "rank": "veteran", "specialty": "gathering", "quirk": "scout",
+                            "desc": "She remembers where every oasis was before it bloomed. The desert keeps no secrets from her."},
+    "beastwood":           {"id": "merc_fenrik",          "name": "Fenrik Alphascent",  "rank": "veteran", "specialty": "hunting",   "quirk": "greedy",
+                            "desc": "He hunts the hunting-grounds that hunt back. His rates match the risk. His pelts match the rates."},
+    "roaring_savanna":     {"id": "merc_ndala",           "name": "Ndala Herdcaller",   "rank": "veteran", "specialty": "hunting",   "quirk": "night_owl",
+                            "desc": "She runs with the herds at dusk and returns with what the savanna owes her."},
+    "ancient_den":         {"id": "merc_ghorza",          "name": "Ghorza Totemblood",  "rank": "elite",   "specialty": "hunting",   "quirk": "lucky",
+                            "desc": "An elder wildblood who reads the totem ruins. The alpha beasts remember her bloodline and tread carefully."},
+    # ---------------- HYLION ----------------
+    "tide_pools":          {"id": "merc_pex",             "name": "Pex Shallowfin",     "rank": "novice",  "specialty": "fishing",   "quirk": "scout",
+                            "desc": "A young hyliondrian mapping the tide pools one shell at a time. Endless patience, tiny nets."},
+    "coral_gardens":       {"id": "merc_maris",           "name": "Maris Coralsong",    "rank": "elite",   "specialty": "fishing",   "quirk": "lucky",
+                            "desc": "The living coral parts for her. The tide pearls practically volunteer."},
+    "kelp_forest":         {"id": "merc_drenn",           "name": "Drenn Deepnet",      "rank": "elite",   "specialty": "fishing",   "quirk": "night_owl",
+                            "desc": "He dives the kelp forest in the dark hours when the hidden predators feed elsewhere."},
+    "storm_reefs":         {"id": "merc_voltessa",        "name": "Voltessa Stormborn", "rank": "elite",   "specialty": "fishing",   "quirk": "greedy",
+                            "desc": "She fishes the lightning-fed reefs. Premium rates — storm shells don't gather themselves."},
+    "abyssal_trench":      {"id": "merc_nharr",           "name": "Nharr the Sunken",   "rank": "elite",   "specialty": "fishing",   "quirk": "lucky",
+                            "desc": "Nobody knows how deep Nharr goes. The trench sends back treasures and Nharr, in that order."},
+    # ---------------- DAW'UL TALALU ----------------
+    "misty_thicket":       {"id": "merc_pip",             "name": "Pip Thistledown",    "rank": "novice",  "specialty": "gathering", "quirk": "lucky",
+                            "desc": "A sylvan sprout gathering shadow herbs where the mist is thin. Small hands, sharp eyes."},
+    "mistwood":            {"id": "merc_whisperwind",     "name": "Whisperwind",        "rank": "elite",   "specialty": "hunting",   "quirk": "night_owl",
+                            "desc": "The illusion creatures can't fool someone who doesn't trust their own eyes. Whisperwind never has."},
+    "thorn_labyrinth":     {"id": "merc_bramblejack",     "name": "Bramblejack",        "rank": "elite",   "specialty": "gathering", "quirk": "greedy",
+                            "desc": "He harvests the living thorns that grew before the Sylvans. They've made a costly peace."},
+    "lumina_grove":        {"id": "merc_glimmer",         "name": "Glimmer Dewleaf",    "rank": "elite",   "specialty": "gathering", "quirk": "lucky",
+                            "desc": "She bottles bioluminescence the way others bottle water. The grove glows brighter when she visits."},
+    "elderroot_hollow":    {"id": "merc_eldwyn",          "name": "Eldwyn Rootkeeper",  "rank": "elite",   "specialty": "gathering", "quirk": "scout",
+                            "desc": "The ancient trees speak slowly, and Eldwyn has spent three centuries listening."},
+}
+
+MERCS_BY_ID = {m["id"]: {**m, "biome_id": b} for b, m in BIOME_MERCS.items()}
+
+
+# ============================================================
+# STUDY PERKS SYSTEM — Atlantyrion Academy (Hylion capital)
+# ============================================================
+
+STUDY_COURSES: dict[str, dict] = {
+    # ---- Main Stats ----
+    "might_theory":       {"id": "might_theory",       "name": "Might Theory",         "stat": "might",       "category": "main",
+                           "desc": "The study of force — not just muscle, but the physics of impact and leverage."},
+    "grace_studies":      {"id": "grace_studies",      "name": "Grace Studies",        "stat": "grace",       "category": "main",
+                           "desc": "Movement, balance, and the art of being exactly where you need to be."},
+    "cognition_lab":      {"id": "cognition_lab",      "name": "Cognition Lab",        "stat": "cognition",   "category": "main",
+                           "desc": "Pattern recognition, tactical analysis, and the science of quick thinking."},
+    "insight_seminars":   {"id": "insight_seminars",   "name": "Insight Seminars",     "stat": "insight",     "category": "main",
+                           "desc": "Perception, intuition, and reading the unseen currents of the world."},
+    "essence_channeling": {"id": "essence_channeling", "name": "Essence Channeling",   "stat": "essence",     "category": "main",
+                           "desc": "The Tide Mothers' art — shaping raw magical essence through breath and coral."},
+    "durability_training":{"id": "durability_training","name": "Durability Training",  "stat": "durability",  "category": "main",
+                           "desc": "Endurance theory. The reef survives the storm not by moving, but by enduring."},
+    # ---- Life Stats ----
+    "vitality_arts":      {"id": "vitality_arts",      "name": "Vitality Arts",        "stat": "vitality",    "category": "life",
+                           "desc": "The deep-current breathing techniques of the Tide Mothers. Life is a tide."},
+    "hp_mastery":         {"id": "hp_mastery",         "name": "Body Mastery",         "stat": "max_hp",      "category": "life",
+                           "desc": "Coral-hard skin and pressure-adapted physiology. The body is a reef."},
+    "mp_mastery":         {"id": "mp_mastery",         "name": "Mind Mastery",         "stat": "max_mp",      "category": "life",
+                           "desc": "The ocean's memory is infinite. Learn to hold more of it within you."},
+    "stamina_mastery":    {"id": "stamina_mastery",    "name": "Spirit Mastery",       "stat": "max_stamina", "category": "life",
+                           "desc": "The undersea current never tires. Neither will you."},
+}
+
+STUDY_TIER_COSTS: list[int] = [1000, 3000, 5000, 10000, 15000]
+STUDY_TIER_DAYS: list[int] = [7, 14, 21, 28, 35]
+STUDY_BONUS_PER_TIER: int = 2        # % per tier
+STUDY_XP_BONUS_PCT: int = 10         # % hunting/gathering XP bonus during buff
+STUDY_BUFF_BASE_HOURS: int = 3       # base buff duration
+STUDY_STREAK_BONUS: dict[int, int] = {7: 1, 14: 2, 21: 3}  # streak -> extra hours

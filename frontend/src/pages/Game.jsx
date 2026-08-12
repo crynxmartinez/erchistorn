@@ -363,6 +363,7 @@ export default function Game() {
                                     onBiomeChange={handleBiomeChange}
                                     onActionResult={handleActionResult}
                                     onCombatStart={handleCombatStart}
+                                    onCharacterUpdate={applyCharacterUpdate}
                                 />
                             )}
                             {tab === "guild" && (
