@@ -6,6 +6,7 @@ import logging
 import os
 import random
 import sys
+import uuid
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -1414,6 +1415,162 @@ async def travel(request: Request, user: dict = Depends(_get_current_user)):
         update_fields["gold"] = ch["gold"]
     await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": update_fields})
     return {"character": ch, "fee": 0 if _heritage_free else (TELEPORTER_FEE if changing_continent else 0)}
+
+
+# ---------------- COUNTRY (CONTINENT) CHAT ----------------
+# A live, shared chat scoped to whichever continent ("country") the character is
+# currently standing in. Everyone in the same continent sees the same feed. When a
+# player enters or leaves a continent, a system line is posted so others are notified.
+#
+# Real-time feel is achieved by short-interval polling from the client (see
+# useCountryChat on the frontend). Presence is tracked with a heartbeat: every poll
+# refreshes the caller's presence row; rows that stop refreshing (player closed the
+# tab / went offline) are swept and announced as a "left" after CHAT_PRESENCE_TTL.
+CHAT_PRESENCE_TTL_SECONDS = 30
+CHAT_MAX_MESSAGE_LEN = 400
+CHAT_HISTORY_LIMIT = 50
+
+
+def _continent_name(cid: str) -> str:
+    c = next((c for c in CONTINENTS if c["id"] == cid), None)
+    if c:
+        return c["name"]
+    return (cid or "the wilds").replace("_", " ").title()
+
+
+async def _chat_post_system(continent: str, text: str) -> None:
+    await db.chat_messages.insert_one({
+        "id": str(uuid.uuid4()),
+        "continent": continent,
+        "kind": "system",
+        "character_id": None,
+        "display_name": None,
+        "text": text,
+        "created_at": datetime.now(timezone.utc),
+    })
+
+
+async def _chat_sweep_absent() -> None:
+    """Announce a 'left' + drop presence rows that stopped polling (went offline)."""
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=CHAT_PRESENCE_TTL_SECONDS)
+    for _ in range(100):  # bounded so a single poll can't loop forever
+        stale = await db.chat_presence.find_one_and_delete({"last_seen": {"$lt": cutoff}})
+        if not stale:
+            break
+        await _chat_post_system(
+            stale["continent"],
+            f"{stale.get('display_name', 'A traveler')} has left {_continent_name(stale['continent'])}.",
+        )
+
+
+async def _chat_touch_presence(character_id: str, name: str, continent: str) -> None:
+    """Heartbeat the caller's presence and announce enter/leave on any transition."""
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(seconds=CHAT_PRESENCE_TTL_SECONDS)
+    existing = await db.chat_presence.find_one({"character_id": character_id})
+    # Ensure last_seen is timezone-aware for comparison
+    last_seen = existing.get("last_seen") if existing else None
+    if last_seen and last_seen.tzinfo is None:
+        last_seen = last_seen.replace(tzinfo=timezone.utc)
+    present = bool(existing and last_seen and last_seen >= cutoff)
+    if not present:
+        # Was offline (or brand new). If they were last seen elsewhere and the sweep
+        # hasn't reaped that row yet, announce the departure from the old continent too.
+        if existing and existing.get("continent") and existing["continent"] != continent:
+            await _chat_post_system(
+                existing["continent"],
+                f"{name} has left {_continent_name(existing['continent'])}.",
+            )
+        await _chat_post_system(continent, f"{name} has entered {_continent_name(continent)}.")
+    elif existing and existing.get("continent") != continent:
+        # Moved to a new continent while online.
+        await _chat_post_system(
+            existing["continent"],
+            f"{name} has left {_continent_name(existing['continent'])}.",
+        )
+        await _chat_post_system(continent, f"{name} has entered {_continent_name(continent)}.")
+    await db.chat_presence.update_one(
+        {"character_id": character_id},
+        {"$set": {
+            "character_id": character_id,
+            "display_name": name,
+            "continent": continent,
+            "last_seen": now,
+        }},
+        upsert=True,
+    )
+
+
+def _chat_msg_public(d: dict) -> dict:
+    ca = d.get("created_at")
+    return {
+        "id": d.get("id"),
+        "kind": d.get("kind", "user"),
+        "character_id": d.get("character_id"),
+        "display_name": d.get("display_name"),
+        "text": d.get("text", ""),
+        "created_at": ca.isoformat() if hasattr(ca, "isoformat") else str(ca),
+    }
+
+
+@api.get("/chat/poll")
+async def chat_poll(user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    continent = ch.get("current_continent") or "valeria"
+    name = ch.get("name") or "A traveler"
+    cid = ch.get("id")
+    await _chat_sweep_absent()
+    await _chat_touch_presence(cid, name, continent)
+    docs = await (
+        db.chat_messages.find({"continent": continent})
+        .sort("created_at", -1)
+        .limit(CHAT_HISTORY_LIMIT)
+        .to_list(length=CHAT_HISTORY_LIMIT)
+    )
+    docs.reverse()
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=CHAT_PRESENCE_TTL_SECONDS)
+    online_docs = await db.chat_presence.find(
+        {"continent": continent, "last_seen": {"$gte": cutoff}}
+    ).to_list(length=500)
+    online = [
+        {"character_id": o.get("character_id"), "display_name": o.get("display_name")}
+        for o in online_docs
+    ]
+    return {
+        "continent": continent,
+        "continent_name": _continent_name(continent),
+        "me": cid,
+        "messages": [_chat_msg_public(d) for d in docs],
+        "online": online,
+        "online_count": len(online),
+    }
+
+
+@api.post("/chat/send")
+async def chat_send(request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    text = (body.get("text") or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Message is empty.")
+    if len(text) > CHAT_MAX_MESSAGE_LEN:
+        text = text[:CHAT_MAX_MESSAGE_LEN]
+    ch = await _get_character_or_404(user["_id"])
+    continent = ch.get("current_continent") or "valeria"
+    name = ch.get("name") or "A traveler"
+    cid = ch.get("id")
+    msg = {
+        "id": str(uuid.uuid4()),
+        "continent": continent,
+        "kind": "user",
+        "character_id": cid,
+        "display_name": name,
+        "text": text,
+        "created_at": datetime.now(timezone.utc),
+    }
+    await db.chat_messages.insert_one(msg)
+    # Keep presence fresh so sending also counts as being "in country".
+    await _chat_touch_presence(cid, name, continent)
+    return {"ok": True, "message": _chat_msg_public(msg)}
 
 
 # ---------------- ACTIONS ----------------
@@ -6424,6 +6581,13 @@ async def _ensure_indexes() -> None:
     # Safety net for combats abandoned without hitting /combat/abandon — expire
     # after 24h so the collection cannot grow without bound.
     await db.combats.create_index("created_at", expireAfterSeconds=86400)
+    # Country (continent) chat.
+    await db.chat_messages.create_index([("continent", 1), ("created_at", -1)])
+    # Auto-expire chat history after 24h so the feed stays fresh and bounded.
+    await db.chat_messages.create_index("created_at", expireAfterSeconds=86400)
+    await db.chat_presence.create_index("character_id", unique=True)
+    await db.chat_presence.create_index("last_seen")
+    await db.chat_presence.create_index("continent")
 
 
 async def _migrate_statuses() -> None:
