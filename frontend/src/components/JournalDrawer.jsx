@@ -231,17 +231,26 @@ function StatsPage() {
 }
 
 function StatusesPage() {
+    const renderStatus = (k) => {
+        const s = STATUS_HINTS[k];
+        if (!s) return null;
+        return (
+            <div key={k} className="border-b border-border/40 py-2 grid grid-cols-[110px_1fr] gap-3">
+                <div className="font-pixel text-sm uppercase text-primary">{k.charAt(0).toUpperCase() + k.slice(1)}</div>
+                <div className="text-sm text-foreground/85 leading-relaxed">
+                    <div>{s.desc}</div>
+                    <div className="stat-label text-primary/70 mt-1">{s.effect} · {s.type}</div>
+                </div>
+            </div>
+        );
+    };
     return (
         <div>
             <Section title="Debuffs" sub="Ill omens on the flesh. All fade with time — most in 2 to 5 actions.">
-                {["bleeding", "poisoned", "weary", "sick", "cursed", "burning", "stunned", "shaken", "blinded", "ensnared"].map((k) => (
-                    <Row key={k} term={k.charAt(0).toUpperCase() + k.slice(1)} def={STATUS_HINTS[k]} />
-                ))}
+                {["bleeding", "poisoned", "weary", "sick", "cursed", "burning", "stunned", "shaken", "blinded", "ensnared"].map(renderStatus)}
             </Section>
             <Section title="Buffs" sub="Small graces. Do not squander them.">
-                {["blessed", "focused", "warded", "hidden", "evasive"].map((k) => (
-                    <Row key={k} term={k.charAt(0).toUpperCase() + k.slice(1)} def={STATUS_HINTS[k]} />
-                ))}
+                {["blessed", "focused", "warded", "hidden", "evasive"].map(renderStatus)}
             </Section>
         </div>
     );
