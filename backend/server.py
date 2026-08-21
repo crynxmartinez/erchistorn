@@ -5851,6 +5851,75 @@ async def donate_guild(guild_id: str, request: Request, user: dict = Depends(_ge
     return {"character": ch, "donated": amt}
 
 
+# ---------------- GUILD HALL BUFFS ----------------
+GUILD_BUFFS = {
+    "combat_xp":   {"label": "Combat XP +5%",       "cost": 500,  "duration_h": 24, "desc": "+5% XP from all combat encounters"},
+    "craft_succ":  {"label": "Crafting Success +10%","cost": 800,  "duration_h": 24, "desc": "+10% chance to succeed on crafting rolls"},
+    "gather_yield":{"label": "Gather Yield +10%",   "cost": 600,  "duration_h": 24, "desc": "+10% materials from gathering actions"},
+    "trade_cut":   {"label": "Trade Profit +8%",    "cost": 400,  "duration_h": 24, "desc": "+8% gold when selling to NPC shops"},
+    "expedition":  {"label": "Expedition Speed +15%","cost": 700, "duration_h": 24, "desc": "Expeditions complete 15% faster"},
+}
+
+
+@api.get("/game/guilds/{guild_id}/buffs")
+async def get_guild_buffs(guild_id: str, user: dict = Depends(_get_current_user)):
+    doc = await db.guilds.find_one({"_id": ObjectId(guild_id)})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Guild not found")
+    now = datetime.now(timezone.utc)
+    active = []
+    for b in doc.get("active_buffs", []):
+        expires = b.get("expires_at")
+        if expires:
+            if isinstance(expires, str):
+                expires = datetime.fromisoformat(expires)
+            if expires.tzinfo is None:
+                expires = expires.replace(tzinfo=timezone.utc)
+            if expires > now:
+                remaining = int((expires - now).total_seconds())
+                meta = GUILD_BUFFS.get(b["buff_id"], {})
+                active.append({
+                    "buff_id": b["buff_id"],
+                    "label": meta.get("label", b["buff_id"]),
+                    "desc": meta.get("desc", ""),
+                    "remaining_seconds": remaining,
+                    "expires_at": b.get("expires_at"),
+                })
+    return {"buffs": active, "hall_unlocked": doc.get("hall_unlocked", False), "treasury": doc.get("treasury", 0)}
+
+
+@api.post("/game/guilds/{guild_id}/buffs/purchase")
+async def purchase_guild_buff(guild_id: str, request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    buff_id = body.get("buff_id")
+    if buff_id not in GUILD_BUFFS:
+        raise HTTPException(status_code=400, detail="Unknown buff")
+    meta = GUILD_BUFFS[buff_id]
+    ch = await _get_character_or_404(user["_id"])
+    if ch.get("guild_id") != guild_id:
+        raise HTTPException(status_code=403, detail="You are not in this guild")
+    if ch.get("guild_rank") != "grandmaster":
+        raise HTTPException(status_code=403, detail="Only the grandmaster can purchase hall buffs")
+    doc = await db.guilds.find_one({"_id": ObjectId(guild_id)})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Guild not found")
+    if not doc.get("hall_unlocked"):
+        raise HTTPException(status_code=403, detail="Guild hall is locked — need 3+ members")
+    if doc.get("treasury", 0) < meta["cost"]:
+        raise HTTPException(status_code=400, detail=f"Treasury needs {meta['cost']}g for this buff")
+    now = datetime.now(timezone.utc)
+    expires = now + timedelta(hours=meta["duration_h"])
+    active = doc.get("active_buffs", [])
+    active = [b for b in active if b["buff_id"] != buff_id]
+    active.append({"buff_id": buff_id, "purchased_at": now.isoformat(), "expires_at": expires.isoformat()})
+    await db.guilds.update_one({"_id": ObjectId(guild_id)}, {"$set": {
+        "treasury": doc["treasury"] - meta["cost"],
+        "active_buffs": active,
+    }})
+    await _push_world_event(ch["name"], f"{ch['name']} activated {meta['label']} for the guild!", "guild")
+    return {"ok": True, "buff_id": buff_id, "treasury": doc["treasury"] - meta["cost"]}
+
+
 # ============================================================
 # HERITAGE SYSTEM — Continental Heritage Months
 # ============================================================
