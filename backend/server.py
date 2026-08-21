@@ -215,14 +215,19 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(na
 logger = logging.getLogger("erchis")
 
 mongo_url = os.environ["MONGO_URL"]
-client = AsyncIOMotorClient(
-    mongo_url,
-    tls=True,
-    tlsAllowInvalidCertificates=True,
-    serverSelectionTimeoutMS=30000,
-    connectTimeoutMS=30000,
-    socketTimeoutMS=30000,
-)
+_mongo_kwargs = {
+    "serverSelectionTimeoutMS": 30000,
+    "connectTimeoutMS": 30000,
+    "socketTimeoutMS": 30000,
+}
+# Only negotiate TLS for remote/managed MongoDB (e.g. Atlas). The local MongoDB
+# used in the Emergent environment (mongodb://localhost:27017) does not speak TLS,
+# so forcing it there breaks the connection. Detect a local host and skip TLS.
+_is_local_mongo = ("localhost" in mongo_url) or ("127.0.0.1" in mongo_url)
+if not _is_local_mongo:
+    _mongo_kwargs["tls"] = True
+    _mongo_kwargs["tlsAllowInvalidCertificates"] = True
+client = AsyncIOMotorClient(mongo_url, **_mongo_kwargs)
 db = client[os.environ["DB_NAME"]]
 initialize_world_stocks()
 

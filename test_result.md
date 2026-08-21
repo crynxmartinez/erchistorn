@@ -101,3 +101,44 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: |
+  User pulled an existing "Erchis — Fantasy Dice RPG" game from their GitHub (originally built for
+  Vercel deployment with MongoDB Atlas) and wants to launch it on the Emergent environment using
+  Emergent resources — specifically the local Emergent MongoDB. Goal: adapt the DB connection and
+  get the full-stack game running on the Emergent preview.
+
+backend:
+  - task: "MongoDB connection adapted for Emergent local DB (conditional TLS)"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "main"
+          comment: "Original code forced tls=True, tlsAllowInvalidCertificates=True (for Atlas). Local Emergent Mongo (mongodb://localhost:27017) does not speak TLS and failed the SSL handshake. Made TLS conditional: skip TLS for localhost/127.0.0.1, keep it for remote/Atlas. Verified via curl: /api/health healthy, /api/auth/register wrote a user (200), /api/auth/me read it back via cookie (200), mongosh confirmed the doc in test_database.users. Test user cleaned up afterwards."
+        - working: true
+          agent: "testing"
+          comment: "Comprehensive smoke test completed successfully. Tested: (1) Auth flow - register (200), GET /api/auth/me (200), logout (200), login (200) all working with cookie-based JWT. (2) Character creation - fetched all game data endpoints (races, roles, masteries, origins), created human knight character 'Theron Stormbreaker' (200), verified persistence in MongoDB. (3) Game action - performed explore action in golden_plains biome (200), verified state change (inventory increased from 8 to 10 items, gold changed to 87), confirmed persistence in MongoDB. All endpoints returning correct HTTP codes, data persisting correctly in Emergent local MongoDB. Verified in mongosh: user document exists in test_database.users, character document exists in test_database.characters with correct state."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "MongoDB connection adapted for Emergent local DB (conditional TLS)"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+    - agent: "main"
+      message: "Launched the pre-built Erchis RPG on Emergent. Only change made was the MongoDB connection (conditional TLS so it works with the local Emergent Mongo instead of Atlas). Please run a FOCUSED SMOKE TEST to confirm the game works end-to-end against the Emergent database: (1) auth flow — register a new user, login, GET /api/auth/me, logout; (2) character creation flow — fetch character-creation data endpoints and create a character; (3) one game action (e.g. an action/hunt/gather or whatever the core play loop endpoint is) and confirm state persists (re-fetch character shows the change). Do NOT attempt an exhaustive test of every one of the dozens of endpoints — the game logic was already tested previously; we only need to confirm persistence works against the Emergent Mongo after the connection change. Report any endpoint returning 500/DB errors."
+    - agent: "testing"
+      message: "✅ SMOKE TEST COMPLETE - All tests passed! MongoDB persistence working correctly on Emergent environment. Auth flow (register/login/logout/me), character creation (with all game data endpoints), and game actions (explore) all functioning properly. Data verified in MongoDB: users and characters collections contain correct documents with proper state persistence. No 500 errors or DB connection issues encountered. The conditional TLS fix is working as expected."

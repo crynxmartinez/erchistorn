@@ -122,6 +122,7 @@ Heritage Ranks II–V per user's detailed spec (utility abilities, cooldowned ac
 - Character reset system (rare + expensive)
 
 ## Notes
+- **Emergent launch (2026-08):** Game was pulled from GitHub (originally built for Vercel + MongoDB Atlas). Adapted to run on Emergent resources by making the MongoDB TLS connection conditional in `server.py` (TLS skipped for local `mongodb://localhost`, kept for Atlas). Verified end-to-end on the Emergent local Mongo — auth, character creation, and game actions all persist. No other code changes.
 - Existing pre-Phase-3 characters were wiped (schema change to add Main Stats).
 - All portraits use DiceBear pixel-art API.
 - No LLM used — 100% static narrative pool.
