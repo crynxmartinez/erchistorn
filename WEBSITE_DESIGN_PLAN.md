@@ -337,21 +337,55 @@ Known remaining noise: a logged-out visitor triggers one `401` on `/api/auth/me`
 per page as the session check runs. Functionally correct, cosmetically noisy;
 silence it when the auth-state work lands in Phase 2.
 
-### Phase 1 — design system (2 days)
-5. Type scale as Tailwind theme tokens; body font to Crimson Text
-6. Build the 12 components in §4.3
-7. Spacing and section rhythm
+### Phase 1 — design system  **[COMPLETE]**
 
-### Phase 2 — page rebuild (3 days)
-8. Home per §5, with the animated d6 hero
-9. Mechanics, Races, World rebuilt on the component set
-10. Sprites on race and continent cards
-11. `Seo` component wired per route; `sitemap.xml` generation
+- Type scale as Tailwind `fontSize` tokens, using `clamp()` so one class is
+  responsive. This also removes the `text-5xl md:text-7xl lg:text-8xl` pile-up that
+  let a single stray override flatten 149 headings unnoticed.
+- Font roles separated: VT323 display, Crimson Text reading copy, JetBrains Mono
+  labels. The serif is scoped to `.site-page`, **not** `body` — the game client has
+  no opt-out hook, so a global swap would have put a serif in the HUD.
+- 13 components in `src/components/site/`: Die, Section, SectionHeader, Button,
+  Hero, StatStrip, FeatureCard, RaceCard, ContinentRow, PostCard, PullQuote,
+  CTABand, Prose.
 
-### Phase 3 — the SEO decision (1 week, or 1 day for interim A)
-12. Option B: migrate public pages to Next.js SSG; game stays CRA
-13. JSON-LD, canonicals, Search Console
-14. Generate the 11 mastery + 11 continent pages
+### Phase 2 — page rebuild  **[COMPLETE]**
+
+- **Home** rebuilt: asymmetric two-column hero with the rolling d6, live StatStrip,
+  three features instead of six, pull-quote band, dense race strip, live ladder,
+  one closing CTA. Alternates contained/band so consecutive sections differ
+  structurally. 4,890 → 4,521px after making the race strip compact.
+- **Mechanics** rebuilt around the actual d6 outcome table — six faces and what each
+  means. That table is the most useful thing the page can show and it did not exist.
+- **Races** rebuilt: numbered index, then alternating detail rows using the pixel
+  sprite slot that already shipped for the game UI and appeared on zero public pages.
+- **World** kept its tabbed browser (a genuinely good interactive page) and had its
+  hero, tab styling and measure rebuilt. Tabs moved off 14px VT323.
+- **Blog, About, Changelog, Leaderboard** normalised onto the type scale.
+- **Hotlinked Unsplash photos removed from five pages.** Each was a 2000px external
+  JPEG at 15–20% opacity: full download cost, external dependency, no license
+  record, and a photograph in a pixel-art game. *This corrects the "zero artwork"
+  claim in §3 — it was wrong. JSX uses camelCase `backgroundImage`, so the grep
+  missed them.*
+- **Per-route metadata**: unique title, description, canonical, OG/Twitter per page;
+  `VideoGame` JSON-LD on home; `noindex` on the three auth routes.
+
+Verified in-browser on all eight public pages: h1 96px desktop / 48px mobile, body
+Crimson Text, zero headings under 24px, no horizontal overflow at 375px, mobile menu
+works, production build passes with no new warnings.
+
+### Phase 3 — the SEO decision  **[BLOCKED ON YOUR CALL]**
+
+JSON-LD and canonicals are done. What remains needs the §2 architecture decision,
+which is yours to make, not mine to guess:
+
+12. **Option A, B or C from §2.** Until the public pages ship non-empty HTML, the
+    metadata added in Phase 2 is invisible to link unfurlers (Discord, Slack,
+    Twitter) — they read raw HTML and will keep showing the `index.html` defaults.
+    Googlebot will generally execute the JS; most other crawlers will not.
+13. Search Console + sitemap submission, once server-rendered.
+14. Generate the 11 mastery + 11 continent pages — 22 real long-tail pages, mostly
+    from `MASTERY_PLANS.md`. Highest-leverage SEO item remaining.
 
 ### Phase 4 — content (ongoing)
 15. One post a week; guides first, dev logs for reach
