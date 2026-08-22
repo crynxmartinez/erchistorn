@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { ScrollText } from "lucide-react";
 import Seo from "@/components/site/Seo";
+import OAuthButtons from "@/components/OAuthButtons";
 
 function pwStrength(pw) {
     let s = 0;
@@ -155,6 +156,8 @@ export default function Register() {
                             {busy ? "…" : "Create Account"}
                         </button>
                     </form>
+
+                    <OAuthButtons onError={(msg) => toast.error(msg)} />
 
                     <div className="mt-6 text-center">
                         <Link to="/login" className="stat-label hover:text-primary transition-colors" data-testid="register-to-login">

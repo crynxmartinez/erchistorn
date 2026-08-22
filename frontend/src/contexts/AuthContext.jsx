@@ -55,7 +55,15 @@ export function AuthProvider({ children }) {
         setUser(false);
     };
 
-    const refresh = async () => await checkSession();
+    const refresh = async () => {
+        await checkSession();
+        try {
+            const { data } = await api.get("/auth/me");
+            return data;
+        } catch {
+            return null;
+        }
+    };
 
     return (
         <AuthCtx.Provider value={{ user, error, login, register, logout, refresh }}>

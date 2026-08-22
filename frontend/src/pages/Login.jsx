@@ -1,18 +1,34 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { ScrollText } from "lucide-react";
 import Seo from "@/components/site/Seo";
+import OAuthButtons from "@/components/OAuthButtons";
 
 export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [remember, setRemember] = useState(true);
     const [busy, setBusy] = useState(false);
-    const { login } = useAuth();
+    const { login, refresh } = useAuth();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+
+    useEffect(() => {
+        const oauth = searchParams.get("oauth");
+        if (oauth === "success") {
+            refresh().then((user) => {
+                if (user && user.has_character) navigate("/game");
+                else if (user) navigate("/create");
+            });
+            toast.success("Welcome to Erchis");
+        } else if (oauth === "error") {
+            const reason = searchParams.get("reason");
+            toast.error(reason === "noemail" ? "No email returned from provider" : "OAuth sign-in failed");
+        }
+    }, [searchParams, refresh, navigate]);
 
     const submit = async (e) => {
         e.preventDefault();
@@ -109,6 +125,8 @@ export default function Login() {
                             {busy ? "…" : "Sign In"}
                         </button>
                     </form>
+
+                    <OAuthButtons onError={(msg) => toast.error(msg)} />
 
                     <div className="mt-6 text-center">
                         <Link to="/register" className="stat-label hover:text-primary transition-colors" data-testid="login-to-register">

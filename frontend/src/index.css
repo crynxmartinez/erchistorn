@@ -239,9 +239,7 @@
    a responsive variant (lg:text-8xl) escaped, which is why Home looked fixed while
    /leaderboard did not.
    The size compensation belongs in the type scale, not in a blanket override. */
-.site-page .font-pixel {
-    /* family/spacing only -- see .pixel-h */
-}
+/* .site-page .font-pixel: family/spacing only -- see .pixel-h */
 
 /* Simple sprite placeholder */
 .sprite-slot {

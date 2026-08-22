@@ -21,7 +21,7 @@ from bson import ObjectId  # noqa: E402
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response  # noqa: E402
 from fastapi.exceptions import RequestValidationError  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
-from fastapi.responses import JSONResponse  # noqa: E402
+from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from motor.motor_asyncio import AsyncIOMotorClient  # noqa: E402
 from starlette.exceptions import HTTPException as StarletteHTTPException  # noqa: E402
 
@@ -33,6 +33,14 @@ from auth import (  # noqa: E402
     hash_password,
     set_auth_cookies,
     verify_password,
+)
+from oauth import (  # noqa: E402
+    build_auth_url,
+    exchange_code,
+    generate_state,
+    get_provider,
+    get_user_info,
+    is_provider_configured,
 )
 from game_data import (  # noqa: E402
     ASSASSIN_PASSIVES,
@@ -784,6 +792,109 @@ async def login(payload: LoginPayload, response: Response):
 async def logout(response: Response, user: dict = Depends(_get_current_user)):
     clear_auth_cookies(response)
     return {"ok": True}
+
+
+# ---------------- OAUTH ROUTES ----------------
+@api.get("/auth/oauth/{provider}/start")
+async def oauth_start(provider: str, request: Request):
+    """Redirect user to the OAuth provider's consent screen."""
+    if not get_provider(provider):
+        raise HTTPException(status_code=400, detail=f"Unknown provider: {provider}")
+    if not is_provider_configured(provider):
+        raise HTTPException(status_code=503, detail=f"{provider} login is not configured")
+    state = generate_state()
+    # Store state in a short-lived cookie to verify on callback
+    response = JSONResponse({"redirect": build_auth_url(provider, state)})
+    response.set_cookie(
+        key="oauth_state", value=state, httponly=True,
+        secure=os.environ.get("COOKIE_SECURE", "true").lower() != "false",
+        samesite="lax", max_age=600, path="/",
+    )
+    return response
+
+
+@api.get("/auth/oauth/{provider}/callback")
+async def oauth_callback(provider: str, code: str, state: str, request: Request):
+    """Handle the OAuth provider redirect back, exchange code, find-or-create user."""
+    if not get_provider(provider):
+        raise HTTPException(status_code=400, detail=f"Unknown provider: {provider}")
+
+    # Verify state matches cookie
+    cookie_state = request.cookies.get("oauth_state")
+    if not cookie_state or cookie_state != state:
+        raise HTTPException(status_code=400, detail="Invalid OAuth state")
+
+    try:
+        token_data = await exchange_code(provider, code)
+    except Exception as e:
+        logger.error("OAuth token exchange failed (%s): %s", provider, e)
+        frontend = os.environ.get("FRONTEND_URL", "http://localhost:3000").split(",")[0]
+        return RedirectResponse(f"{frontend}/login?oauth=error", status_code=302)
+
+    access_token = token_data.get("access_token")
+    if not access_token:
+        frontend = os.environ.get("FRONTEND_URL", "http://localhost:3000").split(",")[0]
+        return RedirectResponse(f"{frontend}/login?oauth=error", status_code=302)
+
+    try:
+        info = await get_user_info(provider, access_token)
+    except Exception as e:
+        logger.error("OAuth userinfo fetch failed (%s): %s", provider, e)
+        frontend = os.environ.get("FRONTEND_URL", "http://localhost:3000").split(",")[0]
+        return RedirectResponse(f"{frontend}/login?oauth=error", status_code=302)
+
+    email = info.get("email", "").strip().lower()
+    if not email:
+        frontend = os.environ.get("FRONTEND_URL", "http://localhost:3000").split(",")[0]
+        return RedirectResponse(f"{frontend}/login?oauth=error&reason=noemail", status_code=302)
+
+    # Find-or-create user
+    user = await db.users.find_one({"email": email})
+    frontend = os.environ.get("FRONTEND_URL", "http://localhost:3000").split(",")[0]
+
+    if user:
+        # Existing user — update OAuth info if not already set
+        if not user.get("oauth_provider"):
+            await db.users.update_one(
+                {"_id": user["_id"]},
+                {"$set": {
+                    "oauth_provider": provider,
+                    "oauth_id": info.get("provider_id", ""),
+                    "avatar_url": info.get("avatar", ""),
+                }},
+            )
+        uid = str(user["_id"])
+        display_name = user.get("display_name", email.split("@")[0])
+    else:
+        # Create new user
+        doc = {
+            "email": email,
+            "password_hash": None,
+            "display_name": info.get("name") or email.split("@")[0],
+            "role": "player",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "oauth_provider": provider,
+            "oauth_id": info.get("provider_id", ""),
+            "avatar_url": info.get("avatar", ""),
+        }
+        result = await db.users.insert_one(doc)
+        uid = str(result.inserted_id)
+        display_name = doc["display_name"]
+
+    # Issue JWT tokens
+    access = create_access_token(uid, email)
+    refresh = create_refresh_token(uid)
+
+    # Check if user has a character
+    ch = await db.characters.find_one({"user_id": uid})
+    has_character = bool(ch)
+
+    # Redirect to frontend with cookies set
+    redirect_url = f"{frontend}/login?oauth=success"
+    response = RedirectResponse(url=redirect_url, status_code=302)
+    set_auth_cookies(response, access, refresh)
+    response.delete_cookie("oauth_state", path="/")
+    return response
 
 
 @api.get("/auth/me")
