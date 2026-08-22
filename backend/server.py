@@ -28,11 +28,13 @@ from starlette.exceptions import HTTPException as StarletteHTTPException  # noqa
 from auth import (  # noqa: E402
     clear_auth_cookies,
     create_access_token,
+    create_password_reset_token,
     create_refresh_token,
     get_current_user,
     hash_password,
     set_auth_cookies,
     verify_password,
+    verify_password_reset_token,
 )
 from oauth import (  # noqa: E402
     build_auth_url,
@@ -41,6 +43,10 @@ from oauth import (  # noqa: E402
     get_provider,
     get_user_info,
     is_provider_configured,
+)
+from email_service import (  # noqa: E402
+    is_email_configured,
+    send_password_reset_email,
 )
 from game_data import (  # noqa: E402
     ASSASSIN_PASSIVES,
@@ -895,6 +901,92 @@ async def oauth_callback(provider: str, code: str, state: str, request: Request)
     set_auth_cookies(response, access, refresh)
     response.delete_cookie("oauth_state", path="/")
     return response
+
+
+# ---------------- PASSWORD RESET ROUTES ----------------
+@api.post("/auth/forgot-password")
+async def forgot_password(payload: dict):
+    """Generate a password reset token and email it to the user."""
+    email = (payload.get("email") or "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+
+    if not is_email_configured():
+        raise HTTPException(status_code=503, detail="Email service is not configured")
+
+    user = await db.users.find_one({"email": email})
+    if not user:
+        # Don't reveal whether the email exists — return success anyway
+        return {"ok": True, "message": "If that email exists, a reset link has been sent."}
+
+    # Don't send reset for OAuth-only accounts (no password)
+    if not user.get("password_hash"):
+        return {"ok": True, "message": "If that email exists, a reset link has been sent."}
+
+    uid = str(user["_id"])
+    token = create_password_reset_token(uid, email)
+
+    # Store token hash in DB for revocation tracking
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    await db.password_resets.update_one(
+        {"user_id": uid},
+        {"$set": {
+            "user_id": uid,
+            "token_hash": token_hash,
+            "used": False,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }},
+        upsert=True,
+    )
+
+    frontend = os.environ.get("FRONTEND_URL", "http://localhost:3000").split(",")[0]
+    reset_url = f"{frontend}/reset-password?token={token}"
+
+    sent = await send_password_reset_email(email, reset_url)
+    if not sent:
+        raise HTTPException(status_code=500, detail="Failed to send reset email. Try again later.")
+
+    return {"ok": True, "message": "If that email exists, a reset link has been sent."}
+
+
+@api.post("/auth/reset-password")
+async def reset_password(payload: dict):
+    """Validate reset token and set a new password."""
+    token = (payload.get("token") or "").strip()
+    new_password = (payload.get("new_password") or "").strip()
+
+    if not token:
+        raise HTTPException(status_code=400, detail="Reset token is required")
+    if not new_password or len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
+    payload_data = verify_password_reset_token(token)
+    if not payload_data:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    uid = payload_data["sub"]
+    email = payload_data.get("email", "")
+
+    # Check token hasn't been used
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    reset_record = await db.password_resets.find_one({"user_id": uid, "token_hash": token_hash})
+    if not reset_record or reset_record.get("used"):
+        raise HTTPException(status_code=400, detail="This reset link has already been used")
+
+    # Update password
+    new_hash = hash_password(new_password)
+    await db.users.update_one(
+        {"_id": ObjectId(uid)},
+        {"$set": {"password_hash": new_hash}},
+    )
+
+    # Mark token as used
+    await db.password_resets.update_one(
+        {"user_id": uid, "token_hash": token_hash},
+        {"$set": {"used": True, "used_at": datetime.now(timezone.utc).isoformat()}},
+    )
+
+    return {"ok": True, "message": "Password reset successfully. You can now sign in."}
 
 
 @api.get("/auth/me")

@@ -3,6 +3,8 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import Auth from "@/pages/Auth";
 import CharacterCreate from "@/pages/CharacterCreate";
 import Game from "@/pages/Game";
@@ -43,6 +45,8 @@ function AppRoutes() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/world" element={<World />} />
             <Route path="/races" element={<Races />} />

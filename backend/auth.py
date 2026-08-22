@@ -12,6 +12,7 @@ from fastapi import HTTPException, Request
 JWT_ALGORITHM = "HS256"
 ACCESS_EXP_MIN = 60 * 24  # 24 hours (game session convenience)
 REFRESH_EXP_DAYS = 30
+RESET_EXP_MIN = 15  # password reset token expiry
 
 
 def get_jwt_secret() -> str:
@@ -51,6 +52,26 @@ def create_refresh_token(user_id: str) -> str:
         "exp": datetime.now(timezone.utc) + timedelta(days=REFRESH_EXP_DAYS),
     }
     return jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
+
+
+def create_password_reset_token(user_id: str, email: str) -> str:
+    payload = {
+        "sub": user_id,
+        "email": email,
+        "type": "password_reset",
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=RESET_EXP_MIN),
+    }
+    return jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
+
+
+def verify_password_reset_token(token: str) -> dict | None:
+    try:
+        payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "password_reset":
+            return None
+        return payload
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        return None
 
 
 def _extract_token(request: Request) -> str | None:

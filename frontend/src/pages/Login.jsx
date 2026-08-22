@@ -126,6 +126,12 @@ export default function Login() {
                         </button>
                     </form>
 
+                    <div className="mt-3 text-right">
+                        <Link to="/forgot-password" className="stat-label hover:text-primary transition-colors">
+                            › FORGOT PASSWORD?
+                        </Link>
+                    </div>
+
                     <OAuthButtons onError={(msg) => toast.error(msg)} />
 
                     <div className="mt-6 text-center">
