@@ -46,7 +46,7 @@ export default function Blog() {
 
     return (
         <SiteLayout>
-            <div className="max-w-5xl mx-auto px-4 md:px-6 py-12">
+            <div className="max-w-6xl mx-auto px-4 md:px-8 py-16">
                 {/* Header */}
                 <div className="mb-10">
                     <div className="stat-label text-primary/70 mb-2 flex items-center gap-2">
@@ -76,11 +76,11 @@ export default function Blog() {
                         ))}
                     </div>
                     <div className="relative flex-1 min-w-[200px]">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <input
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full bg-background border border-border pl-9 pr-3 py-2 font-mono text-sm"
+                            className="w-full bg-background border border-border pl-10 pr-4 py-3 font-mono text-base"
                             placeholder="Search posts…"
                         />
                     </div>
@@ -99,21 +99,21 @@ export default function Blog() {
                             <Link
                                 key={p.slug}
                                 to={`/blog/${p.slug}`}
-                                className="panel p-6 hover:border-primary transition-colors block flex flex-col"
+                                className="panel p-8 hover:border-primary transition-colors block flex flex-col"
                             >
                                 {p.hero_image ? (
-                                    <div className="mb-4 -mx-6 -mt-6 h-40 overflow-hidden border-b border-border">
+                                    <div className="mb-5 -mx-8 -mt-8 h-48 overflow-hidden border-b border-border">
                                         <img src={p.hero_image} alt={p.title} className="w-full h-full object-cover" />
                                     </div>
                                 ) : (
-                                    <div className="mb-4 -mx-6 -mt-6 h-40 border-b border-border bg-primary/5 flex items-center justify-center">
-                                        <Newspaper size={32} className="text-primary/30" />
+                                    <div className="mb-5 -mx-8 -mt-8 h-48 border-b border-border bg-primary/5 flex items-center justify-center">
+                                        <Newspaper size={40} className="text-primary/30" />
                                     </div>
                                 )}
-                                <div className="stat-label text-primary/70 mb-1">{p.category}</div>
-                                <div className="font-pixel text-lg uppercase text-primary mb-2 leading-tight">{p.title}</div>
-                                <div className="text-sm text-muted-foreground line-clamp-3 flex-1">{p.excerpt}</div>
-                                <div className="stat-label text-muted-foreground/60 mt-4 flex items-center justify-between">
+                                <div className="stat-label text-primary/70 mb-2">{p.category}</div>
+                                <div className="font-pixel text-lg uppercase text-primary mb-3 leading-tight">{p.title}</div>
+                                <div className="text-base text-muted-foreground line-clamp-3 flex-1">{p.excerpt}</div>
+                                <div className="stat-label text-muted-foreground/60 mt-5 flex items-center justify-between">
                                     <span>{p.author_name}</span>
                                     <span>{fmtDate(p.published_at)}</span>
                                 </div>

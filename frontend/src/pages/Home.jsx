@@ -100,10 +100,10 @@ export default function Landing() {
                     {FEATURES.map((f, i) => {
                         const Ic = f.icon;
                         return (
-                            <div key={f.title} data-testid={`feature-card-${i}`} className="panel p-6 md:p-8 relative group">
-                                <Ic className="text-primary mb-4" size={32} strokeWidth={1.5} />
-                                <div className="font-pixel text-xl md:text-2xl uppercase text-primary mb-2 tracking-wider">{f.title}</div>
-                                <div className="text-sm text-muted-foreground leading-relaxed">{f.desc}</div>
+                            <div key={f.title} data-testid={`feature-card-${i}`} className="panel p-8 md:p-10 relative group">
+                                <Ic className="text-primary mb-5" size={40} strokeWidth={1.5} />
+                                <div className="font-pixel text-xl md:text-2xl uppercase text-primary mb-3 tracking-wider">{f.title}</div>
+                                <div className="text-base text-muted-foreground leading-relaxed">{f.desc}</div>
                                 <div className="absolute top-3 right-3 font-mono text-xs text-muted-foreground/50">0{i + 1}</div>
                             </div>
                         );
@@ -123,17 +123,17 @@ export default function Landing() {
                 <p className="narr text-lg max-w-2xl text-muted-foreground mb-12">
                     From the sworn Humans of the great Empire to the shrinking Sylvans of Daw&apos;ul Talalu, every bloodline shapes your destiny.
                 </p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {RACE_CARDS.map((r, i) => (
                         <Link
                             key={r.name}
                             to="/races"
                             data-testid={`race-preview-${r.name.toLowerCase()}`}
-                            className="panel p-5 hover:border-primary transition-colors block"
+                            className="panel p-8 hover:border-primary transition-colors block"
                         >
-                            <div className="font-pixel text-lg md:text-xl uppercase text-primary">{r.name}</div>
-                            <div className="stat-label mt-1">{r.tag}</div>
-                            <div className="mt-4 font-mono text-xs text-muted-foreground/60">race_{String(i).padStart(2, "0")}</div>
+                            <div className="font-pixel text-xl md:text-2xl uppercase text-primary">{r.name}</div>
+                            <div className="stat-label mt-2 text-sm">{r.tag}</div>
+                            <div className="mt-5 font-mono text-xs text-muted-foreground/60">race_{String(i).padStart(2, "0")}</div>
                         </Link>
                     ))}
                 </div>
@@ -144,17 +144,17 @@ export default function Landing() {
                 <section className="px-6 md:px-16 py-24 border-t border-border">
                     <div className="stat-label text-primary/70 mb-3">.SECTION_04 // LEGENDS</div>
                     <h2 className="font-pixel text-3xl md:text-5xl uppercase mb-12">Heroes of the Ladder</h2>
-                    <div className="panel p-6 max-w-2xl">
+                    <div className="panel p-8 max-w-3xl">
                         {leaders.map((p, i) => (
-                            <div key={p.id} className="flex items-center justify-between border-b border-border/40 py-3 last:border-0">
-                                <div className="flex items-center gap-3">
-                                    <div className={`font-pixel text-lg ${i === 0 ? "text-primary" : "text-muted-foreground"}`}>#{i + 1}</div>
+                            <div key={p.id} className="flex items-center justify-between border-b border-border/40 py-4 last:border-0">
+                                <div className="flex items-center gap-4">
+                                    <div className={`font-pixel text-xl ${i === 0 ? "text-primary" : "text-muted-foreground"}`}>#{i + 1}</div>
                                     <div>
-                                        <div className="font-mono text-sm text-foreground">{p.name}</div>
-                                        <div className="stat-label">{p.race} · {p.mastery}</div>
+                                        <div className="font-mono text-base text-foreground">{p.name}</div>
+                                        <div className="stat-label text-sm">{p.race} · {p.mastery}</div>
                                     </div>
                                 </div>
-                                <div className="stat-label text-primary">Lv {p.level}</div>
+                                <div className="font-pixel text-lg text-primary">Lv {p.level}</div>
                             </div>
                         ))}
                     </div>
@@ -173,16 +173,16 @@ export default function Landing() {
                     <h2 className="font-pixel text-3xl md:text-5xl uppercase mb-12">Latest from the Blog</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {posts.map((p) => (
-                            <Link key={p.slug} to={`/blog/${p.slug}`} className="panel p-6 hover:border-primary transition-colors block">
+                            <Link key={p.slug} to={`/blog/${p.slug}`} className="panel p-8 hover:border-primary transition-colors block">
                                 {p.hero_image && (
-                                    <div className="mb-4 -mx-6 -mt-6 h-32 overflow-hidden border-b border-border">
+                                    <div className="mb-5 -mx-8 -mt-8 h-40 overflow-hidden border-b border-border">
                                         <img src={p.hero_image} alt={p.title} className="w-full h-full object-cover" />
                                     </div>
                                 )}
-                                <div className="stat-label text-primary/70 mb-1">{p.category}</div>
-                                <div className="font-pixel text-lg uppercase text-primary mb-2">{p.title}</div>
-                                <div className="text-sm text-muted-foreground line-clamp-2">{p.excerpt}</div>
-                                <div className="stat-label text-muted-foreground/60 mt-3">{fmtDate(p.published_at)}</div>
+                                <div className="stat-label text-primary/70 mb-2">{p.category}</div>
+                                <div className="font-pixel text-lg uppercase text-primary mb-3">{p.title}</div>
+                                <div className="text-base text-muted-foreground line-clamp-2">{p.excerpt}</div>
+                                <div className="stat-label text-muted-foreground/60 mt-4">{fmtDate(p.published_at)}</div>
                             </Link>
                         ))}
                     </div>

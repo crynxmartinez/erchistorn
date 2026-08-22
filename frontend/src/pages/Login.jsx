@@ -29,7 +29,7 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden">
+        <div className="site-page min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden">
             <div
                 className="absolute inset-0 opacity-20"
                 style={{
@@ -41,16 +41,16 @@ export default function Login() {
             />
             <div className="absolute inset-0 bg-background/85" />
 
-            <div className="relative w-full max-w-md">
+            <div className="relative w-full max-w-lg">
                 <Link to="/" className="flex items-center gap-2 mb-6 text-primary/70 hover:text-primary">
                     <ScrollText size={18} />
                     <span className="stat-label">ERCHIS</span>
                 </Link>
-                <div className="panel p-10">
-                    <h1 className="font-pixel text-4xl uppercase text-primary tracking-wider mb-2">
+                <div className="panel p-10 md:p-12">
+                    <h1 className="font-pixel text-4xl uppercase text-primary tracking-wider mb-3">
                         Return to Erchis
                     </h1>
-                    <p className="narr text-muted-foreground mb-8">
+                    <p className="narr text-base text-muted-foreground mb-8">
                         Your name is remembered. Speak it, and the world awakens.
                     </p>
 
@@ -63,7 +63,7 @@ export default function Login() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="you@erchis.world"
-                                className="bg-background border-border font-mono"
+                                className="bg-background border-border font-mono text-base h-12"
                                 required
                             />
                         </div>
@@ -75,7 +75,7 @@ export default function Login() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="Your secret word"
-                                className="bg-background border-border font-mono"
+                                className="bg-background border-border font-mono text-base h-12"
                                 required
                                 minLength={6}
                             />

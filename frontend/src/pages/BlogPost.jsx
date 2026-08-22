@@ -27,24 +27,24 @@ function renderMarkdown(body) {
     lines.forEach((line, i) => {
         if (line.startsWith("### ")) {
             flushList();
-            elements.push(<h3 key={i} className="font-pixel text-xl uppercase text-primary mt-6 mb-2">{line.slice(4)}</h3>);
+            elements.push(<h3 key={i} className="font-pixel text-xl uppercase text-primary mt-8 mb-3">{line.slice(4)}</h3>);
         } else if (line.startsWith("## ")) {
             flushList();
-            elements.push(<h2 key={i} className="font-pixel text-2xl uppercase text-primary mt-8 mb-3">{line.slice(3)}</h2>);
+            elements.push(<h2 key={i} className="font-pixel text-2xl uppercase text-primary mt-10 mb-4">{line.slice(3)}</h2>);
         } else if (line.startsWith("# ")) {
             flushList();
-            elements.push(<h1 key={i} className="font-pixel text-3xl uppercase text-primary mt-8 mb-4">{line.slice(2)}</h1>);
+            elements.push(<h1 key={i} className="font-pixel text-3xl uppercase text-primary mt-10 mb-5">{line.slice(2)}</h1>);
         } else if (line.startsWith("- ") || line.startsWith("* ")) {
             inList = true;
-            listItems.push(<li key={i} className="text-sm text-foreground/85">{line.slice(2)}</li>);
+            listItems.push(<li key={i} className="text-base text-foreground/85">{line.slice(2)}</li>);
         } else if (line.startsWith("> ")) {
             flushList();
-            elements.push(<blockquote key={i} className="border-l-2 border-primary pl-4 italic text-muted-foreground my-3">{line.slice(2)}</blockquote>);
+            elements.push(<blockquote key={i} className="border-l-2 border-primary pl-5 italic text-muted-foreground my-4 text-base">{line.slice(2)}</blockquote>);
         } else if (line.trim() === "") {
             flushList();
         } else {
             flushList();
-            elements.push(<p key={i} className="text-sm text-foreground/85 leading-relaxed my-2">{line}</p>);
+            elements.push(<p key={i} className="text-base text-foreground/85 leading-relaxed my-3">{line}</p>);
         }
     });
     flushList();
@@ -67,7 +67,7 @@ export default function BlogPost() {
 
     return (
         <SiteLayout>
-            <div className="max-w-3xl mx-auto px-4 md:px-6 py-12">
+            <div className="max-w-4xl mx-auto px-4 md:px-8 py-16">
                 <Link to="/blog" className="stat-label text-primary/70 hover:text-primary flex items-center gap-1 mb-8">
                     <ArrowLeft size={12} /> Back to Blog
                 </Link>
@@ -79,7 +79,7 @@ export default function BlogPost() {
                     <>
                         {/* Hero image */}
                         {post.hero_image && (
-                            <div className="mb-8 h-64 md:h-80 overflow-hidden border-2 border-border">
+                            <div className="mb-8 h-72 md:h-96 overflow-hidden border-2 border-border">
                                 <img src={post.hero_image} alt={post.title} className="w-full h-full object-cover" />
                             </div>
                         )}

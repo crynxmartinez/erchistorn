@@ -204,8 +204,16 @@
     font-family: 'JetBrains Mono', monospace;
     text-transform: uppercase;
     letter-spacing: 0.15em;
-    font-size: 10px;
+    font-size: 13px;
     color: hsl(var(--muted-foreground));
+}
+
+/* Public website pages — larger base font for readability */
+.site-page {
+    font-size: 18px;
+}
+.site-page :where(.font-pixel) {
+    font-size: 1.15em;
 }
 
 /* Simple sprite placeholder */

@@ -58,20 +58,20 @@ export default function Mechanics() {
                 </div>
             </section>
 
-            <div className="max-w-4xl mx-auto px-4 md:px-6 py-12">
+            <div className="max-w-5xl mx-auto px-4 md:px-8 py-16">
                 <div className="space-y-12">
                     {SECTIONS.map((s, i) => {
                         const Ic = s.icon;
                         return (
-                            <section key={i} className="panel p-6 md:p-8">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <Ic size={28} className="text-primary" />
-                                    <h2 className="font-pixel text-2xl uppercase text-primary tracking-wider">{s.title}</h2>
+                            <section key={i} className="panel p-8 md:p-10">
+                                <div className="flex items-center gap-4 mb-5">
+                                    <Ic size={36} className="text-primary" />
+                                    <h2 className="font-pixel text-2xl md:text-3xl uppercase text-primary tracking-wider">{s.title}</h2>
                                 </div>
-                                <p className="narr text-sm text-foreground/85 leading-relaxed mb-4">{s.body}</p>
-                                <ul className="space-y-1.5">
+                                <p className="narr text-base text-foreground/85 leading-relaxed mb-5">{s.body}</p>
+                                <ul className="space-y-2">
                                     {s.points.map((p, j) => (
-                                        <li key={j} className="text-sm text-muted-foreground flex items-start gap-2">
+                                        <li key={j} className="text-base text-muted-foreground flex items-start gap-2">
                                             <span className="text-primary mt-0.5">▸</span> {p}
                                         </li>
                                     ))}

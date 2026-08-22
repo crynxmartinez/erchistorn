@@ -849,6 +849,131 @@ async def public_leaderboard():
     return {"leaderboard": rows}
 
 
+@api.get("/public/world")
+async def public_world():
+    """Return full nested world data for the public website."""
+    # Build continent → regions mapping
+    regions_by_cont = {}
+    for r in REGIONS:
+        regions_by_cont.setdefault(r["continent"], []).append(r)
+
+    # Build continent → towns mapping
+    towns_by_cont = {}
+    for t in TOWNS:
+        cont = t.get("continent", "")
+        # Map old continent ids to canon
+        from world_data import CONTINENT_ID_MAP
+        cont = CONTINENT_ID_MAP.get(cont, cont)
+        towns_by_cont.setdefault(cont, []).append(t)
+
+    # Build biome → monsters mapping
+    biome_monsters = {}
+    for m in MONSTERS:
+        for b in m.get("biomes", []):
+            biome_monsters.setdefault(b, []).append({
+                "id": m["id"], "name": m["name"], "tier": m.get("tier", "normal"),
+            })
+
+    # Build biome → items/materials mapping
+    biome_items = {}
+    for it in ITEMS:
+        for b in it.get("biomes", []):
+            biome_items.setdefault(b, []).append({
+                "id": it["id"], "name": it["name"], "rarity": it.get("rarity", "common"),
+                "kind": it.get("kind", "material"),
+            })
+
+    # Build continent → monsters mapping (by biome association)
+    cont_monsters = {}
+    for c in CONTINENTS:
+        cont_monster_ids = set()
+        for b in c.get("biomes", []):
+            for m in biome_monsters.get(b["id"], []):
+                cont_monster_ids.add(m["id"])
+        cont_monsters[c["id"]] = [
+            {"id": m["id"], "name": m["name"], "tier": m.get("tier", "normal"),
+             "continent": c["id"]}
+            for m in MONSTERS if m["id"] in cont_monster_ids
+        ]
+
+    # Build continent → items mapping
+    cont_items = {}
+    for c in CONTINENTS:
+        cont_item_ids = set()
+        for b in c.get("biomes", []):
+            for it in biome_items.get(b["id"], []):
+                cont_item_ids.add(it["id"])
+        cont_items[c["id"]] = [
+            {"id": it["id"], "name": it["name"], "rarity": it.get("rarity", "common"),
+             "kind": it.get("kind", "material"), "continent": c["id"]}
+            for it in ITEMS if it["id"] in cont_item_ids
+        ]
+
+    # Assemble nested continents
+    nested = []
+    for c in CONTINENTS:
+        entry = {
+            "id": c["id"],
+            "name": c["name"],
+            "desc": c.get("desc", ""),
+            "specialty": c.get("specialty", ""),
+            "bonus_desc": c.get("bonus_desc", ""),
+            "home_race": c.get("home_race"),
+            "level_req": c.get("level_req", 1),
+            "locked": c.get("locked", False),
+            "biomes": c.get("biomes", []),
+            "regions": regions_by_cont.get(c["id"], []),
+            "towns": towns_by_cont.get(c["id"], []),
+            "monsters": cont_monsters.get(c["id"], []),
+            "materials": cont_items.get(c["id"], []),
+        }
+        nested.append(entry)
+
+    # All biomes flattened
+    all_biomes = []
+    for c in CONTINENTS:
+        for b in c.get("biomes", []):
+            all_biomes.append({
+                **b,
+                "continent": c["id"],
+                "continent_name": c["name"],
+                "monsters": biome_monsters.get(b["id"], []),
+                "materials": biome_items.get(b["id"], []),
+            })
+
+    # All towns flattened
+    all_towns = []
+    for t in TOWNS:
+        from world_data import CONTINENT_ID_MAP
+        cont_id = CONTINENT_ID_MAP.get(t.get("continent", ""), t.get("continent", ""))
+        cont = next((c for c in CONTINENTS if c["id"] == cont_id), None)
+        all_towns.append({
+            "id": t["id"],
+            "name": t["name"],
+            "type": t.get("type", ""),
+            "desc": t.get("desc", ""),
+            "specialty": t.get("specialty", ""),
+            "services": t.get("services", []),
+            "continent": cont_id,
+            "continent_name": cont["name"] if cont else cont_id,
+            "region": t.get("region", ""),
+            "sanctuary_cost": t.get("sanctuary_cost"),
+            "fast_travel_cost": t.get("fast_travel_cost"),
+            "trainer_ids": t.get("trainer_ids", []),
+        })
+
+    return {
+        "continents": nested,
+        "all_biomes": all_biomes,
+        "all_towns": all_towns,
+        "all_monsters": [{"id": m["id"], "name": m["name"], "tier": m.get("tier", "normal"),
+                          "biomes": m.get("biomes", [])} for m in MONSTERS],
+        "all_items": [{"id": it["id"], "name": it["name"], "rarity": it.get("rarity", "common"),
+                        "kind": it.get("kind", "material"), "biomes": it.get("biomes", [])}
+                       for it in ITEMS],
+    }
+
+
 # ---------------- BLOG SYSTEM ----------------
 @api.get("/blog")
 async def blog_list(category: str | None = None, tag: str | None = None, page: int = 1, limit: int = 9):

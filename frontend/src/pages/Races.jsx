@@ -43,23 +43,23 @@ export default function Races() {
                 </div>
             </section>
 
-            <div className="max-w-5xl mx-auto px-4 md:px-6 py-12">
+            <div className="max-w-6xl mx-auto px-4 md:px-8 py-16">
                 {loading && <div className="stat-label text-muted-foreground text-center py-20">Reading the bloodlines…</div>}
 
                 {!loading && races.length > 0 && (
-                    <div className="space-y-8">
+                    <div className="space-y-10">
                         {races.map((r) => (
-                            <div key={r.id} className="panel p-6 md:p-8" data-testid={`race-detail-${r.id}`}>
-                                <div className="flex items-start gap-4">
-                                    <div className="text-5xl">{RACE_ICONS[r.id] || "⚜"}</div>
+                            <div key={r.id} className="panel p-8 md:p-10" data-testid={`race-detail-${r.id}`}>
+                                <div className="flex items-start gap-6">
+                                    <div className="text-6xl">{RACE_ICONS[r.id] || "⚜"}</div>
                                     <div className="flex-1">
-                                        <div className="font-pixel text-2xl uppercase text-primary">{r.name}</div>
-                                        {r.title && <div className="stat-label text-muted-foreground mb-2">{r.title}</div>}
-                                        {r.story && <p className="narr text-sm text-foreground/85 mb-4">{r.story}</p>}
+                                        <div className="font-pixel text-3xl uppercase text-primary">{r.name}</div>
+                                        {r.title && <div className="stat-label text-muted-foreground mb-3 text-sm">{r.title}</div>}
+                                        {r.story && <p className="narr text-base text-foreground/85 mb-5">{r.story}</p>}
                                         {r.perk && (
-                                            <div className="border-l-2 border-primary/40 pl-4">
+                                            <div className="border-l-2 border-primary/40 pl-5">
                                                 <div className="stat-label text-primary/80">RACIAL PERK — {r.perk.name}</div>
-                                                <div className="text-sm text-foreground/80">{r.perk.desc}</div>
+                                                <div className="text-base text-foreground/80">{r.perk.desc}</div>
                                             </div>
                                         )}
                                     </div>
@@ -71,15 +71,15 @@ export default function Races() {
 
                 {/* Beast Aspects */}
                 {!loading && beastAspects.length > 0 && (
-                    <section className="mt-12">
-                        <h2 className="font-pixel text-2xl uppercase text-primary mb-4">Beast Aspects — Wildblood</h2>
-                        <p className="narr text-sm text-muted-foreground mb-4">Choose your inner animal at creation. It shapes your instincts and gifts.</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <section className="mt-16">
+                        <h2 className="font-pixel text-3xl uppercase text-primary mb-4">Beast Aspects — Wildblood</h2>
+                        <p className="narr text-base text-muted-foreground mb-8">Choose your inner animal at creation. It shapes your instincts and gifts.</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {beastAspects.map((a) => (
-                                <div key={a.id} className="panel p-4">
-                                    <div className="font-pixel text-sm uppercase text-primary">{a.name}</div>
-                                    <div className="stat-label text-muted-foreground italic mb-1">Kin of {a.examples}</div>
-                                    <div className="text-sm text-foreground/80">{a.bonus_desc}</div>
+                                <div key={a.id} className="panel p-6">
+                                    <div className="font-pixel text-lg uppercase text-primary">{a.name}</div>
+                                    <div className="stat-label text-muted-foreground italic mb-2">Kin of {a.examples}</div>
+                                    <div className="text-base text-foreground/80">{a.bonus_desc}</div>
                                 </div>
                             ))}
                         </div>
@@ -88,14 +88,14 @@ export default function Races() {
 
                 {/* Marine Adaptations */}
                 {!loading && marineAdaptations.length > 0 && (
-                    <section className="mt-12">
-                        <h2 className="font-pixel text-2xl uppercase text-primary mb-4">Marine Adaptations — Hyliondrian</h2>
-                        <p className="narr text-sm text-muted-foreground mb-4">The lineage of the deep that shaped your gills and instincts.</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <section className="mt-16">
+                        <h2 className="font-pixel text-3xl uppercase text-primary mb-4">Marine Adaptations — Hyliondrian</h2>
+                        <p className="narr text-base text-muted-foreground mb-8">The lineage of the deep that shaped your gills and instincts.</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {marineAdaptations.map((a) => (
-                                <div key={a.id} className="panel p-4">
-                                    <div className="font-pixel text-sm uppercase text-primary">{a.name}</div>
-                                    <div className="text-sm text-foreground/80">{a.bonus_desc}</div>
+                                <div key={a.id} className="panel p-6">
+                                    <div className="font-pixel text-lg uppercase text-primary">{a.name}</div>
+                                    <div className="text-base text-foreground/80">{a.bonus_desc}</div>
                                 </div>
                             ))}
                         </div>

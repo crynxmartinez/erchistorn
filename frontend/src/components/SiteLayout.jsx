@@ -19,22 +19,22 @@ export default function SiteLayout({ children }) {
     const [menuOpen, setMenuOpen] = useState(false);
 
     return (
-        <div className="min-h-screen flex flex-col bg-background">
+        <div className="site-page min-h-screen flex flex-col bg-background">
             {/* Navbar */}
             <nav className="sticky top-0 z-50 border-b-2 border-primary/30 bg-background/95 backdrop-blur-sm">
-                <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-2" onClick={() => setMenuOpen(false)}>
-                        <ScrollText size={20} className="text-primary" />
-                        <span className="font-pixel text-lg uppercase text-primary tracking-wider hidden sm:inline">Erchis</span>
+                <div className="max-w-7xl mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
+                    <Link to="/" className="flex items-center gap-3" onClick={() => setMenuOpen(false)}>
+                        <ScrollText size={28} className="text-primary" />
+                        <span className="font-pixel text-2xl uppercase text-primary tracking-wider hidden sm:inline">Erchis</span>
                     </Link>
 
                     {/* Desktop nav */}
-                    <div className="hidden lg:flex items-center gap-1">
+                    <div className="hidden lg:flex items-center gap-2">
                         {NAV_LINKS.map((l) => (
                             <Link
                                 key={l.to}
                                 to={l.to}
-                                className="stat-label px-3 py-1.5 text-muted-foreground hover:text-primary transition-colors rounded"
+                                className="font-pixel text-sm uppercase px-4 py-2 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors rounded"
                             >
                                 {l.label}
                             </Link>
@@ -42,18 +42,18 @@ export default function SiteLayout({ children }) {
                     </div>
 
                     {/* Auth buttons */}
-                    <div className="hidden lg:flex items-center gap-2">
+                    <div className="hidden lg:flex items-center gap-3">
                         {user && user.has_character ? (
                             <button
                                 onClick={() => navigate("/game")}
-                                className="press-btn font-pixel text-sm uppercase px-4 py-1.5 bg-primary text-primary-foreground border-2 border-primary hover:bg-transparent hover:text-primary transition-colors"
+                                className="press-btn font-pixel text-base uppercase px-6 py-2.5 bg-primary text-primary-foreground border-2 border-primary hover:bg-transparent hover:text-primary transition-colors"
                             >
                                 Enter Game
                             </button>
                         ) : user ? (
                             <button
                                 onClick={() => navigate("/create")}
-                                className="press-btn font-pixel text-sm uppercase px-4 py-1.5 bg-primary text-primary-foreground border-2 border-primary hover:bg-transparent hover:text-primary transition-colors"
+                                className="press-btn font-pixel text-base uppercase px-6 py-2.5 bg-primary text-primary-foreground border-2 border-primary hover:bg-transparent hover:text-primary transition-colors"
                             >
                                 Create Hero
                             </button>
@@ -61,13 +61,13 @@ export default function SiteLayout({ children }) {
                             <>
                                 <Link
                                     to="/login"
-                                    className="press-btn stat-label px-3 py-1.5 border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+                                    className="press-btn font-pixel text-sm uppercase px-5 py-2.5 border-2 border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors"
                                 >
                                     Sign In
                                 </Link>
                                 <Link
                                     to="/register"
-                                    className="press-btn font-pixel text-sm uppercase px-4 py-1.5 bg-primary text-primary-foreground border-2 border-primary hover:bg-transparent hover:text-primary transition-colors"
+                                    className="press-btn font-pixel text-base uppercase px-6 py-2.5 bg-primary text-primary-foreground border-2 border-primary hover:bg-transparent hover:text-primary transition-colors"
                                 >
                                     Play Free
                                 </Link>
@@ -78,40 +78,40 @@ export default function SiteLayout({ children }) {
                     {/* Mobile menu button */}
                     <button
                         onClick={() => setMenuOpen(!menuOpen)}
-                        className="lg:hidden press-btn p-2 border border-border text-primary"
+                        className="lg:hidden press-btn p-3 border-2 border-border text-primary"
                     >
-                        {menuOpen ? <X size={18} /> : <Menu size={18} />}
+                        {menuOpen ? <X size={24} /> : <Menu size={24} />}
                     </button>
                 </div>
 
                 {/* Mobile menu */}
                 {menuOpen && (
                     <div className="lg:hidden border-t border-border bg-background">
-                        <div className="px-4 py-3 space-y-1">
+                        <div className="px-4 py-4 space-y-2">
                             {NAV_LINKS.map((l) => (
                                 <Link
                                     key={l.to}
                                     to={l.to}
                                     onClick={() => setMenuOpen(false)}
-                                    className="flex items-center gap-2 px-3 py-2 stat-label text-muted-foreground hover:text-primary hover:bg-primary/5 rounded transition-colors"
+                                    className="flex items-center gap-3 px-4 py-3 font-pixel text-sm uppercase text-muted-foreground hover:text-primary hover:bg-primary/5 rounded transition-colors"
                                 >
-                                    <l.icon size={14} /> {l.label}
+                                    <l.icon size={18} /> {l.label}
                                 </Link>
                             ))}
-                            <div className="pt-2 border-t border-border flex gap-2">
+                            <div className="pt-3 border-t border-border flex gap-3">
                                 {user ? (
                                     <button
                                         onClick={() => { setMenuOpen(false); navigate(user.has_character ? "/game" : "/create"); }}
-                                        className="flex-1 press-btn font-pixel text-sm uppercase px-4 py-2 bg-primary text-primary-foreground border-2 border-primary"
+                                        className="flex-1 text-center press-btn font-pixel text-sm uppercase px-4 py-3 bg-primary text-primary-foreground border-2 border-primary"
                                     >
                                         {user.has_character ? "Enter Game" : "Create Hero"}
                                     </button>
                                 ) : (
                                     <>
-                                        <Link to="/login" onClick={() => setMenuOpen(false)} className="flex-1 text-center press-btn stat-label px-3 py-2 border border-border text-muted-foreground">
+                                        <Link to="/login" onClick={() => setMenuOpen(false)} className="flex-1 text-center press-btn font-pixel text-sm uppercase px-4 py-3 border-2 border-border text-muted-foreground">
                                             Sign In
                                         </Link>
-                                        <Link to="/register" onClick={() => setMenuOpen(false)} className="flex-1 text-center press-btn font-pixel text-sm uppercase px-4 py-2 bg-primary text-primary-foreground border-2 border-primary">
+                                        <Link to="/register" onClick={() => setMenuOpen(false)} className="flex-1 text-center press-btn font-pixel text-sm uppercase px-4 py-3 bg-primary text-primary-foreground border-2 border-primary">
                                             Play Free
                                         </Link>
                                     </>

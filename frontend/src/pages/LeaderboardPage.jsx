@@ -21,12 +21,12 @@ export default function LeaderboardPage({ embedded }) {
 
     const content = (
         <>
-            <div className="flex items-center gap-3 mb-8">
-                <Trophy className="text-primary" size={32} />
+            <div className="flex items-center gap-3 mb-10">
+                <Trophy className="text-primary" size={40} />
                 <h1 className="font-pixel text-5xl uppercase text-primary">Leaderboard</h1>
             </div>
 
-            <div className="panel p-4">
+            <div className="panel p-6 md:p-8">
                 <div className="grid grid-cols-12 gap-2 stat-label text-primary/60 border-b border-border pb-2 mb-2">
                     <div className="col-span-1">#</div>
                     <div className="col-span-3">NAME</div>
@@ -41,7 +41,7 @@ export default function LeaderboardPage({ embedded }) {
                     <div
                         key={r.id || i}
                         data-testid={`leaderboard-row-${i}`}
-                        className="grid grid-cols-12 gap-2 font-mono text-sm py-2 border-b border-border/40 hover:bg-primary/5"
+                        className="grid grid-cols-12 gap-2 font-mono text-base py-3 border-b border-border/40 hover:bg-primary/5"
                     >
                         <div className="col-span-1 text-primary flex items-center gap-1">
                             {i === 0 && <Crown size={12} />}
@@ -66,7 +66,7 @@ export default function LeaderboardPage({ embedded }) {
     if (embedded) return content;
     return (
         <SiteLayout>
-            <div className="max-w-5xl mx-auto px-4 md:px-8 py-12" data-testid="leaderboard-page">
+            <div className="max-w-5xl mx-auto px-4 md:px-8 py-16" data-testid="leaderboard-page">
                 {content}
             </div>
         </SiteLayout>
