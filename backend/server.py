@@ -833,6 +833,27 @@ async def public_heritage():
     return {"heritage_rank_1": HERITAGE_RANK_LEVEL_REQS.get(1, {})}
 
 
+@api.get("/public/online")
+async def public_online():
+    """How many players are online right now.
+
+    Reuses the chat presence heartbeat rather than inventing a second notion of
+    "online": `_chat_touch_presence` refreshes a row per polling character and
+    `_chat_sweep_absent` deletes rows older than CHAT_PRESENCE_TTL_SECONDS, so a
+    non-stale row *is* the game's existing definition of a player being here.
+
+    Public and unauthenticated, but deliberately a bare count -- no names,
+    continents or ids, so it cannot be used to see who is playing.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=CHAT_PRESENCE_TTL_SECONDS)
+    try:
+        count = await db.chat_presence.count_documents({"last_seen": {"$gte": cutoff}})
+    except Exception:
+        # A marketing page must not break because a count failed.
+        count = 0
+    return {"online": int(count)}
+
+
 @api.get("/public/leaderboard")
 async def public_leaderboard():
     cursor = db.characters.find({}, {"name": 1, "race": 1, "mastery": 1, "level": 1, "gold": 1}).sort("level", -1).limit(20)
