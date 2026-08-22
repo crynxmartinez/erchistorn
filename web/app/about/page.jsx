@@ -20,7 +20,6 @@ import { PullQuote, CTABand } from "@/components/site/Bits";
  */
 
 const DISCORD = "https://discord.gg/eWRnDWWMt";
-const GITHUB = "https://github.com/crynxmartinez/erchistorn";
 
 export const metadata = {
     title: "About",
@@ -182,54 +181,27 @@ export default function AboutPage() {
                 <SectionHeader
                     eyebrow="Come and talk"
                     title="Community"
-                    lede="Bug reports, build arguments and screenshots of improbable dice all welcome."
+                    lede="Bug reports, build arguments and screenshots of improbable dice all welcome. Discord is the fastest way to reach the developer."
                 />
-                <ul className="mt-10 space-y-4">
-                    <li>
-                        <a
-                            href={DISCORD}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group flex items-baseline gap-4 border-l-2 border-border/70 pl-5 py-1 transition-colors hover:border-primary"
-                        >
-                            <span className="font-display text-card uppercase text-foreground group-hover:text-primary">
-                                Discord
-                            </span>
-                            <span className="text-body-sm text-muted-foreground">
-                                The fastest way to reach the developer, and where patches get
-                                argued about first.
-                            </span>
-                        </a>
-                    </li>
-                    <li>
-                        <Link
-                            href="/blog"
-                            className="group flex items-baseline gap-4 border-l-2 border-border/70 pl-5 py-1 transition-colors hover:border-primary"
-                        >
-                            <span className="font-display text-card uppercase text-foreground group-hover:text-primary">
-                                Dev log
-                            </span>
-                            <span className="text-body-sm text-muted-foreground">
-                                Longer writing about what is being built and why.
-                            </span>
-                        </Link>
-                    </li>
-                    <li>
-                        <a
-                            href={GITHUB}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group flex items-baseline gap-4 border-l-2 border-border/70 pl-5 py-1 transition-colors hover:border-primary"
-                        >
-                            <span className="font-display text-card uppercase text-foreground group-hover:text-primary">
-                                GitHub
-                            </span>
-                            <span className="text-body-sm text-muted-foreground">
-                                The source, if you are the sort of person who wants to look.
-                            </span>
-                        </a>
-                    </li>
-                </ul>
+                {/* One destination, so a <ul> of a single <li> is the wrong shape.
+                    A direct call to action reads better and gives Discord the weight
+                    it deserves now that it is the only community link. */}
+                <div className="mt-10">
+                    <a
+                        href={DISCORD}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group inline-flex flex-col gap-2 border-l-2 border-primary/60 pl-6 transition-colors hover:border-primary"
+                    >
+                        <span className="font-display text-subtitle uppercase text-foreground group-hover:text-primary">
+                            Join the Discord
+                        </span>
+                        <span className="max-w-prose text-body-sm text-muted-foreground">
+                            The fastest way to reach the developer, and where patches get argued
+                            about before they ship.
+                        </span>
+                    </a>
+                </div>
             </Section>
 
             <CTABand
