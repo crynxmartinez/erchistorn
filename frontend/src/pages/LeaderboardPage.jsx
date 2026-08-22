@@ -31,12 +31,19 @@ export default function LeaderboardPage({ embedded }) {
         })();
     }, [embedded]);
 
+    // The public view shows the real table -- columns, ranks and all -- because the
+    // ladder is a genuine feature and a visitor should see exactly what gets tracked.
+    // Only the *rows* wait on a real player database: right now the only characters in
+    // it are development ones, and a top ten of "Cv99999614" is worse than an empty
+    // table. Delete this block to turn rows back on; the fetch above already handles
+    // the public endpoint when `embedded` is false.
     if (!embedded) {
+        const COLUMNS = ["Rank", "Hero", "Race", "Mastery", "Level", "Gold"];
         return (
             <SiteLayout>
                 <Seo
                     title="Leaderboard"
-                    description="The Erchis ladder. One shared world, one ranking — opening when the first heroes take the field."
+                    description="The Erchis ladder — every hero ranked by level, race and mastery in one shared world. Opening with the first real players."
                     path="/leaderboard"
                 />
                 <section className="border-b border-border/60">
@@ -48,21 +55,55 @@ export default function LeaderboardPage({ embedded }) {
                             Leader<span className="text-primary">board</span>
                         </h1>
                         <p className="mt-6 max-w-prose text-lede text-muted-foreground">
-                            One shared world. One ranking. Every hero on the same table.
+                            One shared world. One ranking. Every hero on the same table — no
+                            seasons, no brackets, no resets.
                         </p>
                     </div>
                 </section>
+
                 <div className="mx-auto w-full max-w-6xl px-6 py-section-sm md:py-section">
-                    <div className="max-w-prose">
-                        <h2 className="font-display text-subtitle uppercase text-foreground">
-                            No one has been ranked yet
-                        </h2>
-                        <p className="mt-5 text-body text-muted-foreground">
-                            The ladder opens when the first heroes take the field. Levels, races and
-                            masteries will all be listed here — one table for the whole world.
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[40rem] border-collapse text-left">
+                            <caption className="sr-only">Erchis player rankings by level</caption>
+                            <thead>
+                                <tr className="border-b border-border">
+                                    {COLUMNS.map((c) => (
+                                        <th
+                                            key={c}
+                                            scope="col"
+                                            className="pb-3 font-mono text-label uppercase text-primary/70"
+                                        >
+                                            {c}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {[1, 2, 3].map((n) => (
+                                    <tr key={n} className="border-b border-border/40">
+                                        <td className="py-4 font-display text-card text-primary/30">
+                                            {String(n).padStart(2, "0")}
+                                        </td>
+                                        <td
+                                            colSpan={5}
+                                            className="py-4 font-mono text-caption uppercase text-muted-foreground/40"
+                                        >
+                                            Unclaimed
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="mt-12 max-w-prose border-l-2 border-primary/50 pl-6">
+                        <p className="font-display text-card uppercase text-foreground">
+                            The ladder opens with the first real heroes
                         </p>
-                        <p className="mt-4 text-body text-muted-foreground">
-                            Create a character now and the first entry is yours.
+                        <p className="mt-3 text-body text-muted-foreground">
+                            Rankings go live once players start claiming places. Level, race,
+                            mastery and gold are tracked from your first roll — so the first entry
+                            is there for the taking.
                         </p>
                         <div className="mt-8">
                             <Link

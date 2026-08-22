@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import Die from "@/components/site/Die";
 import Button from "@/components/site/Button";
+import OnlineCount from "@/components/site/OnlineCount";
 
 /**
  * Public site shell.
@@ -16,6 +17,8 @@ import Button from "@/components/site/Button";
  *    needs to be large to be legible; at nav size it reads as noise, which is why
  *    everything on the old site felt shouty and hard to scan.
  */
+
+const DISCORD = "https://discord.gg/eWRnDWWMt";
 
 const NAV_LINKS = [
     { to: "/world", label: "World" },
@@ -42,6 +45,7 @@ const FOOTER_GROUPS = [
             { to: "/blog", label: "Blog" },
             { to: "/changelog", label: "Changelog" },
             { to: "/about", label: "About" },
+            { to: DISCORD, label: "Discord", external: true },
         ],
     },
     {
@@ -106,7 +110,8 @@ export default function SiteLayout({ children }) {
                         })}
                     </nav>
 
-                    <div className="hidden items-center gap-3 lg:flex">
+                    <div className="hidden items-center gap-4 lg:flex">
+                        <OnlineCount />
                         {cta ? (
                             <Button size="md" onClick={cta.go}>
                                 {cta.label}
@@ -167,6 +172,7 @@ export default function SiteLayout({ children }) {
                                         </Button>
                                     </>
                                 )}
+                                <OnlineCount className="pt-1" />
                             </div>
                         </div>
                     </nav>
@@ -203,16 +209,29 @@ export default function SiteLayout({ children }) {
                                     {g.title}
                                 </p>
                                 <ul className="space-y-2">
-                                    {g.links.map((l) => (
-                                        <li key={l.to}>
-                                            <Link
-                                                to={l.to}
-                                                className="text-body-sm text-muted-foreground transition-colors hover:text-primary"
-                                            >
-                                                {l.label}
-                                            </Link>
-                                        </li>
-                                    ))}
+                                    {g.links.map((l) =>
+                                        l.external ? (
+                                            <li key={l.to}>
+                                                <a
+                                                    href={l.to}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-body-sm text-muted-foreground transition-colors hover:text-primary"
+                                                >
+                                                    {l.label}
+                                                </a>
+                                            </li>
+                                        ) : (
+                                            <li key={l.to}>
+                                                <Link
+                                                    to={l.to}
+                                                    className="text-body-sm text-muted-foreground transition-colors hover:text-primary"
+                                                >
+                                                    {l.label}
+                                                </Link>
+                                            </li>
+                                        )
+                                    )}
                                 </ul>
                             </div>
                         ))}

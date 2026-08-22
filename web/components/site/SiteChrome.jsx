@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import Die from "./Die";
 import Button from "./Button";
+import OnlineCount from "./OnlineCount";
 
 /**
  * Nav + footer.
@@ -20,6 +21,7 @@ import Button from "./Button";
  */
 
 const APP = process.env.NEXT_PUBLIC_APP_ORIGIN || "/app";
+const DISCORD = "https://discord.gg/eWRnDWWMt";
 
 const NAV_LINKS = [
     { href: "/world", label: "World" },
@@ -46,6 +48,7 @@ const FOOTER_GROUPS = [
             { href: "/blog", label: "Blog" },
             { href: "/changelog", label: "Changelog" },
             { href: "/about", label: "About" },
+            { href: DISCORD, label: "Discord", external: true },
         ],
     },
     {
@@ -101,7 +104,8 @@ export default function SiteChrome({ children }) {
                         })}
                     </nav>
 
-                    <div className="hidden items-center gap-3 lg:flex">
+                    <div className="hidden items-center gap-4 lg:flex">
+                        <OnlineCount />
                         <a
                             href={`${APP}/login`}
                             className="px-3 py-2 font-mono text-label uppercase text-muted-foreground transition-colors hover:text-foreground"
@@ -143,6 +147,7 @@ export default function SiteChrome({ children }) {
                                 <Button href={`${APP}/login`} size="md" variant="ghost">
                                     Sign in
                                 </Button>
+                                <OnlineCount className="pt-1" />
                             </div>
                         </div>
                     </nav>
@@ -179,16 +184,29 @@ export default function SiteChrome({ children }) {
                                     {g.title}
                                 </p>
                                 <ul className="space-y-2">
-                                    {g.links.map((l) => (
-                                        <li key={l.href}>
-                                            <Link
-                                                href={l.href}
-                                                className="text-body-sm text-muted-foreground transition-colors hover:text-primary"
-                                            >
-                                                {l.label}
-                                            </Link>
-                                        </li>
-                                    ))}
+                                    {g.links.map((l) =>
+                                        l.external ? (
+                                            <li key={l.href}>
+                                                <a
+                                                    href={l.href}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-body-sm text-muted-foreground transition-colors hover:text-primary"
+                                                >
+                                                    {l.label}
+                                                </a>
+                                            </li>
+                                        ) : (
+                                            <li key={l.href}>
+                                                <Link
+                                                    href={l.href}
+                                                    className="text-body-sm text-muted-foreground transition-colors hover:text-primary"
+                                                >
+                                                    {l.label}
+                                                </Link>
+                                            </li>
+                                        )
+                                    )}
                                 </ul>
                             </div>
                         ))}

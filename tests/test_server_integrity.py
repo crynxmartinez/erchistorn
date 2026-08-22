@@ -115,21 +115,22 @@ def _function_locals(fn) -> set[str]:
 def test_no_undefined_names_in_server():
     """Every name a route body reads must be visible from that function's scope.
 
-    Scoped per function — see `_module_scope` for why that matters.
+    Delegates to `tests/_scope.undefined_names`, which is closure-aware. This test
+    used to carry its own copy of the logic that compared each function against
+    module scope plus its *own* locals only. That version reported five false
+    positives the moment a route defined a nested helper -- `_stat_info` inside the
+    training-status route legitimately reads `trained`, `base_stats` and three
+    locally-imported helpers from the function enclosing it.
+
+    A check that fires on valid code is worse than no check, because it teaches
+    people to ignore it. The shared helper accumulates visibility down the nesting
+    chain, which is what Python actually does.
     """
-    tree = _tree()
-    module = _module_scope(tree)
-    missing = {}
-    for fn in ast.walk(tree):
-        if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            continue
-        visible = module | _function_locals(fn)
-        for node in ast.walk(fn):
-            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
-                if node.id not in visible:
-                    missing.setdefault(node.id, (fn.name, node.lineno))
+    from _scope import undefined_names
+
+    missing = undefined_names(_tree())
     assert not missing, (
-        "server.py reads names not visible in scope — these raise NameError at "
+        "server.py reads names not visible in scope - these raise NameError at "
         "request time, not import time: "
         + ", ".join(f"{k} in {v[0]}() line {v[1]}"
                     for k, v in sorted(missing.items(), key=lambda x: x[1][1]))
