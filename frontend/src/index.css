@@ -1,4 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=VT323&family=JetBrains+Mono:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,700;1,400&display=swap');
+/* Fonts are loaded from public/index.html, not here. An @import serialises
+   the request chain -- the browser must download this stylesheet before it
+   can even discover the font URL -- which made it the largest single
+   contributor to LCP. The <link> in the document head starts both in
+   parallel, behind a preconnect. */
 
 @tailwind base;
 @tailwind components;
@@ -212,8 +216,20 @@
 .site-page {
     font-size: 18px;
 }
-.site-page :where(.font-pixel) {
-    font-size: 1.15em;
+/* No font-size here on purpose.
+   This rule used to read `.site-page .font-pixel { font-size: 1.15em }`, meant to
+   compensate for VT323 rendering small for its point size. But it set font-size on
+   the class every heading uses, so it overrode all 149 explicit text-* sizes across
+   the public pages and flattened them to 18px x 1.15 = 20.7px -- the hero headline
+   ended up smaller than the body copy.
+   Wrapping it in :where() was not enough: that drops specificity to 0-1-0, which
+   TIES with .text-5xl and is then decided by source order -- and this file is
+   emitted after the utilities layer, so it still won. Headings that happened to use
+   a responsive variant (lg:text-8xl) escaped, which is why Home looked fixed while
+   /leaderboard did not.
+   The size compensation belongs in the type scale, not in a blanket override. */
+.site-page .font-pixel {
+    /* family/spacing only -- see .pixel-h */
 }
 
 /* Simple sprite placeholder */

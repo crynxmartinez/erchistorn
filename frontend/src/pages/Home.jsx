@@ -29,7 +29,7 @@ function fmtDate(s) {
     return new Date(s).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export default function Landing() {
+export default function Home() {
     const [posts, setPosts] = useState([]);
     const [leaders, setLeaders] = useState([]);
 

@@ -47,7 +47,7 @@ Treat these as fixed. Every new page must satisfy them.
 | 3 | **Zero artwork.** `public/` contains only `index.html` | High |
 | 4 | `Landing.jsx` dead duplicate | Low |
 
-### The typography bug  **[fixed — one character]**
+### The typography bug  **[fixed]**
 
 ```css
 .site-page             { font-size: 18px; }
@@ -65,14 +65,35 @@ declarations** across the public pages.
 | Body paragraph | — | **24px** |
 
 Distinct heading sizes on the home page: **one**. The hero was smaller than the
-body copy. Fix — `:where()` carries zero specificity:
+body copy.
 
-```css
-.site-page :where(.font-pixel) { font-size: 1.15em; }
-```
+**The fix.** The first attempt wrapped the selector in `:where()` to drop its
+specificity. **That was wrong, and it is worth recording why.** `:where()` zeroes
+only its own argument — `.site-page` still counts — so the selector becomes 0-1-0,
+which *ties* with `.text-5xl`. Ties break on source order, and this file is emitted
+after the utilities layer, so the override still won.
 
-**After:** `h1` 96px, `h2` 48/60px, three distinct sizes. Verified in-browser.
-Revert with `git checkout frontend/src/index.css`.
+It looked fixed because the home hero uses a responsive variant (`lg:text-8xl`)
+that lands after the rule and escaped, while `/leaderboard`'s plain `text-5xl` did
+not. Verified on one page, generalised to all — precisely the mistake this repo
+keeps punishing.
+
+The correct fix is to stop setting `font-size` on that class at all. The rule
+existed to compensate for VT323 rendering small for its point size; that belongs in
+the type scale (§4.1), not in a blanket override on the class every heading uses.
+
+**Verified after, across all eight public pages** (real router navigation):
+
+| Page | h1 | Distinct heading sizes |
+|---|---|---|
+| `/` | **96px** | 96 / 60 / 48 |
+| `/mechanics` | 60px | 60 / 30 |
+| `/races` | 60px | 60 / 30 |
+| `/world` | 60px | 60 / 36 |
+| `/blog`, `/leaderboard`, `/changelog`, `/about` | 48px | 48 |
+
+Headings under 24px: **0** on every page except `/about`, where four are deliberate
+`text-xl` sub-headings beneath a 48px `h1`.
 
 ---
 
@@ -291,13 +312,30 @@ Without the last one you cannot tell which content actually recruits players.
 
 ## 7. Build order
 
-### Phase 0 — corrections (half a day)
-1. `:where()` typography fix — **done**
-2. Real title, description, OG/Twitter, favicon, `robots.txt`
-3. Delete `Landing.jsx`
-4. Fix font loading (`@import` → `preload`, subset, `swap`)
+### Phase 0 — corrections  **[COMPLETE]**
 
-Cheapest, largest perceived gain. Do this regardless of everything else.
+1. **Typography override removed** — hierarchy restored on all 8 public pages
+2. **Identity** — `<title>Erchis — A Fantasy Dice RPG</title>`, real meta
+   description, canonical, full Open Graph + Twitter card, `theme-color: #0C0A09`
+3. **Assets created** — `favicon.svg` (a d6 showing six, zero-radius to match the
+   site), `og-image.png` (1200x630, rendered with the real VT323 face),
+   `apple-touch-icon.png`, `robots.txt` (game routes disallowed), `sitemap.xml`
+   (8 static routes, valid against the sitemaps.org schema)
+4. **Font loading** — the `@import` moved out of `index.css` into a `<link>` in the
+   head behind the existing preconnect. An `@import` serialises the chain: the
+   stylesheet must download before the font URL is even discovered.
+5. **Dropped an unused fourth font** — `Inter:wght@600` loaded on every page and
+   referenced nowhere in `src/` or the Tailwind config
+6. **Deleted `Landing.jsx`**, and renamed `Home.jsx`'s component from `Landing()`
+   to `Home()` — that mismatch is what caused a fix to land in the dead file
+
+Left alone deliberately: `assets.emergent.sh/scripts/emergent-main.js` in the head.
+It may be required by the hosting platform, and removing deploy infrastructure on a
+guess is not worth the risk. Flagged for you to confirm.
+
+Known remaining noise: a logged-out visitor triggers one `401` on `/api/auth/me`
+per page as the session check runs. Functionally correct, cosmetically noisy;
+silence it when the auth-state work lands in Phase 2.
 
 ### Phase 1 — design system (2 days)
 5. Type scale as Tailwind theme tokens; body font to Crimson Text

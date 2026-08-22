@@ -1,0 +1,16 @@
+# Erchis — https://erchis.online
+User-agent: *
+Allow: /
+
+# The game client and auth screens are an application, not content. They render
+# nothing useful without a session and should not compete with the public pages
+# for crawl budget or appear in results.
+Disallow: /game
+Disallow: /create
+Disallow: /login
+Disallow: /register
+Disallow: /auth
+Disallow: /guild-house
+Disallow: /guild/
+
+Sitemap: https://erchis.online/sitemap.xml
