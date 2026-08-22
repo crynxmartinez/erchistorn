@@ -1,4 +1,5 @@
-import { getPosts } from "@/lib/api";
+import { getPosts, getWorld } from "@/lib/api";
+import { MASTERIES } from "@/content/masteries";
 
 const ORIGIN = process.env.NEXT_PUBLIC_SITE_ORIGIN || "https://erchis.online";
 
@@ -33,6 +34,23 @@ export default async function sitemap() {
         priority: r.priority,
     }));
 
+    // The eleven mastery and eleven continent pages. Generated pages that are not
+    // in the sitemap are pages nothing knows to crawl.
+    const masteryRoutes = MASTERIES.map((m) => ({
+        url: `${ORIGIN}/mastery/${m.id}`,
+        lastModified: now,
+        changeFrequency: "monthly",
+        priority: 0.8,
+    }));
+
+    const world = await getWorld();
+    const continentRoutes = (world?.continents || []).map((c) => ({
+        url: `${ORIGIN}/continent/${c.id}`,
+        lastModified: now,
+        changeFrequency: "monthly",
+        priority: 0.8,
+    }));
+
     const posts = await getPosts(500);
     const postRoutes = posts.map((p) => ({
         url: `${ORIGIN}/blog/${p.slug}`,
@@ -41,5 +59,5 @@ export default async function sitemap() {
         priority: 0.7,
     }));
 
-    return [...staticRoutes, ...postRoutes];
+    return [...staticRoutes, ...masteryRoutes, ...continentRoutes, ...postRoutes];
 }

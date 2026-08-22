@@ -1,7 +1,9 @@
 import Section from "@/components/site/Section";
 import SectionHeader from "@/components/site/SectionHeader";
 import Die from "@/components/site/Die";
+import Link from "next/link";
 import { PullQuote, CTABand } from "@/components/site/Bits";
+import { MASTERIES } from "@/content/masteries";
 import { Swords, Hammer, Users, TrendingUp, Zap } from "lucide-react";
 
 /**
@@ -194,6 +196,34 @@ export default function MechanicsPage() {
                         );
                     })}
                 </div>
+            </Section>
+
+            <Section variant="band" label="Masteries">
+                <SectionHeader
+                    eyebrow="Eleven masteries"
+                    title="Pick how you fight"
+                    lede="Each mastery has its own resource system. They do not play alike."
+                />
+                <ul className="mt-12 grid grid-cols-2 gap-x-8 gap-y-5 md:grid-cols-3">
+                    {MASTERIES.map((m) => (
+                        <li key={m.id}>
+                            <Link
+                                href={`/mastery/${m.id}`}
+                                className="group block border-l-2 border-border/70 pl-5 py-1 transition-colors hover:border-primary"
+                            >
+                                <span className="block font-display text-card uppercase text-foreground group-hover:text-primary">
+                                    {m.name}
+                                </span>
+                                <span className="font-mono text-label uppercase text-primary/60">
+                                    {m.resource}
+                                </span>
+                                <span className="mt-1 block text-body-sm text-muted-foreground">
+                                    {m.tagline}
+                                </span>
+                            </Link>
+                        </li>
+                    ))}
+                </ul>
             </Section>
 
             <CTABand

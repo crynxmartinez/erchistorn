@@ -92,6 +92,7 @@ export default async function WorldPage() {
                                 name={c.name}
                                 blurb={c.desc}
                                 biomes={(c.biomes || []).length || null}
+                                href={`/continent/${c.id}`}
                             />
                         ))}
                     </div>

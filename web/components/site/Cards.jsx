@@ -71,8 +71,15 @@ export function RaceCard({ name, tag, blurb, to, compact = false }) {
 }
 
 /** Continent row — full-bleed alternating layout rather than a uniform grid. */
-export function ContinentRow({ name, blurb, biomes, index = 0 }) {
+export function ContinentRow({ name, blurb, biomes, index = 0, href = null }) {
     const flip = index % 2 === 1;
+    const Title = href
+        ? ({ children }) => (
+              <Link href={href} className="text-foreground hover:text-primary">
+                  {children}
+              </Link>
+          )
+        : ({ children }) => <>{children}</>;
     return (
         <article
             className={`flex flex-col gap-6 border-b border-border/50 py-10 md:flex-row md:items-center md:gap-12 ${
@@ -87,7 +94,7 @@ export function ContinentRow({ name, blurb, biomes, index = 0 }) {
                     Continent {String(index + 1).padStart(2, "0")}
                 </p>
                 <h3 className="mt-2 font-display text-subtitle uppercase text-foreground">
-                    {name}
+                    <Title>{name}</Title>
                 </h3>
                 {blurb && (
                     <p className="mt-3 max-w-prose text-body-sm text-muted-foreground">{blurb}</p>
