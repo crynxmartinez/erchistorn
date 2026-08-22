@@ -6,15 +6,19 @@ import StatStrip from "@/components/site/StatStrip";
 import Button from "@/components/site/Button";
 import { FeatureCard, RaceCard, PostCard } from "@/components/site/Cards";
 import { PullQuote, CTABand } from "@/components/site/Bits";
-import { getPosts, getLeaderboard, fmtDate } from "@/lib/api";
+import { getPosts, fmtDate } from "@/lib/api";
 
 /**
  * Home — a server component.
  *
- * The ladder and the dev-log posts are fetched on the server, so they are present in
- * the HTML a crawler receives. On the CRA version both arrived via `useEffect`,
- * which meant the page's only real evidence that the game exists was invisible to
- * anything that does not execute JavaScript.
+ * The dev-log posts are fetched on the server, so they are present in the HTML a
+ * crawler receives. On the CRA version they arrived via `useEffect` and were
+ * invisible to anything that does not execute JavaScript.
+ *
+ * The live ladder section was removed: the only characters in the database are
+ * development ones, and a public page is better saying nothing than showing a top
+ * five called "Cv99999614". Bring it back when there are real players — the
+ * `getLeaderboard` helper in lib/api.js is still there.
  */
 
 export const metadata = {
@@ -72,8 +76,7 @@ const JSON_LD = {
 };
 
 export default async function HomePage() {
-    const [posts, leaders] = await Promise.all([getPosts(3), getLeaderboard()]);
-    const top = leaders.slice(0, 5);
+    const posts = await getPosts(3);
 
     return (
         <>
@@ -85,7 +88,7 @@ export default async function HomePage() {
             <Hero />
 
             <Section variant="plain" className="!py-12" label="At a glance">
-                <StatStrip initialLeaders={leaders} />
+                <StatStrip />
             </Section>
 
             <Section variant="plain" label="How it plays">
@@ -137,43 +140,10 @@ export default async function HomePage() {
                 </div>
             </Section>
 
-            {top.length > 0 && (
-                <Section variant="band" label="Leaderboard">
-                    <div className="flex flex-wrap items-end justify-between gap-6">
-                        <SectionHeader
-                            eyebrow="Section 03 — Live"
-                            title="Heroes of the ladder"
-                            lede="A shared world. One ranking."
-                        />
-                        <Button to="/leaderboard" variant="ghost" size="md">
-                            Full ladder
-                        </Button>
-                    </div>
-                    <ol className="mt-12 divide-y divide-border/50">
-                        {top.map((p, i) => (
-                            <li key={p.name || i} className="flex items-center gap-5 py-4">
-                                <span className="w-10 font-display text-card text-primary/70">
-                                    {String(i + 1).padStart(2, "0")}
-                                </span>
-                                <span className="min-w-0 flex-1 truncate font-display text-card uppercase text-foreground">
-                                    {p.name}
-                                </span>
-                                <span className="font-mono text-label uppercase text-muted-foreground">
-                                    {p.race} · {p.mastery}
-                                </span>
-                                <span className="w-20 text-right font-mono text-label uppercase text-primary">
-                                    Lv {p.level}
-                                </span>
-                            </li>
-                        ))}
-                    </ol>
-                </Section>
-            )}
-
             {posts.length > 0 && (
                 <Section variant="plain" label="Latest posts">
                     <div className="flex flex-wrap items-end justify-between gap-6">
-                        <SectionHeader eyebrow="Section 04 — Dispatches" title="From the dev log" />
+                        <SectionHeader eyebrow="Section 03 — Dispatches" title="From the dev log" />
                         <Button to="/blog" variant="ghost" size="md">
                             All posts
                         </Button>

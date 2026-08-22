@@ -23,6 +23,10 @@ import { PullQuote, CTABand } from "@/components/site/Bits";
  * Six feature cards became three. The other three claims (lore, crafting,
  * skillbooks) live on /mechanics, where someone who wants that detail is already
  * heading.
+ *
+ * The live ladder section was removed: the only characters in the database are
+ * development ones, so it showed a top five called "Cv99999614". Restore it when
+ * there are real players.
  */
 
 const FEATURES = [
@@ -65,15 +69,11 @@ function fmtDate(s) {
 
 export default function Home() {
     const [posts, setPosts] = useState([]);
-    const [leaders, setLeaders] = useState([]);
 
     useEffect(() => {
         let cancelled = false;
         api.get("/blog?limit=3")
             .then((r) => !cancelled && setPosts(r.data?.posts || []))
-            .catch(() => {});
-        api.get("/public/leaderboard")
-            .then((r) => !cancelled && setLeaders((r.data?.leaderboard || []).slice(0, 5)))
             .catch(() => {});
         return () => {
             cancelled = true;
@@ -146,47 +146,11 @@ export default function Home() {
                 </div>
             </Section>
 
-            {leaders.length > 0 && (
-                <Section variant="band" label="Leaderboard">
-                    <div className="flex flex-wrap items-end justify-between gap-6">
-                        <SectionHeader
-                            eyebrow="Section 03 — Live"
-                            title="Heroes of the ladder"
-                            lede="A shared world. One ranking."
-                        />
-                        <Button to="/leaderboard" variant="ghost" size="md">
-                            Full ladder
-                        </Button>
-                    </div>
-                    <ol className="mt-12 divide-y divide-border/50">
-                        {leaders.map((p, i) => (
-                            <li
-                                key={p.name || i}
-                                className="flex items-center gap-5 py-4"
-                            >
-                                <span className="w-10 font-display text-card text-primary/70">
-                                    {String(i + 1).padStart(2, "0")}
-                                </span>
-                                <span className="min-w-0 flex-1 truncate font-display text-card uppercase text-foreground">
-                                    {p.name}
-                                </span>
-                                <span className="font-mono text-label uppercase text-muted-foreground">
-                                    {p.race} · {p.mastery}
-                                </span>
-                                <span className="w-20 text-right font-mono text-label uppercase text-primary">
-                                    Lv {p.level}
-                                </span>
-                            </li>
-                        ))}
-                    </ol>
-                </Section>
-            )}
-
             {posts.length > 0 && (
                 <Section variant="plain" label="Latest posts">
                     <div className="flex flex-wrap items-end justify-between gap-6">
                         <SectionHeader
-                            eyebrow="Section 04 — Dispatches"
+                            eyebrow="Section 03 — Dispatches"
                             title="From the dev log"
                         />
                         <Button to="/blog" variant="ghost" size="md">
