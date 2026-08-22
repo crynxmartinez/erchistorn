@@ -225,13 +225,18 @@ export default function RacialAbilityPanel({ character, onCharacterUpdate, timeO
                     const mins = Math.floor(remaining / 60);
                     const secs = remaining % 60;
                     return (
-                        <div key={a.id} className="border border-border p-3" data-testid={`racial-ability-${a.id}`}>
-                            <div className="flex justify-between items-baseline">
-                                <div className="font-pixel text-lg uppercase text-primary">{a.name}</div>
-                                <div className="stat-label text-primary/70">CD: {a.cooldown_hours}h{a.cost ? ` · costs ${a.cost} ${a.cost_resource}` : ""}</div>
+                        <div key={a.id} className="border border-border p-3 overflow-hidden" data-testid={`racial-ability-${a.id}`}>
+                            <div className="flex justify-between items-baseline gap-2">
+                                <div className="font-pixel text-lg uppercase text-primary break-words">{a.name}</div>
+                                <div className="stat-label text-primary/70 whitespace-nowrap flex-shrink-0">CD: {a.cooldown_hours}h</div>
                             </div>
+                            {a.cost ? (
+                                <div className="stat-label text-primary/50 text-[10px] mt-0.5 break-words">
+                                    Costs {a.cost} {a.cost_resource?.replace(/_/g, " ")}
+                                </div>
+                            ) : null}
                             {!a.available && a.reason && (
-                                <div className="stat-label text-destructive mt-1">
+                                <div className="stat-label text-destructive mt-1 break-words">
                                     {a.reason}{remaining > 0 ? ` · ${mins}m ${secs}s` : ""}
                                 </div>
                             )}
@@ -240,12 +245,12 @@ export default function RacialAbilityPanel({ character, onCharacterUpdate, timeO
                             {a.id === "heritage_surge" && (
                                 <>
                                     {a.description && (
-                                        <div className="text-xs text-amber-500/80 mt-2 italic leading-relaxed">
+                                        <div className="text-xs text-amber-500/80 mt-2 italic leading-relaxed break-words">
                                             {a.description}
                                         </div>
                                     )}
                                     {a.duration && (
-                                        <div className="stat-label text-amber-500/50 mt-1 text-[10px]">
+                                        <div className="stat-label text-amber-500/50 mt-1 text-[10px] break-words leading-relaxed">
                                             Duration: {a.duration} actions · Cooldown: {a.cooldown_hours}h · Cost: Full {a.cost_resource?.replace(/_/g, " ")}
                                         </div>
                                     )}

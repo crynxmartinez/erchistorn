@@ -96,7 +96,7 @@ from game_data import (  # noqa: E402
     get_race,
     get_role,
 )
-from game_engine import combat_turn, resolve_action, start_combat, start_craft, finish_craft, start_enchant, skin_monster, generate_telegraph, _alch_spend_cf, attempt_tame, _is_druid, _druid_summon_creature, _druid_unsummon_creature, _druid_fuse, _druid_end_fusion, _druid_get_max_summons, _get_weapon_range_for_combat  # noqa: E402
+from game_engine import combat_turn, resolve_action, start_combat, start_craft, finish_craft, start_enchant, skin_monster, generate_telegraph, _alch_spend_cf, attempt_tame, _is_druid, _is_paladin, _druid_summon_creature, _druid_unsummon_creature, _druid_fuse, _druid_end_fusion, _druid_get_max_summons, _get_weapon_range_for_combat  # noqa: E402
 from progression import apply_level_ups, max_hp_for, xp_for_next  # noqa: E402
 from game_data_p2 import (  # noqa: E402
     BEAST_ASPECTS,
@@ -2663,11 +2663,37 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
     updates["paladin_faith_tier"] = ch.get("paladin_faith_tier")
     updates["paladin_faith_bonuses"] = ch.get("paladin_faith_bonuses")
 
-    # Attach combat-only bonuses to character for frontend display
+    # Attach combat-only bonuses to character for frontend display.
+    # All mastery self stat_mods live in state as "<mastery>_self_stat_mods"
+    # (and "generic_self_stat_mods" for Druid/Bard). combat_turn restores
+    # character["stats"] to _orig_stats on exit, so we must re-apply them
+    # here for the frontend to see accurate totals during combat.
+    _STAT_MOD_KEYS = [
+        "knight_self_stat_mods", "paladin_self_stat_mods",
+        "mage_self_stat_mods", "lancer_self_stat_mods",
+        "assassin_self_stat_mods", "hunter_self_stat_mods",
+        "rogue_self_stat_mods", "alchemist_self_stat_mods",
+        "priest_self_stat_mods", "generic_self_stat_mods",
+    ]
+    combat_mods = {}
+    if state.get("active"):
+        for key in _STAT_MOD_KEYS:
+            entries = state.get(key, [])
+            if not entries:
+                continue
+            for entry in entries:
+                for stat, val in entry.get("mods", {}).items():
+                    ch["stats"][stat] = ch["stats"].get(stat, 0) + val
+                    combat_mods[stat] = combat_mods.get(stat, 0) + val
+    if combat_mods:
+        ch["combat_stat_mods"] = combat_mods
+    else:
+        ch.pop("combat_stat_mods", None)
+
+    # Knight oath bonuses (applied separately from stat_mods)
     knight_bonuses = state.get("knight_current_oath_bonuses")
     if knight_bonuses and state.get("active"):
         ch["knight_current_oath_bonuses"] = knight_bonuses
-        # Add bonuses to stats so totals reflect combat state (not persisted to DB)
         for stat, val in knight_bonuses.items():
             if val and not stat.startswith("enemy_"):
                 ch["stats"][stat] = ch["stats"].get(stat, 0) + val
@@ -2682,16 +2708,15 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
         ch.pop("knight_oath", None)
         ch.pop("knight_oath_stacks", None)
 
-    # Re-apply active knight self stat_mods (from skills like Iron Stance) for frontend display
-    knight_self_mods = state.get("knight_self_stat_mods", [])
-    if knight_self_mods and state.get("active"):
-        ch["knight_self_stat_mods"] = {}
-        for entry in knight_self_mods:
-            for stat, val in entry.get("mods", {}).items():
+    # Paladin faith bonuses (combat-applied, separate from _recompute_stats)
+    paladin_combat_faith = state.get("paladin_faith_bonuses")
+    if paladin_combat_faith and state.get("active") and _is_paladin(ch):
+        ch["paladin_combat_faith"] = {k: v for k, v in paladin_combat_faith.items() if k != "heal_amp"}
+        for stat, val in paladin_combat_faith.items():
+            if val and stat != "heal_amp":
                 ch["stats"][stat] = ch["stats"].get(stat, 0) + val
-                ch["knight_self_stat_mods"][stat] = ch["knight_self_stat_mods"].get(stat, 0) + val
     else:
-        ch.pop("knight_self_stat_mods", None)
+        ch.pop("paladin_combat_faith", None)
 
     # Recompute derived defenses now that combat-only bonuses are in ch["stats"],
     # so the frontend CharacterSheet shows accurate armor/MR during combat.

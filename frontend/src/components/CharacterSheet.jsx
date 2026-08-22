@@ -345,9 +345,9 @@ export default function CharacterSheet({ character, portraits, race, role, maste
                     </div>
                 ) : null}
 
-                {/* Combat-active buffs — oath stacks, skill stat mods, etc.
+                {/* Combat-active buffs — oath stacks, faith, skill stat mods, etc.
                     These are temporary and only present during combat. */}
-                {(character.knight_oath || character.knight_current_oath_bonuses || character.knight_self_stat_mods) && (
+                {(character.knight_oath || character.knight_current_oath_bonuses || character.combat_stat_mods || character.paladin_combat_faith) && (
                     <div className="mt-3 border border-primary/30 bg-primary/5 p-2">
                         <div className="stat-label mb-1 text-primary">COMBAT BUFFS</div>
                         {character.knight_oath && (
@@ -362,13 +362,19 @@ export default function CharacterSheet({ character, portraits, race, role, maste
                             </div>
                         )}
                         {character.knight_current_oath_bonuses && Object.entries(character.knight_current_oath_bonuses).map(([stat, val]) => (
-                            <div key={stat} className="flex justify-between font-mono text-xs">
+                            <div key={`ob_${stat}`} className="flex justify-between font-mono text-xs">
                                 <span className="text-muted-foreground">{stat.replace(/_/g, " ").toUpperCase()}</span>
                                 <span className="text-primary">+{val}</span>
                             </div>
                         ))}
-                        {character.knight_self_stat_mods && Object.entries(character.knight_self_stat_mods).map(([stat, val]) => (
-                            <div key={stat} className="flex justify-between font-mono text-xs">
+                        {character.paladin_combat_faith && Object.entries(character.paladin_combat_faith).map(([stat, val]) => (
+                            <div key={`pf_${stat}`} className="flex justify-between font-mono text-xs">
+                                <span className="text-muted-foreground">{stat.replace(/_/g, " ").toUpperCase()} (faith)</span>
+                                <span className="text-primary">+{val}</span>
+                            </div>
+                        ))}
+                        {character.combat_stat_mods && Object.entries(character.combat_stat_mods).map(([stat, val]) => (
+                            <div key={`cm_${stat}`} className="flex justify-between font-mono text-xs">
                                 <span className="text-muted-foreground">{stat.replace(/_/g, " ").toUpperCase()} (skill)</span>
                                 <span className="text-primary">{val >= 0 ? "+" : ""}{val}</span>
                             </div>
