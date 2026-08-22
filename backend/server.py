@@ -2674,6 +2674,14 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
     else:
         ch.pop("knight_current_oath_bonuses", None)
 
+    # Expose knight oath info for frontend combat display
+    if state.get("knight_oath") and state.get("active"):
+        ch["knight_oath"] = state["knight_oath"]
+        ch["knight_oath_stacks"] = state.get("knight_oath_stacks", 0)
+    else:
+        ch.pop("knight_oath", None)
+        ch.pop("knight_oath_stacks", None)
+
     # Re-apply active knight self stat_mods (from skills like Iron Stance) for frontend display
     knight_self_mods = state.get("knight_self_stat_mods", [])
     if knight_self_mods and state.get("active"):
@@ -2684,6 +2692,23 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
                 ch["knight_self_stat_mods"][stat] = ch["knight_self_stat_mods"].get(stat, 0) + val
     else:
         ch.pop("knight_self_stat_mods", None)
+
+    # Recompute derived defenses now that combat-only bonuses are in ch["stats"],
+    # so the frontend CharacterSheet shows accurate armor/MR during combat.
+    ch["derived"] = {
+        "armor": compute_armor(ch),
+        "magic_resistance": compute_magic_resistance(ch),
+        "accuracy": compute_accuracy(ch),
+        "evasion": compute_evasion(ch),
+        "skill_capacity": compute_skill_capacity(ch),
+        "physical_reduction_pct": round(
+            100 * (1 - apply_armor(1000, compute_armor(ch)) / 1000), 1
+        ),
+        "magical_reduction_pct": round(
+            100 * (1 - apply_magic_resistance(1000, compute_magic_resistance(ch)) / 1000), 1
+        ),
+        "xp_for_next": _xp_for_next(ch.get("level", 1)),
+    }
 
     await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": updates})
     # Persist the finished state rather than deleting the document. Deleting it

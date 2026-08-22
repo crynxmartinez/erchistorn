@@ -344,6 +344,37 @@ export default function CharacterSheet({ character, portraits, race, role, maste
                         </Tooltip>
                     </div>
                 ) : null}
+
+                {/* Combat-active buffs — oath stacks, skill stat mods, etc.
+                    These are temporary and only present during combat. */}
+                {(character.knight_oath || character.knight_current_oath_bonuses || character.knight_self_stat_mods) && (
+                    <div className="mt-3 border border-primary/30 bg-primary/5 p-2">
+                        <div className="stat-label mb-1 text-primary">COMBAT BUFFS</div>
+                        {character.knight_oath && (
+                            <div className="flex justify-between font-mono text-xs border-b border-border/40 pb-0.5 mb-1">
+                                <span className="text-muted-foreground">OATH</span>
+                                <span className="text-primary capitalize">
+                                    {character.knight_oath.replace(/_/g, " ")}
+                                    {character.knight_oath_stacks != null && (
+                                        <span className="ml-1">({character.knight_oath_stacks} stacks)</span>
+                                    )}
+                                </span>
+                            </div>
+                        )}
+                        {character.knight_current_oath_bonuses && Object.entries(character.knight_current_oath_bonuses).map(([stat, val]) => (
+                            <div key={stat} className="flex justify-between font-mono text-xs">
+                                <span className="text-muted-foreground">{stat.replace(/_/g, " ").toUpperCase()}</span>
+                                <span className="text-primary">+{val}</span>
+                            </div>
+                        ))}
+                        {character.knight_self_stat_mods && Object.entries(character.knight_self_stat_mods).map(([stat, val]) => (
+                            <div key={stat} className="flex justify-between font-mono text-xs">
+                                <span className="text-muted-foreground">{stat.replace(/_/g, " ").toUpperCase()} (skill)</span>
+                                <span className="text-primary">{val >= 0 ? "+" : ""}{val}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Equipped */}
