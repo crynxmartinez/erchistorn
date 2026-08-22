@@ -796,6 +796,166 @@ async def me(user: dict = Depends(_get_current_user)):
     }
 
 
+# ---------------- PUBLIC DATA (no auth, for website) ----------------
+@api.get("/public/races")
+async def public_races():
+    return {"races": RACES}
+
+
+@api.get("/public/continents")
+async def public_continents():
+    return {"continents": CONTINENTS}
+
+
+@api.get("/public/monsters")
+async def public_monsters():
+    return {"monsters": MONSTERS}
+
+
+@api.get("/public/items")
+async def public_items():
+    return {"items": ITEMS}
+
+
+@api.get("/public/beast_aspects")
+async def public_beast_aspects():
+    return {"beast_aspects": BEAST_ASPECTS}
+
+
+@api.get("/public/marine_adaptations")
+async def public_marine_adaptations():
+    return {"marine_adaptations": MARINE_ADAPTATIONS}
+
+
+@api.get("/public/heritage")
+async def public_heritage():
+    from game_data_p2 import HERITAGE_RANK_LEVEL_REQS
+    return {"heritage_rank_1": HERITAGE_RANK_LEVEL_REQS.get(1, {})}
+
+
+@api.get("/public/leaderboard")
+async def public_leaderboard():
+    cursor = db.characters.find({}, {"name": 1, "race": 1, "mastery": 1, "level": 1, "gold": 1}).sort("level", -1).limit(20)
+    rows = []
+    async for doc in cursor:
+        rows.append({
+            "id": str(doc["_id"]),
+            "name": doc.get("name"),
+            "race": doc.get("race"),
+            "mastery": doc.get("mastery"),
+            "level": doc.get("level", 1),
+            "gold": doc.get("gold", 0),
+        })
+    return {"leaderboard": rows}
+
+
+# ---------------- BLOG SYSTEM ----------------
+@api.get("/blog")
+async def blog_list(category: str | None = None, tag: str | None = None, page: int = 1, limit: int = 9):
+    skip = (page - 1) * limit
+    query = {"status": "published"}
+    if category:
+        query["category"] = category
+    if tag:
+        query["tags"] = tag
+    total = await db.blog_posts.count_documents(query)
+    cursor = db.blog_posts.find(query).sort("published_at", -1).skip(skip).limit(limit)
+    posts = []
+    async for doc in cursor:
+        posts.append({
+            "id": str(doc["_id"]),
+            "slug": doc.get("slug"),
+            "title": doc.get("title"),
+            "excerpt": doc.get("excerpt"),
+            "hero_image": doc.get("hero_image"),
+            "tags": doc.get("tags", []),
+            "category": doc.get("category"),
+            "author_name": doc.get("author_name"),
+            "published_at": doc.get("published_at"),
+            "created_at": doc.get("created_at"),
+        })
+    return {"posts": posts, "total": total, "page": page, "pages": (total + limit - 1) // limit}
+
+
+@api.get("/blog/{slug}")
+async def blog_get(slug: str):
+    doc = await db.blog_posts.find_one({"slug": slug, "status": "published"})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return {"post": {
+        "id": str(doc["_id"]),
+        "slug": doc.get("slug"),
+        "title": doc.get("title"),
+        "excerpt": doc.get("excerpt"),
+        "body": doc.get("body"),
+        "hero_image": doc.get("hero_image"),
+        "tags": doc.get("tags", []),
+        "category": doc.get("category"),
+        "author_name": doc.get("author_name"),
+        "published_at": doc.get("published_at"),
+        "created_at": doc.get("created_at"),
+    }}
+
+
+async def _require_admin(user: dict):
+    ch = await _get_character_or_404(user["_id"])
+    if ch.get("mastery") != "GameMaster" and ch.get("name") != "crynxmartinez":
+        raise HTTPException(status_code=403, detail="Admin only")
+    return ch
+
+
+@api.post("/blog")
+async def blog_create(request: Request, user: dict = Depends(_get_current_user)):
+    ch = await _require_admin(user)
+    body = await request.json()
+    title = (body.get("title") or "").strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Title required")
+    slug = body.get("slug") or title.lower().replace(" ", "-").replace("'", "")[:80]
+    existing = await db.blog_posts.find_one({"slug": slug})
+    if existing:
+        raise HTTPException(status_code=409, detail="Slug already exists")
+    now = datetime.now(timezone.utc).isoformat()
+    doc = {
+        "slug": slug,
+        "title": title,
+        "excerpt": body.get("excerpt", ""),
+        "body": body.get("body", ""),
+        "hero_image": body.get("hero_image", ""),
+        "tags": body.get("tags", []),
+        "category": body.get("category", "Devlog"),
+        "author_name": ch.get("name", "Admin"),
+        "status": body.get("status", "draft"),
+        "published_at": now if body.get("status") == "published" else None,
+        "created_at": now,
+        "updated_at": now,
+    }
+    r = await db.blog_posts.insert_one(doc)
+    return {"id": str(r.inserted_id), "slug": slug}
+
+
+@api.put("/blog/{post_id}")
+async def blog_update(post_id: str, request: Request, user: dict = Depends(_get_current_user)):
+    await _require_admin(user)
+    body = await request.json()
+    update = {}
+    for k in ["title", "excerpt", "body", "hero_image", "tags", "category", "status"]:
+        if k in body:
+            update[k] = body[k]
+    if body.get("status") == "published":
+        update["published_at"] = update.get("published_at") or datetime.now(timezone.utc).isoformat()
+    update["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.blog_posts.update_one({"_id": ObjectId(post_id)}, {"$set": update})
+    return {"ok": True}
+
+
+@api.delete("/blog/{post_id}")
+async def blog_delete(post_id: str, user: dict = Depends(_get_current_user)):
+    await _require_admin(user)
+    await db.blog_posts.delete_one({"_id": ObjectId(post_id)})
+    return {"ok": True}
+
+
 # ---------------- STATIC GAME DATA ----------------
 @api.get("/game/data/races")
 async def get_races(user: dict = Depends(_get_current_user)):
