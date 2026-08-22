@@ -105,6 +105,14 @@ module.exports = {
                     '65%':  { transform: 'rotate(-6deg) scale(0.98)' },
                     '100%': { transform: 'rotate(0deg) scale(1)' },
                 },
+                // A short settle on each face change while the die loops. Without
+                // it the pips just swap and the die reads as a counter rather than
+                // something being thrown.
+                'die-settle': {
+                    '0%':   { transform: 'scale(0.94)' },
+                    '60%':  { transform: 'scale(1.02)' },
+                    '100%': { transform: 'scale(1)' },
+                },
                 'flash': {
                     '0%': { opacity: '1' },
                     '50%': { opacity: '0.2' },
@@ -115,6 +123,7 @@ module.exports = {
                 'fade-in': 'fade-in 0.4s ease-out',
                 'flash': 'flash 0.5s steps(2, end)',
                 'die-tumble': 'die-tumble 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) 1',
+                'die-settle': 'die-settle 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) 1',
             },
         },
     },

@@ -32,7 +32,7 @@ export default function Hero() {
 
             <div className="relative mx-auto grid w-full max-w-6xl items-center gap-12 px-6 py-24 md:grid-cols-[minmax(0,340px)_1fr] md:gap-16 md:py-36">
                 <div className="order-2 flex justify-center md:order-1 md:justify-start">
-                    <Die size={300} face={6} />
+                    <Die size={300} loop />
                 </div>
 
                 <div className="order-1 md:order-2">
