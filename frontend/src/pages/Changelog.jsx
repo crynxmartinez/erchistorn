@@ -1,4 +1,5 @@
 import SiteLayout from "@/components/SiteLayout";
+import Seo from "@/components/site/Seo";
 import { ScrollText } from "lucide-react";
 
 const PATCHES = [
@@ -55,16 +56,21 @@ const PATCHES = [
 export default function Changelog() {
     return (
         <SiteLayout>
+            <Seo
+                title="Patch notes"
+                description="Every change shipped to Erchis, newest first — balance passes, new systems and fixes."
+                path="/changelog"
+            />
             <div className="max-w-4xl mx-auto px-4 md:px-8 py-16">
                 <div className="stat-label text-primary/70 mb-2 flex items-center gap-2"><ScrollText size={14} /> CHANGELOG</div>
-                <h1 className="font-pixel text-4xl md:text-5xl uppercase text-primary tracking-wider mb-10">Patch Notes</h1>
+                <h1 className="mb-12 font-display text-display uppercase text-foreground">Patch <span className="text-primary">notes</span></h1>
 
                 <div className="space-y-8">
                     {PATCHES.map((p, i) => (
                         <div key={p.version} className="panel p-8">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
-                                    <span className="font-pixel text-2xl uppercase text-primary">{p.version}</span>
+                                    <span className="font-display text-card uppercase text-primary">{p.version}</span>
                                     {i === 0 && <span className="stat-label px-2 py-0.5 border border-primary text-primary">LATEST</span>}
                                 </div>
                                 <span className="stat-label text-muted-foreground">{p.date}</span>

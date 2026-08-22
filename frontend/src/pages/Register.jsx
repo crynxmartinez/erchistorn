@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { ScrollText } from "lucide-react";
+import Seo from "@/components/site/Seo";
 
 function pwStrength(pw) {
     let s = 0;
@@ -53,12 +54,19 @@ export default function Register() {
 
     return (
         <div className="site-page min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden">
+            <Seo
+                title="Create an account"
+                description="Create a free Erchis account and roll your first character."
+                path="/register"
+                noindex
+            />
             <div
-                className="absolute inset-0 opacity-20"
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
                 style={{
-                    backgroundImage: "url(https://images.unsplash.com/photo-1518709268805-4e9042af2176?q=80&w=2000&auto=format&fit=crop)",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
+                    background:
+                        "radial-gradient(ellipse 60% 60% at 50% 25%, rgba(212,175,55,0.10), transparent 65%)"
+                        + ", radial-gradient(ellipse 100% 100% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%)",
                     filter: "grayscale(0.9) sepia(0.3)",
                 }}
             />

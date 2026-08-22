@@ -1,32 +1,66 @@
-import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { Dices, Swords, Map } from "lucide-react";
 import { api } from "@/lib/api";
 import SiteLayout from "@/components/SiteLayout";
-import { Dices, Swords, Sparkles, Map, Skull, ScrollText, Users, Zap, Newspaper, Trophy, ArrowRight } from "lucide-react";
+import Seo, { GAME_JSON_LD } from "@/components/site/Seo";
+import Hero from "@/components/site/Hero";
+import Section from "@/components/site/Section";
+import SectionHeader from "@/components/site/SectionHeader";
+import StatStrip from "@/components/site/StatStrip";
+import Button from "@/components/site/Button";
+import { FeatureCard, RaceCard, PostCard } from "@/components/site/Cards";
+import { PullQuote, CTABand } from "@/components/site/Bits";
+
+/**
+ * Home.
+ *
+ * Rebuilt on the site component set. The previous version was 4,428px of six
+ * structurally identical sections — centred heading, then a grid of bordered
+ * boxes — which is why scrolling felt like standing still. This one alternates
+ * contained / band / flush and leads with a two-column hero, so each section
+ * looks different from the one above it.
+ *
+ * Six feature cards became three. The other three claims (lore, crafting,
+ * skillbooks) live on /mechanics, where someone who wants that detail is already
+ * heading.
+ */
 
 const FEATURES = [
-    { icon: Dices,    title: "Weighted D6 Fate",  desc: "Every action is a dice throw. 6 outcomes. 20+ narratives each. Your strength shifts the odds — but never guarantees them." },
-    { icon: Swords,   title: "Turn-Based Combat", desc: "Auto-selected skills, item triggers, manual override when it matters. Dice narrative meets tactical depth." },
-    { icon: Map,      title: "Eleven Continents", desc: "Valeria, Mushkara, Concordia, Khardrum, Haya, Gennel, Hylion, Daw'ul Talalu, Azurea, Vael'Turog, Orinth. Each biome, its own monsters and materials." },
-    { icon: Sparkles, title: "Erchis Lore",       desc: "8 playable races with unique perks — Sacred Oaths, Sun-and-Moon magic, Zone-triggers, aquatic sovereignty." },
-    { icon: Skull,    title: "Crafting & Rarity", desc: "Six-tier rarity from Common to Mythic. Craft with materials from every corner of the world." },
-    { icon: ScrollText, title: "Skillbooks & Teachers", desc: "Learn from wandering masters or hunt rare skillbooks dropped by monsters." },
+    {
+        icon: Dices,
+        title: "Weighted d6 fate",
+        desc: "Every action is a dice throw. Six outcomes, each with more than twenty narratives. Your stats shift the odds — they never guarantee them.",
+    },
+    {
+        icon: Swords,
+        title: "Turn-based combat",
+        desc: "Eleven masteries, each with its own resource system: Oath stacks, a Faith bar, elemental imbues, Combo Flow. Skills fire automatically, or you override when it matters.",
+    },
+    {
+        icon: Map,
+        title: "A world with corners",
+        desc: "Eleven continents, each with its own biomes, monsters and materials. Explore to unlock the next region; nothing is handed to you.",
+    },
 ];
 
 const RACE_CARDS = [
-    { name: "Human",       tag: "Sacred Oath" },
-    { name: "Elf",         tag: "Sun & Moon" },
-    { name: "Dwarf",       tag: "Mountain Resilience" },
-    { name: "Half-Elf",    tag: "Dual Heritage" },
-    { name: "Orc",         tag: "Blood of the Liberated" },
-    { name: "Wildblood",   tag: "The Zone" },
+    { name: "Human", tag: "Sacred Oath" },
+    { name: "Elf", tag: "Sun & Moon" },
+    { name: "Dwarf", tag: "Mountain Resilience" },
+    { name: "Half-Elf", tag: "Dual Heritage" },
+    { name: "Orc", tag: "Blood of the Liberated" },
+    { name: "Wildblood", tag: "The Zone" },
     { name: "Hyliondrian", tag: "Children of the Sea" },
-    { name: "Sylvan",      tag: "Shrink" },
+    { name: "Sylvan", tag: "Shrink" },
 ];
 
 function fmtDate(s) {
     if (!s) return "";
-    return new Date(s).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return new Date(s).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
 }
 
 export default function Home() {
@@ -34,186 +68,152 @@ export default function Home() {
     const [leaders, setLeaders] = useState([]);
 
     useEffect(() => {
-        api.get("/blog?limit=3").then(r => setPosts(r.data.posts)).catch(() => {});
-        api.get("/public/leaderboard").then(r => setLeaders(r.data.leaderboard.slice(0, 5))).catch(() => {});
+        let cancelled = false;
+        api.get("/blog?limit=3")
+            .then((r) => !cancelled && setPosts(r.data?.posts || []))
+            .catch(() => {});
+        api.get("/public/leaderboard")
+            .then((r) => !cancelled && setLeaders((r.data?.leaderboard || []).slice(0, 5)))
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     return (
         <SiteLayout>
-            {/* HERO */}
-            <section className="relative min-h-[88vh] flex flex-col justify-center px-6 md:px-16 py-24 overflow-hidden">
-                <div
-                    className="absolute inset-0 opacity-30"
-                    style={{
-                        backgroundImage: "url(https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=2000&auto=format&fit=crop)",
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        filter: "grayscale(0.6) contrast(1.1)",
-                    }}
+            <Seo
+                description="A free browser fantasy RPG decided by one weighted six-sided die. Eight races, eleven continents, eleven masteries. No energy caps."
+                path="/"
+                jsonLd={GAME_JSON_LD}
+            />
+            <Hero />
+
+            {/* Measured facts immediately under the hero: a number that moves is
+                better evidence than a paragraph claiming scale. */}
+            <Section variant="plain" className="!py-12" label="At a glance">
+                <StatStrip />
+            </Section>
+
+            <Section variant="plain" label="How it plays">
+                <SectionHeader
+                    eyebrow="Section 01 — Mechanics"
+                    title={"The dice do not care\nwho you are"}
+                    lede="But your gear, race and cunning tilt the throw."
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/85 to-background pointer-events-none" />
-                <div className="relative max-w-5xl">
-                    <div className="stat-label mb-4 text-primary/80">A FANTASY DICE RPG · MULTIPLAYER · ERCHIS</div>
-                    <h1 className="font-pixel text-5xl md:text-7xl lg:text-8xl leading-[0.9] tracking-wide">
-                        <span className="text-foreground">ROLL THE</span>
-                        <br />
-                        <span className="text-primary">BONES OF</span>
-                        <br />
-                        <span className="text-foreground">ERCHIS</span>
-                    </h1>
-                    <p className="narr text-xl md:text-2xl max-w-2xl mt-8 text-foreground/85">
-                        Eight races. Eleven continents. One six-sided die that will decide
-                        whether you become legend — or footnote.
-                    </p>
-                    <div className="flex flex-wrap gap-4 mt-12">
-                        <Link
-                            to="/register"
-                            data-testid="landing-cta-play"
-                            className="press-btn font-pixel text-2xl uppercase px-8 py-3 bg-primary text-primary-foreground border-2 border-primary hover:bg-transparent hover:text-primary transition-colors"
-                            style={{ boxShadow: "4px 4px 0 0 hsl(var(--destructive))" }}
-                        >
-                            Begin Your Saga
-                        </Link>
-                        <Link
-                            to="/world"
-                            className="press-btn font-pixel text-2xl uppercase px-8 py-3 bg-transparent text-primary border-2 border-primary hover:bg-primary hover:text-primary-foreground transition-colors"
-                        >
-                            Explore the World
-                        </Link>
-                    </div>
-                    <div className="mt-16 flex items-center gap-6 stat-label flex-wrap">
-                        <span>d6 · 20+ narratives</span><span className="opacity-40">|</span>
-                        <span>Shared world · Global ladder</span><span className="opacity-40">|</span>
-                        <span>No energy caps · Play at your pace</span>
-                    </div>
-                </div>
-            </section>
-
-            {/* FEATURES BENTO */}
-            <section className="px-6 md:px-16 py-24">
-                <div className="stat-label text-primary/70 mb-3">.SECTION_02 // MECHANICS</div>
-                <h2 className="font-pixel text-3xl md:text-5xl uppercase mb-16 max-w-3xl">
-                    The dice do not care <span className="text-primary">who you are.</span><br />
-                    But your gear, race, and cunning tilt the throw.
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {FEATURES.map((f, i) => {
-                        const Ic = f.icon;
-                        return (
-                            <div key={f.title} data-testid={`feature-card-${i}`} className="panel p-8 md:p-10 relative group">
-                                <Ic className="text-primary mb-5" size={40} strokeWidth={1.5} />
-                                <div className="font-pixel text-xl md:text-2xl uppercase text-primary mb-3 tracking-wider">{f.title}</div>
-                                <div className="text-base text-muted-foreground leading-relaxed">{f.desc}</div>
-                                <div className="absolute top-3 right-3 font-mono text-xs text-muted-foreground/50">0{i + 1}</div>
-                            </div>
-                        );
-                    })}
-                </div>
-                <div className="mt-8">
-                    <Link to="/mechanics" className="stat-label text-primary hover:underline flex items-center gap-1">
-                        Read full mechanics <ArrowRight size={12} />
-                    </Link>
-                </div>
-            </section>
-
-            {/* RACES */}
-            <section className="px-6 md:px-16 py-24 border-t border-border">
-                <div className="stat-label text-primary/70 mb-3">.SECTION_03 // BLOODLINES</div>
-                <h2 className="font-pixel text-3xl md:text-5xl uppercase mb-4">Eight Playable Races</h2>
-                <p className="narr text-lg max-w-2xl text-muted-foreground mb-12">
-                    From the sworn Humans of the great Empire to the shrinking Sylvans of Daw&apos;ul Talalu, every bloodline shapes your destiny.
-                </p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {RACE_CARDS.map((r, i) => (
-                        <Link
-                            key={r.name}
-                            to="/races"
-                            data-testid={`race-preview-${r.name.toLowerCase()}`}
-                            className="panel p-8 hover:border-primary transition-colors block"
-                        >
-                            <div className="font-pixel text-xl md:text-2xl uppercase text-primary">{r.name}</div>
-                            <div className="stat-label mt-2 text-sm">{r.tag}</div>
-                            <div className="mt-5 font-mono text-xs text-muted-foreground/60">race_{String(i).padStart(2, "0")}</div>
-                        </Link>
+                <div className="mt-14 grid gap-10 md:grid-cols-3">
+                    {FEATURES.map((f) => (
+                        <FeatureCard key={f.title} icon={f.icon} title={f.title}>
+                            {f.desc}
+                        </FeatureCard>
                     ))}
                 </div>
-            </section>
-
-            {/* LEADERBOARD PREVIEW */}
-            {leaders.length > 0 && (
-                <section className="px-6 md:px-16 py-24 border-t border-border">
-                    <div className="stat-label text-primary/70 mb-3">.SECTION_04 // LEGENDS</div>
-                    <h2 className="font-pixel text-3xl md:text-5xl uppercase mb-12">Heroes of the Ladder</h2>
-                    <div className="panel p-8 max-w-3xl">
-                        {leaders.map((p, i) => (
-                            <div key={p.id} className="flex items-center justify-between border-b border-border/40 py-4 last:border-0">
-                                <div className="flex items-center gap-4">
-                                    <div className={`font-pixel text-xl ${i === 0 ? "text-primary" : "text-muted-foreground"}`}>#{i + 1}</div>
-                                    <div>
-                                        <div className="font-mono text-base text-foreground">{p.name}</div>
-                                        <div className="stat-label text-sm">{p.race} · {p.mastery}</div>
-                                    </div>
-                                </div>
-                                <div className="font-pixel text-lg text-primary">Lv {p.level}</div>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="mt-6">
-                        <Link to="/leaderboard" className="stat-label text-primary hover:underline flex items-center gap-1">
-                            View full leaderboard <ArrowRight size={12} />
-                        </Link>
-                    </div>
-                </section>
-            )}
-
-            {/* LATEST BLOG POSTS */}
-            {posts.length > 0 && (
-                <section className="px-6 md:px-16 py-24 border-t border-border">
-                    <div className="stat-label text-primary/70 mb-3">.SECTION_05 // CHRONICLES</div>
-                    <h2 className="font-pixel text-3xl md:text-5xl uppercase mb-12">Latest from the Blog</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {posts.map((p) => (
-                            <Link key={p.slug} to={`/blog/${p.slug}`} className="panel p-8 hover:border-primary transition-colors block">
-                                {p.hero_image && (
-                                    <div className="mb-5 -mx-8 -mt-8 h-40 overflow-hidden border-b border-border">
-                                        <img src={p.hero_image} alt={p.title} className="w-full h-full object-cover" />
-                                    </div>
-                                )}
-                                <div className="stat-label text-primary/70 mb-2">{p.category}</div>
-                                <div className="font-pixel text-lg uppercase text-primary mb-3">{p.title}</div>
-                                <div className="text-base text-muted-foreground line-clamp-2">{p.excerpt}</div>
-                                <div className="stat-label text-muted-foreground/60 mt-4">{fmtDate(p.published_at)}</div>
-                            </Link>
-                        ))}
-                    </div>
-                    <div className="mt-6">
-                        <Link to="/blog" className="stat-label text-primary hover:underline flex items-center gap-1">
-                            Read all posts <ArrowRight size={12} />
-                        </Link>
-                    </div>
-                </section>
-            )}
-
-            {/* FINAL CTA */}
-            <section className="px-6 md:px-16 py-32 border-t border-border">
-                <div className="max-w-3xl">
-                    <div className="stat-label text-primary/70 mb-3">.END_TRANSMISSION</div>
-                    <h2 className="font-pixel text-4xl md:text-6xl uppercase leading-none mb-6">
-                        The die is <span className="text-primary">cast.</span>
-                    </h2>
-                    <p className="narr text-xl md:text-2xl text-muted-foreground mb-10">
-                        Six faces. One outcome. Everything else — the story between the rolls — is yours to write.
-                    </p>
-                    <Link
-                        to="/register"
-                        data-testid="landing-cta-bottom"
-                        className="press-btn font-pixel text-2xl md:text-3xl uppercase px-10 py-4 bg-primary text-primary-foreground border-2 border-primary hover:bg-transparent hover:text-primary transition-colors"
-                        style={{ boxShadow: "5px 5px 0 0 hsl(var(--destructive))" }}
-                    >
-                        Enter Erchis →
-                    </Link>
+                <div className="mt-12">
+                    <Button to="/mechanics" variant="ghost" size="md">
+                        See every system
+                    </Button>
                 </div>
-            </section>
+            </Section>
+
+            {/* Band: breaks the run of contained sections, and gives the quote
+                the room that makes the serif do the work of missing artwork. */}
+            <Section variant="band" label="Fate">
+                <div className="grid gap-12 md:grid-cols-[1fr_auto] md:items-center">
+                    <PullQuote cite="Outcome 1 of 6 — a critical failure">
+                        “Your blade finds only air. The Highway Bandit grins, and for one long
+                        moment you understand exactly how this ends.”
+                    </PullQuote>
+                    <p className="font-mono text-label uppercase leading-relaxed text-muted-foreground md:text-right">
+                        6 outcomes
+                        <br />
+                        20+ narratives each
+                        <br />
+                        350 skills
+                    </p>
+                </div>
+            </Section>
+
+            <Section variant="plain" label="Races">
+                <SectionHeader
+                    eyebrow="Section 02 — Bloodlines"
+                    title="Eight playable races"
+                    lede="Each with a racial gift that changes how you play, not just what you look like."
+                />
+                <div className="mt-14 grid grid-cols-2 gap-5 md:grid-cols-4">
+                    {RACE_CARDS.map((r) => (
+                        <RaceCard key={r.name} name={r.name} tag={r.tag} to="/races" compact />
+                    ))}
+                </div>
+            </Section>
+
+            {leaders.length > 0 && (
+                <Section variant="band" label="Leaderboard">
+                    <div className="flex flex-wrap items-end justify-between gap-6">
+                        <SectionHeader
+                            eyebrow="Section 03 — Live"
+                            title="Heroes of the ladder"
+                            lede="A shared world. One ranking."
+                        />
+                        <Button to="/leaderboard" variant="ghost" size="md">
+                            Full ladder
+                        </Button>
+                    </div>
+                    <ol className="mt-12 divide-y divide-border/50">
+                        {leaders.map((p, i) => (
+                            <li
+                                key={p.name || i}
+                                className="flex items-center gap-5 py-4"
+                            >
+                                <span className="w-10 font-display text-card text-primary/70">
+                                    {String(i + 1).padStart(2, "0")}
+                                </span>
+                                <span className="min-w-0 flex-1 truncate font-display text-card uppercase text-foreground">
+                                    {p.name}
+                                </span>
+                                <span className="font-mono text-label uppercase text-muted-foreground">
+                                    {p.race} · {p.mastery}
+                                </span>
+                                <span className="w-20 text-right font-mono text-label uppercase text-primary">
+                                    Lv {p.level}
+                                </span>
+                            </li>
+                        ))}
+                    </ol>
+                </Section>
+            )}
+
+            {posts.length > 0 && (
+                <Section variant="plain" label="Latest posts">
+                    <div className="flex flex-wrap items-end justify-between gap-6">
+                        <SectionHeader
+                            eyebrow="Section 04 — Dispatches"
+                            title="From the dev log"
+                        />
+                        <Button to="/blog" variant="ghost" size="md">
+                            All posts
+                        </Button>
+                    </div>
+                    <div className="mt-12 grid gap-10 md:grid-cols-3">
+                        {posts.map((p) => (
+                            <PostCard
+                                key={p.slug}
+                                slug={p.slug}
+                                title={p.title}
+                                excerpt={p.excerpt}
+                                date={fmtDate(p.published_at || p.created_at)}
+                                tag={p.tag}
+                            />
+                        ))}
+                    </div>
+                </Section>
+            )}
+
+            <CTABand
+                title="The die is cast."
+                lede="Create a character, swear an oath, and find out what the dice think of you."
+                primary={{ to: "/register", label: "Begin your saga" }}
+                secondary={{ to: "/world", label: "See the world first" }}
+            />
         </SiteLayout>
     );
 }

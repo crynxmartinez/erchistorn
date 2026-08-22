@@ -89,7 +89,9 @@
 
     h1, h2, h3, h4 {
         font-family: 'VT323', monospace;
-        letter-spacing: 0.02em;
+        /* Tracking now comes from the type scale in tailwind.config.js, which
+           sets it per size -- a single global value is wrong at both 96px and
+           24px. */
     }
 
     ::selection {
@@ -214,7 +216,16 @@
 
 /* Public website pages — larger base font for readability */
 .site-page {
-    font-size: 18px;
+    font-family: 'Crimson Text', Georgia, serif;
+    font-size: 19px;
+    line-height: 1.7;
+}
+/* Labels, stats and buttons keep the monospace voice inside the serif page. */
+.site-page :is(.font-mono, .stat-label, button, input, select, textarea) {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+.site-page :is(h1, h2, h3, h4, .font-display, .font-pixel) {
+    font-family: 'VT323', monospace;
 }
 /* No font-size here on purpose.
    This rule used to read `.site-page .font-pixel { font-size: 1.15em }`, meant to

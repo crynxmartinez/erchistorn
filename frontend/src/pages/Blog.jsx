@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import SiteLayout from "@/components/SiteLayout";
+import Seo from "@/components/site/Seo";
 import { Newspaper, Search, ArrowLeft, ArrowRight } from "lucide-react";
 
 const CATEGORIES = ["All", "Devlog", "Lore", "Patch Notes", "Community", "Guides"];
@@ -46,14 +47,19 @@ export default function Blog() {
 
     return (
         <SiteLayout>
+            <Seo
+                title="Dev log"
+                description="Devlogs, lore entries and patch notes from the world of Erchis — how a solo-built browser RPG gets made."
+                path="/blog"
+            />
             <div className="max-w-6xl mx-auto px-4 md:px-8 py-16">
                 {/* Header */}
                 <div className="mb-10">
                     <div className="stat-label text-primary/70 mb-2 flex items-center gap-2">
                         <Newspaper size={14} /> CHRONICLES
                     </div>
-                    <h1 className="font-pixel text-4xl md:text-5xl uppercase text-primary tracking-wider mb-3">The Erchis Blog</h1>
-                    <p className="narr text-lg text-muted-foreground max-w-2xl">
+                    <h1 className="mb-4 font-display text-display uppercase text-foreground">The Erchis <span className="text-primary">blog</span></h1>
+                    <p className="text-lede text-muted-foreground max-w-2xl">
                         Devlogs, lore entries, patch notes, and community stories from the world of Erchis.
                     </p>
                 </div>
@@ -111,7 +117,7 @@ export default function Blog() {
                                     </div>
                                 )}
                                 <div className="stat-label text-primary/70 mb-2">{p.category}</div>
-                                <div className="font-pixel text-lg uppercase text-primary mb-3 leading-tight">{p.title}</div>
+                                <div className="font-display text-card uppercase text-primary mb-3 leading-tight">{p.title}</div>
                                 <div className="text-base text-muted-foreground line-clamp-3 flex-1">{p.excerpt}</div>
                                 <div className="stat-label text-muted-foreground/60 mt-5 flex items-center justify-between">
                                     <span>{p.author_name}</span>

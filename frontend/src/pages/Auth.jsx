@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import Seo from "@/components/site/Seo";
 
 export default function Auth() {
     const [mode, setMode] = useState("login");
@@ -37,12 +38,19 @@ export default function Auth() {
 
     return (
         <div className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden" data-testid="auth-root">
+            <Seo
+                title="Sign in"
+                description="Sign in or create an Erchis account."
+                path="/auth"
+                noindex
+            />
             <div
-                className="absolute inset-0 opacity-20"
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
                 style={{
-                    backgroundImage: "url(https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=2000&auto=format&fit=crop)",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
+                    background:
+                        "radial-gradient(ellipse 60% 60% at 50% 25%, rgba(212,175,55,0.10), transparent 65%)"
+                        + ", radial-gradient(ellipse 100% 100% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%)",
                     filter: "grayscale(0.9) sepia(0.3)",
                 }}
             />

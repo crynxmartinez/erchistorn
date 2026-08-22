@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import SiteLayout from "@/components/SiteLayout";
+import Seo from "@/components/site/Seo";
 import { Trophy, Crown } from "lucide-react";
 
 export default function LeaderboardPage({ embedded }) {
@@ -23,7 +24,7 @@ export default function LeaderboardPage({ embedded }) {
         <>
             <div className="flex items-center gap-3 mb-10">
                 <Trophy className="text-primary" size={40} />
-                <h1 className="font-pixel text-5xl uppercase text-primary">Leaderboard</h1>
+                <h1 className="font-display text-display uppercase text-foreground">Leader<span className="text-primary">board</span></h1>
             </div>
 
             <div className="panel p-6 md:p-8">
@@ -66,6 +67,11 @@ export default function LeaderboardPage({ embedded }) {
     if (embedded) return content;
     return (
         <SiteLayout>
+            <Seo
+                title="Leaderboard"
+                description="The live Erchis ladder. One shared world, one ranking — see who is ahead right now."
+                path="/leaderboard"
+            />
             <div className="max-w-5xl mx-auto px-4 md:px-8 py-16" data-testid="leaderboard-page">
                 {content}
             </div>

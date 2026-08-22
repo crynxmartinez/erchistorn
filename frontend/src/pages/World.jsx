@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import SiteLayout from "@/components/SiteLayout";
+import Seo from "@/components/site/Seo";
 import { Globe, Skull, Sparkles, Lock, MapPin, Home, Sword, Shield, FlaskConical, ScrollText, MessageSquare, Beer, ShoppingBag, TrainFront, ChevronLeft, ChevronRight } from "lucide-react";
 
 const RACE_ICONS = {
@@ -74,29 +75,48 @@ export default function World() {
 
     return (
         <SiteLayout>
-            {/* Hero */}
-            <section className="relative px-6 md:px-16 py-20 border-b border-border overflow-hidden">
-                <div className="absolute inset-0 opacity-15" style={{
-                    backgroundImage: "url(https://images.unsplash.com/photo-1532012197267-da84d127e864?q=80&w=2000&auto=format&fit=crop)",
-                    backgroundSize: "cover", backgroundPosition: "center",
-                }} />
-                <div className="relative max-w-4xl">
-                    <div className="stat-label text-primary/70 mb-2 flex items-center gap-2"><Globe size={14} /> THE WORLD</div>
-                    <h1 className="font-pixel text-4xl md:text-6xl uppercase text-primary tracking-wider mb-4">The World of Erchis</h1>
-                    <p className="narr text-lg md:text-xl text-muted-foreground max-w-2xl">
-                        Eleven continents. Thirty biomes. Sixteen towns. Hundreds of creatures and materials. Explore every corner of the world — from the imperial halls of Valeria to the sunken depths of Hylion.
+            <Seo
+                title="The world"
+                description="Eleven continents, thirty biomes, sixteen towns, and hundreds of creatures and materials — from the imperial halls of Valeria to the sunken depths of Hylion."
+                path="/world"
+            />
+            {/* Hero. The old version hotlinked a 2000px Unsplash photo at 15%
+                opacity: a full external download on every visit for something
+                almost invisible, and a photograph in a pixel-art game. The
+                vignette below is code-only and on-brand. */}
+            <section className="relative overflow-hidden border-b border-border/60">
+                <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                        background:
+                            "radial-gradient(ellipse 70% 70% at 78% 25%, rgba(212,175,55,0.09), transparent 65%)," +
+                            "radial-gradient(ellipse 100% 100% at 50% 50%, transparent 45%, rgba(0,0,0,0.5) 100%)",
+                    }}
+                />
+                <div className="relative mx-auto w-full max-w-6xl px-6 py-20 md:py-28">
+                    <p className="mb-5 flex items-center gap-2 font-mono text-label uppercase text-primary/70">
+                        <Globe size={14} aria-hidden="true" /> The world
+                    </p>
+                    <h1 className="max-w-3xl font-display text-display uppercase text-foreground">
+                        The world of <span className="text-primary">Erchis</span>
+                    </h1>
+                    <p className="mt-7 max-w-prose text-lede text-muted-foreground">
+                        Eleven continents. Thirty biomes. Sixteen towns. Hundreds of creatures
+                        and materials — from the imperial halls of Valeria to the sunken depths
+                        of Hylion.
                     </p>
                 </div>
             </section>
 
             {/* Tabs */}
             <div className="sticky top-20 z-40 bg-background/95 backdrop-blur-sm border-b border-border">
-                <div className="max-w-7xl mx-auto px-4 md:px-8 flex gap-1 overflow-x-auto no-scrollbar">
+                <div className="mx-auto flex w-full max-w-6xl gap-1 overflow-x-auto px-6 no-scrollbar">
                     {TABS.map(t => (
                         <button
                             key={t.id}
                             onClick={() => setTab(t.id)}
-                            className={`px-5 py-4 font-pixel text-sm uppercase whitespace-nowrap transition-colors border-b-2 ${
+                            className={`px-5 py-4 font-mono text-label uppercase whitespace-nowrap transition-colors border-b-2 ${
                                 tab === t.id ? "text-primary border-primary" : "text-muted-foreground border-transparent hover:text-foreground"
                             }`}
                         >
@@ -106,7 +126,7 @@ export default function World() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
+            <div className="mx-auto w-full max-w-6xl px-6 py-16">
                 {loading && <div className="stat-label text-muted-foreground text-center py-20">Unfurling the map…</div>}
 
                 {/* ===== CONTINENTS TAB ===== */}

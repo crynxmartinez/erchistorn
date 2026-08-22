@@ -1,169 +1,233 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Menu, X, BookOpen, Swords, Globe, Users, Zap, Newspaper, Trophy, Info, ScrollText } from "lucide-react";
-import { useState } from "react";
+import { Menu, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import Die from "@/components/site/Die";
+import Button from "@/components/site/Button";
+
+/**
+ * Public site shell.
+ *
+ * Two changes from the previous version worth noting:
+ *
+ *  - The mark is the d6, not a generic scroll icon. The die is the game's central
+ *    mechanic, so it is the one thing that can carry the brand without artwork.
+ *  - Nav links are monospace at label size rather than VT323 at 14px. A pixel face
+ *    needs to be large to be legible; at nav size it reads as noise, which is why
+ *    everything on the old site felt shouty and hard to scan.
+ */
 
 const NAV_LINKS = [
-    { to: "/",          label: "Home",       icon: BookOpen },
-    { to: "/world",     label: "World",      icon: Globe },
-    { to: "/races",     label: "Races",      icon: Users },
-    { to: "/mechanics", label: "Mechanics",  icon: Swords },
-    { to: "/blog",      label: "Blog",       icon: Newspaper },
-    { to: "/leaderboard", label: "Ladder",   icon: Trophy },
-    { to: "/about",     label: "About",      icon: Info },
+    { to: "/world", label: "World" },
+    { to: "/races", label: "Races" },
+    { to: "/mechanics", label: "Mechanics" },
+    { to: "/blog", label: "Blog" },
+    { to: "/leaderboard", label: "Ladder" },
+    { to: "/about", label: "About" },
+];
+
+const FOOTER_GROUPS = [
+    {
+        title: "Game",
+        links: [
+            { to: "/world", label: "World" },
+            { to: "/races", label: "Races" },
+            { to: "/mechanics", label: "Mechanics" },
+            { to: "/leaderboard", label: "Leaderboard" },
+        ],
+    },
+    {
+        title: "Community",
+        links: [
+            { to: "/blog", label: "Blog" },
+            { to: "/changelog", label: "Changelog" },
+            { to: "/about", label: "About" },
+        ],
+    },
+    {
+        title: "Account",
+        links: [
+            { to: "/register", label: "Create account" },
+            { to: "/login", label: "Sign in" },
+        ],
+    },
 ];
 
 export default function SiteLayout({ children }) {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const { pathname } = useLocation();
     const [menuOpen, setMenuOpen] = useState(false);
 
+    // Close the mobile menu on navigation, otherwise it stays open over the new page.
+    useEffect(() => setMenuOpen(false), [pathname]);
+
+    const cta = user?.has_character
+        ? { label: "Enter game", go: () => navigate("/game") }
+        : user
+        ? { label: "Create hero", go: () => navigate("/create") }
+        : null;
+
     return (
-        <div className="site-page min-h-screen flex flex-col bg-background">
-            {/* Navbar */}
-            <nav className="sticky top-0 z-50 border-b-2 border-primary/30 bg-background/95 backdrop-blur-sm">
-                <div className="max-w-7xl mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-3" onClick={() => setMenuOpen(false)}>
-                        <ScrollText size={28} className="text-primary" />
-                        <span className="font-pixel text-2xl uppercase text-primary tracking-wider hidden sm:inline">Erchis</span>
+        <div className="site-page flex min-h-screen flex-col bg-background">
+            <a
+                href="#main"
+                className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:border-2 focus:border-primary focus:bg-background focus:px-4 focus:py-2 focus:font-mono focus:text-label focus:uppercase focus:text-primary"
+            >
+                Skip to content
+            </a>
+
+            <header className="sticky top-0 z-50 border-b border-border/70 bg-background/90 backdrop-blur-md">
+                <div className="mx-auto flex h-20 w-full max-w-6xl items-center justify-between px-6">
+                    <Link to="/" className="flex items-center gap-3" aria-label="Erchis, home">
+                        <Die size={30} face={6} roll={false} />
+                        <span className="font-display text-card uppercase tracking-widest text-foreground">
+                            Erchis
+                        </span>
                     </Link>
 
-                    {/* Desktop nav */}
-                    <div className="hidden lg:flex items-center gap-2">
-                        {NAV_LINKS.map((l) => (
-                            <Link
-                                key={l.to}
-                                to={l.to}
-                                className="font-pixel text-sm uppercase px-4 py-2 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors rounded"
-                            >
-                                {l.label}
-                            </Link>
-                        ))}
-                    </div>
+                    <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
+                        {NAV_LINKS.map((l) => {
+                            const active = pathname === l.to;
+                            return (
+                                <Link
+                                    key={l.to}
+                                    to={l.to}
+                                    aria-current={active ? "page" : undefined}
+                                    className={`px-3 py-2 font-mono text-label uppercase transition-colors ${
+                                        active
+                                            ? "text-primary"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    }`}
+                                >
+                                    {l.label}
+                                </Link>
+                            );
+                        })}
+                    </nav>
 
-                    {/* Auth buttons */}
-                    <div className="hidden lg:flex items-center gap-3">
-                        {user && user.has_character ? (
-                            <button
-                                onClick={() => navigate("/game")}
-                                className="press-btn font-pixel text-base uppercase px-6 py-2.5 bg-primary text-primary-foreground border-2 border-primary hover:bg-transparent hover:text-primary transition-colors"
-                            >
-                                Enter Game
-                            </button>
-                        ) : user ? (
-                            <button
-                                onClick={() => navigate("/create")}
-                                className="press-btn font-pixel text-base uppercase px-6 py-2.5 bg-primary text-primary-foreground border-2 border-primary hover:bg-transparent hover:text-primary transition-colors"
-                            >
-                                Create Hero
-                            </button>
+                    <div className="hidden items-center gap-3 lg:flex">
+                        {cta ? (
+                            <Button size="md" onClick={cta.go}>
+                                {cta.label}
+                            </Button>
                         ) : (
                             <>
                                 <Link
                                     to="/login"
-                                    className="press-btn font-pixel text-sm uppercase px-5 py-2.5 border-2 border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+                                    className="px-3 py-2 font-mono text-label uppercase text-muted-foreground transition-colors hover:text-foreground"
                                 >
-                                    Sign In
+                                    Sign in
                                 </Link>
-                                <Link
-                                    to="/register"
-                                    className="press-btn font-pixel text-base uppercase px-6 py-2.5 bg-primary text-primary-foreground border-2 border-primary hover:bg-transparent hover:text-primary transition-colors"
-                                >
-                                    Play Free
-                                </Link>
+                                <Button to="/register" size="md">
+                                    Play free
+                                </Button>
                             </>
                         )}
                     </div>
 
-                    {/* Mobile menu button */}
                     <button
-                        onClick={() => setMenuOpen(!menuOpen)}
-                        className="lg:hidden press-btn p-3 border-2 border-border text-primary"
+                        type="button"
+                        onClick={() => setMenuOpen((v) => !v)}
+                        aria-expanded={menuOpen}
+                        aria-label={menuOpen ? "Close menu" : "Open menu"}
+                        className="p-2 text-primary lg:hidden"
                     >
-                        {menuOpen ? <X size={24} /> : <Menu size={24} />}
+                        {menuOpen ? <X size={26} /> : <Menu size={26} />}
                     </button>
                 </div>
 
-                {/* Mobile menu */}
                 {menuOpen && (
-                    <div className="lg:hidden border-t border-border bg-background">
-                        <div className="px-4 py-4 space-y-2">
+                    <nav
+                        aria-label="Mobile"
+                        className="border-t border-border/70 bg-background lg:hidden"
+                    >
+                        <div className="mx-auto max-w-6xl px-6 py-4">
                             {NAV_LINKS.map((l) => (
                                 <Link
                                     key={l.to}
                                     to={l.to}
-                                    onClick={() => setMenuOpen(false)}
-                                    className="flex items-center gap-3 px-4 py-3 font-pixel text-sm uppercase text-muted-foreground hover:text-primary hover:bg-primary/5 rounded transition-colors"
+                                    className="block border-b border-border/40 py-3 font-mono text-label uppercase text-muted-foreground hover:text-primary"
                                 >
-                                    <l.icon size={18} /> {l.label}
+                                    {l.label}
                                 </Link>
                             ))}
-                            <div className="pt-3 border-t border-border flex gap-3">
-                                {user ? (
-                                    <button
-                                        onClick={() => { setMenuOpen(false); navigate(user.has_character ? "/game" : "/create"); }}
-                                        className="flex-1 text-center press-btn font-pixel text-sm uppercase px-4 py-3 bg-primary text-primary-foreground border-2 border-primary"
-                                    >
-                                        {user.has_character ? "Enter Game" : "Create Hero"}
-                                    </button>
+                            <div className="mt-5 flex flex-col gap-3">
+                                {cta ? (
+                                    <Button size="md" onClick={cta.go}>
+                                        {cta.label}
+                                    </Button>
                                 ) : (
                                     <>
-                                        <Link to="/login" onClick={() => setMenuOpen(false)} className="flex-1 text-center press-btn font-pixel text-sm uppercase px-4 py-3 border-2 border-border text-muted-foreground">
-                                            Sign In
-                                        </Link>
-                                        <Link to="/register" onClick={() => setMenuOpen(false)} className="flex-1 text-center press-btn font-pixel text-sm uppercase px-4 py-3 bg-primary text-primary-foreground border-2 border-primary">
-                                            Play Free
-                                        </Link>
+                                        <Button to="/register" size="md">
+                                            Play free
+                                        </Button>
+                                        <Button to="/login" size="md" variant="ghost">
+                                            Sign in
+                                        </Button>
                                     </>
                                 )}
                             </div>
                         </div>
-                    </div>
+                    </nav>
                 )}
-            </nav>
+            </header>
 
-            {/* Page content */}
-            <main className="flex-1">{children}</main>
+            <main id="main" className="flex-1">
+                {children}
+            </main>
 
-            {/* Footer */}
-            <footer className="border-t-2 border-primary/20 bg-card mt-12">
-                <div className="max-w-7xl mx-auto px-4 md:px-6 py-10">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        <div className="col-span-2 md:col-span-1">
-                            <div className="flex items-center gap-2 mb-3">
-                                <ScrollText size={18} className="text-primary" />
-                                <span className="font-pixel text-lg uppercase text-primary">Erchis</span>
-                            </div>
-                            <p className="narr text-sm text-muted-foreground">A fantasy dice RPG. Eight races, eleven continents, one die that decides all.</p>
-                        </div>
+            <footer className="border-t border-border/70 bg-card/30">
+                <div className="mx-auto w-full max-w-6xl px-6 py-14">
+                    <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
                         <div>
-                            <div className="stat-label text-primary/70 mb-2">GAME</div>
-                            <div className="space-y-1">
-                                <Link to="/world" className="block text-sm text-muted-foreground hover:text-primary">World</Link>
-                                <Link to="/races" className="block text-sm text-muted-foreground hover:text-primary">Races</Link>
-                                <Link to="/mechanics" className="block text-sm text-muted-foreground hover:text-primary">Mechanics</Link>
-                                <Link to="/leaderboard" className="block text-sm text-muted-foreground hover:text-primary">Leaderboard</Link>
+                            <div className="mb-4 flex items-center gap-3">
+                                <Die size={24} face={6} roll={false} />
+                                <span className="font-display text-card uppercase tracking-widest text-foreground">
+                                    Erchis
+                                </span>
                             </div>
+                            <p className="max-w-xs text-body-sm text-muted-foreground">
+                                A fantasy dice RPG. Eight races, eleven continents, one die that
+                                decides all.
+                            </p>
                         </div>
-                        <div>
-                            <div className="stat-label text-primary/70 mb-2">COMMUNITY</div>
-                            <div className="space-y-1">
-                                <Link to="/blog" className="block text-sm text-muted-foreground hover:text-primary">Blog</Link>
-                                <Link to="/changelog" className="block text-sm text-muted-foreground hover:text-primary">Changelog</Link>
-                                <Link to="/about" className="block text-sm text-muted-foreground hover:text-primary">About</Link>
+
+                        {FOOTER_GROUPS.map((g) => (
+                            <div key={g.title}>
+                                {/* Not a heading: footer column labels as <h2> put
+                                    "Game / Community / Account" into the document
+                                    outline on every page, competing with the real
+                                    section headings a crawler should see. */}
+                                <p className="mb-3 font-mono text-label uppercase text-primary/70">
+                                    {g.title}
+                                </p>
+                                <ul className="space-y-2">
+                                    {g.links.map((l) => (
+                                        <li key={l.to}>
+                                            <Link
+                                                to={l.to}
+                                                className="text-body-sm text-muted-foreground transition-colors hover:text-primary"
+                                            >
+                                                {l.label}
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
-                        </div>
-                        <div>
-                            <div className="stat-label text-primary/70 mb-2">ACCOUNT</div>
-                            <div className="space-y-1">
-                                <Link to="/register" className="block text-sm text-muted-foreground hover:text-primary">Create Account</Link>
-                                <Link to="/login" className="block text-sm text-muted-foreground hover:text-primary">Sign In</Link>
-                            </div>
-                        </div>
+                        ))}
                     </div>
-                    <div className="mt-8 pt-6 border-t border-border flex items-center justify-between">
-                        <div className="stat-label text-muted-foreground/40">&copy; Erchis Saga · A Fantasy Dice RPG</div>
-                        <div className="stat-label text-muted-foreground/40">v.MVP</div>
+
+                    <div className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-border/50 pt-6">
+                        <p className="font-mono text-caption uppercase text-muted-foreground/50">
+                            © {new Date().getFullYear()} Erchis · A fantasy dice RPG
+                        </p>
+                        <Link
+                            to="/changelog"
+                            className="font-mono text-caption uppercase text-muted-foreground/50 hover:text-primary"
+                        >
+                            Changelog
+                        </Link>
                     </div>
                 </div>
             </footer>

@@ -27,13 +27,13 @@ function renderMarkdown(body) {
     lines.forEach((line, i) => {
         if (line.startsWith("### ")) {
             flushList();
-            elements.push(<h3 key={i} className="font-pixel text-xl uppercase text-primary mt-8 mb-3">{line.slice(4)}</h3>);
+            elements.push(<h3 key={i} className="font-display text-card uppercase text-primary mt-8 mb-3">{line.slice(4)}</h3>);
         } else if (line.startsWith("## ")) {
             flushList();
-            elements.push(<h2 key={i} className="font-pixel text-2xl uppercase text-primary mt-10 mb-4">{line.slice(3)}</h2>);
+            elements.push(<h2 key={i} className="font-display text-card uppercase text-primary mt-10 mb-4">{line.slice(3)}</h2>);
         } else if (line.startsWith("# ")) {
             flushList();
-            elements.push(<h1 key={i} className="font-pixel text-3xl uppercase text-primary mt-10 mb-5">{line.slice(2)}</h1>);
+            elements.push(<h1 key={i} className="font-display text-subtitle uppercase text-primary mt-10 mb-5">{line.slice(2)}</h1>);
         } else if (line.startsWith("- ") || line.startsWith("* ")) {
             inList = true;
             listItems.push(<li key={i} className="text-base text-foreground/85">{line.slice(2)}</li>);
@@ -86,7 +86,7 @@ export default function BlogPost() {
 
                         {/* Meta */}
                         <div className="stat-label text-primary/70 mb-2">{post.category}</div>
-                        <h1 className="font-pixel text-3xl md:text-4xl uppercase text-primary tracking-wider mb-4 leading-tight">
+                        <h1 className="font-display text-subtitle md:text-4xl uppercase text-primary tracking-wider mb-4 leading-tight">
                             {post.title}
                         </h1>
                         <div className="flex items-center gap-4 stat-label text-muted-foreground mb-8 flex-wrap">

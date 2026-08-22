@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { ScrollText } from "lucide-react";
+import Seo from "@/components/site/Seo";
 
 export default function Login() {
     const [email, setEmail] = useState("");
@@ -30,12 +31,19 @@ export default function Login() {
 
     return (
         <div className="site-page min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden">
+            <Seo
+                title="Sign in"
+                description="Return to Erchis."
+                path="/login"
+                noindex
+            />
             <div
-                className="absolute inset-0 opacity-20"
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
                 style={{
-                    backgroundImage: "url(https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=2000&auto=format&fit=crop)",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
+                    background:
+                        "radial-gradient(ellipse 60% 60% at 50% 25%, rgba(212,175,55,0.10), transparent 65%)"
+                        + ", radial-gradient(ellipse 100% 100% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%)",
                     filter: "grayscale(0.9) sepia(0.3)",
                 }}
             />
