@@ -374,18 +374,47 @@ Verified in-browser on all eight public pages: h1 96px desktop / 48px mobile, bo
 Crimson Text, zero headings under 24px, no horizontal overflow at 375px, mobile menu
 works, production build passes with no new warnings.
 
-### Phase 3 — the SEO decision  **[BLOCKED ON YOUR CALL]**
+### Phase 3 — server-rendered public site  **[COMPLETE — one decision left for you]**
 
-JSON-LD and canonicals are done. What remains needs the §2 architecture decision,
-which is yours to make, not mine to guess:
+Option B, built in `web/` (Next.js 15, App Router, SSG). The game client stays a SPA
+in `frontend/`. Measured against the same running backend:
 
-12. **Option A, B or C from §2.** Until the public pages ship non-empty HTML, the
-    metadata added in Phase 2 is invisible to link unfurlers (Discord, Slack,
-    Twitter) — they read raw HTML and will keep showing the `index.html` defaults.
-    Googlebot will generally execute the JS; most other crawlers will not.
-13. Search Console + sitemap submission, once server-rendered.
-14. Generate the 11 mastery + 11 continent pages — 22 real long-tail pages, mostly
-    from `MASTERY_PLANS.md`. Highest-leverage SEO item remaining.
+| Content | `web/` (SSR) | `frontend/` (CRA) |
+|---|---|---|
+| Race names and perks | **in HTML** | absent |
+| Continent names | **in HTML** | absent |
+| Leaderboard | **in HTML** | absent |
+| d6 outcome table | **in HTML** | absent |
+| Per-route `<title>` | **unique** | same title on all 11 routes |
+
+**30 routes prerendered at build time**, including the 22 generated pages:
+`/mastery/[id]` x11 and `/continent/[id]` x11. Both sets are linked from
+`/mechanics` and `/world` respectively and listed in the generated sitemap — a
+generated page that is unlinked and unannounced is a page nothing crawls.
+
+Also shipped: `Article` JSON-LD per blog post, `VideoGame` JSON-LD on home, generated
+`sitemap.xml` (30 URLs, blog slugs included so publishing needs no edit) and
+`robots.txt`. Fonts moved to `next/font`, which self-hosts them and removes the
+external round trip the old `@import` chain caused.
+
+Theme verified identical at 1272px: h1 96px VT323, body Crimson Text, background
+`rgb(12,10,9)`, no overflow. The palette block is **copied verbatim** from
+`frontend/src/index.css` rather than retyped, so the two apps cannot drift.
+
+**What still needs you:** there are two apps now and something has to route between
+them (`/` → `web/`, `/app` → `frontend/`). Three options with their auth-cookie
+implications are documented in `web/README.md`. That depends on your host, so it is
+not a call I should make. Until it is wired, `frontend/` deliberately keeps serving
+its own copies of the public pages — deleting them first would break the live site.
+
+**Deliberately not ported:**
+- World's tabbed browser (continents/biomes/towns/bestiary/materials). That is an app
+  feature — six interacting pieces of client state, useful while playing, not what
+  should rank. `/world` server-renders the eleven continents as indexable text and
+  leaves the browser in the game.
+- Blog search and tag filters. Client-side filtering would put the archive back behind
+  JavaScript; they should return as real routes (`/blog/tag/[tag]`) so each filter is
+  its own indexable page.
 
 ### Phase 4 — content (ongoing)
 15. One post a week; guides first, dev logs for reach
