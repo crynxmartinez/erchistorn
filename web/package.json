@@ -1,0 +1,23 @@
+{
+  "name": "erchis-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Erchis public marketing site. Server-rendered so crawlers and link unfurlers see real HTML; the game client stays a SPA in ../frontend.",
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start -p 3100",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "15.1.6",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "lucide-react": "0.475.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "10.4.20",
+    "postcss": "8.4.49",
+    "tailwindcss": "3.4.17"
+  }
+}

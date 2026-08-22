@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ported from ../frontend/src/index.css. The palette is the theme contract, copied
+   verbatim rather than retyped so the two apps cannot drift apart.
+   Fonts load via next/font in app/layout.jsx, not @import: an @import serialises
+   the request chain, which made it the largest LCP contributor on the old site. */
+@layer base {
+    :root {
+        /* --- Erchis Dark Fantasy Palette --- */
+        --background: 30 15% 4%;      /* #0A0908 */
+        --foreground: 40 15% 90%;     /* #E8E6E3 */
+
+        --card: 30 12% 10%;           /* #1C1A17 */
+        --card-foreground: 40 15% 90%;
+
+        --popover: 30 14% 15%;        /* #2A241F */
+        --popover-foreground: 40 15% 90%;
+
+        --primary: 46 65% 52%;        /* #D4AF37 amber */
+        --primary-foreground: 30 15% 4%;
+
+        --secondary: 30 14% 15%;
+        --secondary-foreground: 40 15% 90%;
+
+        --muted: 30 12% 10%;
+        --muted-foreground: 35 5% 62%;   /* #A39F98 */
+
+        --accent: 46 65% 52%;
+        --accent-foreground: 30 15% 4%;
+
+        --destructive: 0 75% 55%;        /* bright crimson, readable on dark */
+        --destructive-foreground: 0 0% 8%;   /* near-black for destructive bg buttons */
+
+        --border: 30 15% 20%;            /* #3A332A */
+        --input: 30 15% 20%;
+        --ring: 46 65% 52%;
+
+        --radius: 0;
+
+        --rarity-common: 0 0% 88%;
+        --rarity-uncommon: 122 39% 49%;
+        --rarity-rare: 207 90% 54%;
+        --rarity-epic: 291 64% 42%;
+        --rarity-legendary: 33 100% 50%;
+        --rarity-mythic: 4 90% 58%;
+    }
+}
+@layer base {
+    * {
+        @apply border-border;
+        box-sizing: border-box;
+    }
+    html,
+    body {
+        margin: 0;
+        min-height: 100vh;
+    }
+    body {
+        @apply bg-background text-foreground;
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-image:
+            radial-gradient(ellipse 80% 60% at 50% 0%, rgba(212, 175, 55, 0.06) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 50% at 100% 100%, rgba(122, 27, 27, 0.04) 0%, transparent 70%),
+            repeating-linear-gradient(
+                0deg,
+                rgba(255, 255, 255, 0.008) 0px,
+                rgba(255, 255, 255, 0.008) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+    }
+
+    /* Kill rounded corners globally to match brutalist pixel aesthetic */
+    button,
+    input,
+    textarea,
+    select,
+    [role="dialog"],
+    [role="alertdialog"] {
+        border-radius: 0 !important;
+    }
+
+    h1, h2, h3, h4 {
+        font-family: 'VT323', monospace;
+        /* Tracking now comes from the type scale in tailwind.config.js, which
+           sets it per size -- a single global value is wrong at both 96px and
+           24px. */
+    }
+
+    ::selection {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+    }
+
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: hsl(var(--card));
+    }
+    ::-webkit-scrollbar-thumb {
+        background: hsl(var(--border));
+        border: 1px solid hsl(var(--primary) / 0.3);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: hsl(var(--primary) / 0.6);
+    }
+}
+
+
+/* The public site reads in the serif; labels, stats and controls stay monospace;
+   headings are the display face. None of these set font-size -- the type scale in
+   tailwind.config.js owns that. A blanket font-size on the heading class is exactly
+   what flattened all 149 headings to 20.7px on the old site. */
+body {
+    font-family: var(--font-body), Georgia, serif;
+}
+:is(h1, h2, h3, h4, .font-display) {
+    font-family: var(--font-display), monospace;
+}
+:is(.font-mono, .stat-label, button, input, select, textarea) {
+    font-family: var(--font-mono), ui-monospace, monospace;
+}
+/* Simple sprite placeholder */
+.sprite-slot {
+    width: 100%;
+    aspect-ratio: 1;
+    background-color: hsl(var(--background));
+    background-image:
+        linear-gradient(45deg, hsl(var(--card)) 25%, transparent 25%),
+        linear-gradient(-45deg, hsl(var(--card)) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, hsl(var(--card)) 75%),
+        linear-gradient(-45deg, transparent 75%, hsl(var(--card)) 75%);
+    background-size: 8px 8px;
+    background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(var(--primary));
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    border: 1px solid hsl(var(--border));
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+

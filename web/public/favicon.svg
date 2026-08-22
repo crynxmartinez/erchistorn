@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Erchis">
+  <!-- Zero-radius square, matching the site's border-radius: 0 identity. -->
+  <rect width="32" height="32" fill="#0C0A09"/>
+  <rect x="3.5" y="3.5" width="25" height="25" fill="none" stroke="#D4AF37" stroke-width="2"/>
+  <!-- Six pips: the game is decided by a weighted d6, so the icon shows a six. -->
+  <g fill="#D4AF37">
+    <rect x="9"  y="9"  width="3.5" height="3.5"/>
+    <rect x="19.5" y="9"  width="3.5" height="3.5"/>
+    <rect x="9"  y="14.25" width="3.5" height="3.5"/>
+    <rect x="19.5" y="14.25" width="3.5" height="3.5"/>
+    <rect x="9"  y="19.5" width="3.5" height="3.5"/>
+    <rect x="19.5" y="19.5" width="3.5" height="3.5"/>
+  </g>
+</svg>
