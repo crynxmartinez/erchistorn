@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useGameData } from "@/data/gameData";
 import { getThemeVars } from "@/data/themes";
 import { toast } from "sonner";
-import { LogOut, Trophy, ScrollText, Home as HomeIcon, Building2, Shield, Sun, Globe, User, Package, BookOpen, MessageSquare } from "lucide-react";
+import { LogOut, Trophy, ScrollText, Home as HomeIcon, Building2, Shield, Sun, Globe, User, Package, BookOpen } from "lucide-react";
 
 import CharacterPanel from "@/components/CharacterPanel";
 import CharacterSheet from "@/components/CharacterSheet";
@@ -24,8 +24,7 @@ import RacialAbilityPanel from "@/components/RacialAbilityPanel";
 import SlidePanel from "@/components/SlidePanel";
 import HeritageArrivalModal from "@/components/HeritageArrivalModal";
 import TownView from "@/components/TownView";
-import CountryChat from "@/components/CountryChat";
-import { useCountryChat } from "@/hooks/useCountryChat";
+import ChatWidget from "@/components/ChatWidget";
 import GuildHouse from "@/pages/GuildHouse";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 
@@ -132,15 +131,6 @@ export default function Game() {
         }
         prevContinentRef.current = currCont;
     }, [character?.current_continent]);
-
-    // Live country (continent) chat — the presence heartbeat runs continuously while
-    // the Game page is mounted, so enter/leave is announced even with the panel closed.
-    const chat = useCountryChat({
-        enabled: !!character,
-        active: tab === "chat",
-        myId: character?.id,
-        myName: character?.name,
-    });
 
     if (!character || !gd.ready) {
         return (
@@ -282,25 +272,6 @@ export default function Game() {
                         <Shield size={14} strokeWidth={1.5} /> Guild
                     </button>
                     <button
-                        data-testid="tab-chat"
-                        onClick={() => { setTab("chat"); setTownId(null); setTownMenuOpen(false); closePanels(); }}
-                        className={`press-btn font-pixel text-sm uppercase px-3 py-1.5 border-2 flex items-center gap-1.5 relative ${
-                            tab === "chat"
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-border text-muted-foreground hover:border-primary hover:text-primary"
-                        }`}
-                    >
-                        <MessageSquare size={14} strokeWidth={1.5} /> Chat
-                        {chat.unread > 0 && tab !== "chat" && (
-                            <span
-                                data-testid="chat-unread"
-                                className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-mono flex items-center justify-center"
-                            >
-                                {chat.unread > 9 ? "9+" : chat.unread}
-                            </span>
-                        )}
-                    </button>
-                    <button
                         data-testid="tab-journal"
                         onClick={() => { setTab("journal"); setTownId(null); setTownMenuOpen(false); closePanels(); }}
                         className={`press-btn font-pixel text-sm uppercase px-3 py-1.5 border-2 flex items-center gap-1.5 ${
@@ -409,18 +380,6 @@ export default function Game() {
                             {tab === "journal" && (
                                 <JournalDrawer embedded />
                             )}
-                            {tab === "chat" && (
-                                <CountryChat
-                                    continentName={chat.continentName}
-                                    messages={chat.messages}
-                                    online={chat.online}
-                                    onlineCount={chat.onlineCount}
-                                    me={chat.me}
-                                    loading={chat.loading}
-                                    sending={chat.sending}
-                                    onSend={chat.send}
-                                />
-                            )}
                         </>
                     )}
                 </main>
@@ -516,6 +475,9 @@ export default function Game() {
                     }}
                 />
             )}
+
+            {/* Floating chat widget — bottom-right, always accessible */}
+            <ChatWidget character={character} />
         </div>
     );
 }

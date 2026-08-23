@@ -2,14 +2,21 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
-// Live country (continent) chat. Polls the backend on a short interval so the feed
-// feels real-time and, just as importantly, so the caller's presence heartbeat keeps
-// refreshing while they are in-game. Enter/leave of OTHER players surface as toasts.
 const POLL_MS = 6000;
 
-export function useCountryChat({ enabled = true, active = false, myId = null, myName = "" } = {}) {
-    const [continent, setContinent] = useState(null);
-    const [continentName, setContinentName] = useState("");
+/**
+ * Generic multi-channel chat hook. Each channel instance polls independently
+ * and tracks its own unread count.
+ *
+ * @param {object}   opts
+ * @param {boolean}  opts.enabled   - whether to poll at all
+ * @param {boolean}  opts.active    - whether this channel is currently visible (clears unread)
+ * @param {string}   opts.channel   - "world" | "country" | "guild"
+ * @param {string|null} opts.myId   - character id
+ * @param {string}   opts.myName    - character name
+ */
+export function useChatChannel({ enabled = true, active = false, channel = "country", myId = null, myName = "" } = {}) {
+    const [label, setLabel] = useState("");
     const [messages, setMessages] = useState([]);
     const [online, setOnline] = useState([]);
     const [onlineCount, setOnlineCount] = useState(0);
@@ -17,31 +24,33 @@ export function useCountryChat({ enabled = true, active = false, myId = null, my
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const [unread, setUnread] = useState(0);
+    const [error, setError] = useState(null);
 
     const seenSystemRef = useRef(new Set());
     const seenUserRef = useRef(new Set());
     const initializedRef = useRef(false);
     const inFlightRef = useRef(false);
     const activeRef = useRef(active);
-    const continentRef = useRef(null);
     const myNameRef = useRef(myName);
 
     useEffect(() => { activeRef.current = active; }, [active]);
     useEffect(() => { myNameRef.current = myName; }, [myName]);
-    // Opening the chat clears the unread badge immediately.
     useEffect(() => { if (active) setUnread(0); }, [active]);
 
+    const pollUrl = channel === "world" ? "/chat/world/poll" : channel === "guild" ? "/chat/guild/poll" : "/chat/poll";
+    const sendUrl = channel === "world" ? "/chat/world/send" : channel === "guild" ? "/chat/guild/send" : "/chat/send";
+
     const processPoll = useCallback((data) => {
-        const newContinent = data.continent;
-        // Travelled to a new country -> start its feed fresh (no stale toasts).
-        if (continentRef.current !== null && continentRef.current !== newContinent) {
-            seenSystemRef.current = new Set();
-            seenUserRef.current = new Set();
-            initializedRef.current = false;
+        if (data.error) {
+            setError(data.error);
+            setMessages([]);
+            setOnline([]);
+            setOnlineCount(0);
+            setLoading(false);
+            return;
         }
-        continentRef.current = newContinent;
-        setContinent(newContinent);
-        setContinentName(data.continent_name || "");
+        setError(null);
+        setLabel(data.label || "");
         setMe(data.me);
         setOnline(data.online || []);
         setOnlineCount(data.online_count ?? (data.online || []).length);
@@ -49,7 +58,6 @@ export function useCountryChat({ enabled = true, active = false, myId = null, my
 
         const msgs = data.messages || [];
         if (!initializedRef.current) {
-            // First poll for this country: seed dedupe sets so we don't toast history.
             for (const m of msgs) {
                 if (m.kind === "system") seenSystemRef.current.add(m.id);
                 else seenUserRef.current.add(m.id);
@@ -76,15 +84,15 @@ export function useCountryChat({ enabled = true, active = false, myId = null, my
         if (inFlightRef.current) return;
         inFlightRef.current = true;
         try {
-            const { data } = await api.get("/chat/poll");
+            const { data } = await api.get(pollUrl);
             processPoll(data);
-        } catch (e) {
+        } catch {
             // Chat is non-critical; stay silent on transient poll failures.
         } finally {
             inFlightRef.current = false;
             setLoading(false);
         }
-    }, [processPoll]);
+    }, [pollUrl, processPoll]);
 
     useEffect(() => {
         if (!enabled) return undefined;
@@ -98,19 +106,19 @@ export function useCountryChat({ enabled = true, active = false, myId = null, my
         if (!t) return false;
         setSending(true);
         try {
-            const { data } = await api.post("/chat/send", { text: t });
+            const { data } = await api.post(sendUrl, { text: t });
             if (data?.message) {
                 seenUserRef.current.add(data.message.id);
                 setMessages((prev) => (prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message]));
             }
             return true;
-        } catch (e) {
+        } catch {
             toast.error("Message failed to send.");
             return false;
         } finally {
             setSending(false);
         }
-    }, []);
+    }, [sendUrl]);
 
-    return { continent, continentName, messages, online, onlineCount, me, loading, sending, unread, send };
+    return { label, messages, online, onlineCount, me, loading, sending, unread, error, send };
 }
