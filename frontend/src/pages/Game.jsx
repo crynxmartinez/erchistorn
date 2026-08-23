@@ -202,6 +202,7 @@ export default function Game() {
     };
 
     return (
+        <>
         <div style={themeVars} className="min-h-screen p-3 md:p-4 bg-background text-foreground" data-testid="game-root">
             {/* Top bar */}
             <div className="max-w-7xl mx-auto mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
@@ -475,9 +476,10 @@ export default function Game() {
                     }}
                 />
             )}
-
-            {/* Floating chat widget — bottom-right, always accessible */}
-            <ChatWidget character={character} />
         </div>
+
+        {/* Floating chat widget — outside themed container so fixed positioning is viewport-relative */}
+        <ChatWidget character={character} />
+        </>
     );
 }
