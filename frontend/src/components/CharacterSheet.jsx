@@ -347,7 +347,7 @@ export default function CharacterSheet({ character, portraits, race, role, maste
 
                 {/* Combat-active buffs — oath stacks, faith, skill stat mods, potions, etc.
                     These are temporary and only present during combat. */}
-                {(character.knight_oath || character.knight_current_oath_bonuses || character.combat_stat_mods || character.paladin_combat_faith || character.lancer_imbue_mods || character.druid_fusion_name || character.potion_stat_mods || character.combat_statuses) && (
+                {(character.knight_oath || character.knight_current_oath_bonuses || character.combat_stat_mods || character.paladin_combat_faith || character.lancer_imbue_mods || character.druid_fusion_name || character.potion_stat_mods || character.combat_statuses || character.heritage_surge_info) && (
                     <div className="mt-3 border border-primary/30 bg-primary/5 p-2">
                         <div className="stat-label mb-1 text-primary">COMBAT BUFFS</div>
                         {character.knight_oath && (
@@ -397,6 +397,12 @@ export default function CharacterSheet({ character, portraits, race, role, maste
                                 <span className="text-primary">+{val}</span>
                             </div>
                         ))}
+                        {character.heritage_surge_info && (
+                            <div className="flex justify-between font-mono text-xs border-t border-amber-500/30 pt-0.5 mt-0.5">
+                                <span className="text-amber-400">{character.heritage_surge_info.name.toUpperCase()}</span>
+                                <span className="text-amber-400">({character.heritage_surge_info.remaining} actions)</span>
+                            </div>
+                        )}
                         {character.combat_statuses && character.combat_statuses.map((s) => (
                             <div key={`cs_${s.id}`} className="flex justify-between font-mono text-xs border-t border-border/30 pt-0.5 mt-0.5">
                                 <span className="text-muted-foreground">{s.name.toUpperCase()}</span>
@@ -410,7 +416,7 @@ export default function CharacterSheet({ character, portraits, race, role, maste
                     </div>
                 )}
 
-                {/* Out-of-combat active buffs (sanctuary blessing, recovering, etc.) */}
+                {/* Out-of-combat active buffs (sanctuary blessing, inspired, recovering, etc.) */}
                 {character.statuses && character.statuses.filter(s => s.kind === "buff").length > 0 && (
                     <div className="mt-2 border border-green-500/20 bg-green-500/5 p-2">
                         <div className="stat-label mb-1 text-green-500">ACTIVE BUFFS</div>
@@ -418,9 +424,71 @@ export default function CharacterSheet({ character, portraits, race, role, maste
                             <div key={`ab_${s.id}`} className="flex justify-between font-mono text-xs">
                                 <span className="text-muted-foreground">{(s.name || s.id || "").toUpperCase()}</span>
                                 <span className="text-green-500">
-                                    {s.magnitude > 0 && `+${s.magnitude}`}
+                                    {s.modifiers && Object.entries(s.modifiers).map(([k, v]) => `${k.replace(/_/g, " ")} +${v}`).join(", ")}
+                                    {!s.modifiers && s.magnitude > 0 && `+${s.magnitude}`}
                                     {s.duration > 0 && ` (${s.duration}t)`}
                                 </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Study buff (Atlantyrion Academy daily check-in) */}
+                {character.study_buff && (
+                    <div className="mt-2 border border-cyan-500/20 bg-cyan-500/5 p-2">
+                        <div className="stat-label mb-1 text-cyan-400">STUDY BUFF</div>
+                        <div className="flex justify-between font-mono text-xs">
+                            <span className="text-muted-foreground">{character.study_buff.stat.replace(/_/g, " ").toUpperCase()}</span>
+                            <span className="text-cyan-400">
+                                +{character.study_buff.bonus_pct}%
+                                {character.study_buff.is_exam_day && <span className="ml-1 text-amber-400">EXAM</span>}
+                            </span>
+                        </div>
+                        {character.study_buff.xp_bonus_pct > 0 && (
+                            <div className="flex justify-between font-mono text-xs">
+                                <span className="text-muted-foreground">XP BONUS ({character.study_buff.xp_bonus_type})</span>
+                                <span className="text-cyan-400">+{character.study_buff.xp_bonus_pct}%</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Study perks (permanent tier bonuses) */}
+                {character.study_perks && Object.keys(character.study_perks).length > 0 && (
+                    <div className="mt-1 border border-cyan-500/10 bg-cyan-500/5 p-2">
+                        <div className="stat-label mb-1 text-cyan-600">STUDY PERKS</div>
+                        {Object.entries(character.study_perks).map(([stat, tiers]) => (
+                            <div key={`sp_${stat}`} className="flex justify-between font-mono text-xs">
+                                <span className="text-muted-foreground">{stat.replace(/_/g, " ").toUpperCase()}</span>
+                                <span className="text-cyan-600">T{tiers} (+{tiers * 2}%)</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Guild buffs */}
+                {character._guild_buffs && character._guild_buffs.length > 0 && (
+                    <div className="mt-2 border border-purple-500/20 bg-purple-500/5 p-2">
+                        <div className="stat-label mb-1 text-purple-400">GUILD BUFFS</div>
+                        {character._guild_buffs.map((b) => (
+                            <div key={`gb_${b.buff_id}`} className="flex justify-between font-mono text-xs">
+                                <span className="text-muted-foreground">{b.label}</span>
+                                <span className="text-purple-400">
+                                    {Math.floor(b.remaining_seconds / 3600)}h {Math.floor((b.remaining_seconds % 3600) / 60)}m
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Trained stats breakdown */}
+                {character.trained_stats && Object.keys(character.trained_stats).length > 0 && (
+                    <div className="mt-1 border border-border/40 bg-muted/10 p-2">
+                        <div className="stat-label mb-1 text-muted-foreground">TRAINED STATS</div>
+                        {Object.entries(character.trained_stats).map(([stat, val]) => (
+                            <div key={`ts_${stat}`} className="flex justify-between font-mono text-xs">
+                                <span className="text-muted-foreground">{stat.replace(/_/g, " ").toUpperCase()}</span>
+                                <span className="text-muted-foreground">+{val}</span>
                             </div>
                         ))}
                     </div>

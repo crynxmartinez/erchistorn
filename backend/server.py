@@ -2156,6 +2156,20 @@ async def do_action(payload: ActionPayload, user: dict = Depends(_get_current_us
     study_xp_mult = study_xp_bonus_for_action(ch, payload.action_id)
     if study_xp_mult > 1.0 and result["rewards"].get("xp", 0) > 0:
         result["rewards"]["xp"] = int(result["rewards"]["xp"] * study_xp_mult)
+    # Consumable XP buff potion
+    xp_buff_pct = ch.get("xp_buff_pct", 0)
+    if xp_buff_pct > 0 and result["rewards"].get("xp", 0) > 0:
+        result["rewards"]["xp"] = int(result["rewards"]["xp"] * (1.0 + xp_buff_pct / 100.0))
+    # Guild buffs
+    _guild_buffs = await _get_active_guild_buffs(ch)
+    _gb_ids = _guild_buff_ids(_guild_buffs)
+    if "combat_xp" in _gb_ids and result["rewards"].get("xp", 0) > 0 and payload.action_id == "hunt":
+        result["rewards"]["xp"] = int(result["rewards"]["xp"] * 1.05)
+    if "gather_yield" in _gb_ids and payload.action_id == "gather":
+        for it in result["rewards"].get("items", []):
+            if isinstance(it, (list, tuple)) and len(it) == 2:
+                it[1] = max(1, int(it[1] * 1.10))
+    ch["_guild_buffs"] = _guild_buffs
 
     _apply_rewards_to_character(ch, result["rewards"], log=result.get("log"))
     _level_up_if_needed(ch, result["rewards"])
@@ -2545,6 +2559,16 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
         study_xp_mult = study_xp_bonus_for_action(ch, "hunt")
         if study_xp_mult > 1.0 and result["rewards"].get("xp", 0) > 0:
             result["rewards"]["xp"] = int(result["rewards"]["xp"] * study_xp_mult)
+        # Consumable XP buff potion
+        xp_buff_pct = ch.get("xp_buff_pct", 0)
+        if xp_buff_pct > 0 and result["rewards"].get("xp", 0) > 0:
+            result["rewards"]["xp"] = int(result["rewards"]["xp"] * (1.0 + xp_buff_pct / 100.0))
+        # Guild combat XP buff
+        _guild_buffs = await _get_active_guild_buffs(ch)
+        _gb_ids = _guild_buff_ids(_guild_buffs)
+        if "combat_xp" in _gb_ids and result["rewards"].get("xp", 0) > 0:
+            result["rewards"]["xp"] = int(result["rewards"]["xp"] * 1.05)
+        ch["_guild_buffs"] = _guild_buffs
         _apply_rewards_to_character(ch, result["rewards"], log=result.get("log"))
         _level_up_if_needed(ch, result["rewards"])
         ch["kills"] = ch.get("kills", 0) + 1
@@ -2813,6 +2837,19 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
     else:
         ch.pop("potion_stat_mods", None)
         ch.pop("combat_statuses", None)
+
+    # --- Heritage Surge info for frontend ---
+    surge_remaining = ch.get("heritage_surge_active", 0)
+    if surge_remaining > 0:
+        from game_data_p2 import HERITAGE_SURGES
+        surge = HERITAGE_SURGES.get(ch.get("race"), {})
+        ch["heritage_surge_info"] = {
+            "name": surge.get("name", "Heritage Surge"),
+            "desc": surge.get("desc", ""),
+            "remaining": surge_remaining,
+        }
+    else:
+        ch.pop("heritage_surge_info", None)
 
     # Recompute derived defenses now that combat-only bonuses are in ch["stats"],
     # so the frontend CharacterSheet shows accurate armor/MR during combat.
@@ -4494,27 +4531,83 @@ async def use_item(request: Request, user: dict = Depends(_get_current_user)):
     if idx < 0:
         raise HTTPException(status_code=400, detail="Item not in inventory")
     effect = item.get("effect", {})
+    if not isinstance(effect, dict):
+        raise HTTPException(status_code=400, detail="This item cannot be used.")
     message = f"You used {item['name']}."
+    update_fields: dict = {}
     if "heal" in effect:
         from game_data import compute_healing
         from world_data import continental_bonus_for
         _hq = continental_bonus_for(ch.get("current_continent", ""), "healing_quality")
         heal = compute_healing(ch, int(int(effect["heal"]) * (float(_hq) if _hq else 1.0)))
         ch["hp"] = min(ch["max_hp"], ch["hp"] + heal)
+        update_fields["hp"] = ch["hp"]
         message = f"You recovered {heal} HP."
     elif "cure" in effect:
         status = effect["cure"]
         ch["statuses"] = [s for s in ch.get("statuses", []) if s.get("id") != status]
+        update_fields["statuses"] = ch.get("statuses", [])
         message = f"You cured {status}."
+    elif "restore_mp" in effect:
+        amount = int(effect["restore_mp"])
+        ch["mp"] = min(ch.get("max_mp", amount), ch.get("mp", 0) + amount)
+        update_fields["mp"] = ch["mp"]
+        message = f"You restored {amount} MP."
+    elif "stamina" in effect:
+        amount = int(effect["stamina"])
+        ch["stamina"] = min(ch.get("max_stamina", amount), ch.get("stamina", 0) + amount)
+        update_fields["stamina"] = ch["stamina"]
+        message = f"You recovered {amount} stamina."
+    elif "buff_stat" in effect:
+        from game_engine import make_status, _append_status_dedup
+        amount = int(effect["buff_stat"])
+        stat = item.get("stat") or "might"
+        status = make_status("inspired")
+        status["modifiers"] = {stat: amount}
+        _append_status_dedup(ch, status, key="statuses")
+        _recompute_stats(ch)
+        update_fields["stats"] = ch["stats"]
+        update_fields["statuses"] = ch.get("statuses", [])
+        update_fields["base_stats"] = ch.get("base_stats", ch["stats"])
+        message = f"You feel inspired — {stat} +{amount} for {status['duration']} actions."
+    elif "hp_regen" in effect:
+        from game_engine import make_status, _append_status_dedup
+        status = make_status("blessed")
+        status["magnitude"] = int(effect["hp_regen"])
+        _append_status_dedup(ch, status, key="statuses")
+        update_fields["statuses"] = ch.get("statuses", [])
+        message = f"You feel blessed — regenerating {effect['hp_regen']} HP per turn."
+    elif "mp_regen" in effect:
+        from game_engine import make_status, _append_status_dedup
+        status = make_status("focused")
+        status["magnitude"] = int(effect["mp_regen"])
+        _append_status_dedup(ch, status, key="statuses")
+        update_fields["statuses"] = ch.get("statuses", [])
+        message = f"You feel focused — regenerating {effect['mp_regen']} MP per turn."
+    elif "resist" in effect:
+        from game_engine import make_status, _append_status_dedup
+        status = make_status("warded")
+        status["magnitude"] = int(effect["resist"])
+        _append_status_dedup(ch, status, key="statuses")
+        update_fields["statuses"] = ch.get("statuses", [])
+        message = f"You feel warded — resistant to harm."
+    elif "xp_buff" in effect:
+        ch["xp_buff_pct"] = int(effect["xp_buff"])
+        update_fields["xp_buff_pct"] = ch["xp_buff_pct"]
+        message = f"You feel enlightened — +{effect['xp_buff']}% XP gain."
+    elif "gold" in effect:
+        amount = int(effect["gold"])
+        ch["gold"] = ch.get("gold", 0) + amount
+        update_fields["gold"] = ch["gold"]
+        message = f"You open {item['name']} and find {amount} gold."
     else:
-        message = f"You used {item['name']}, but nothing happened."
+        raise HTTPException(status_code=400, detail="This item has no usable effect.")
     if inv[idx].get("quantity", 1) <= 1:
         inv.pop(idx)
     else:
         inv[idx]["quantity"] -= 1
-    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {
-        "inventory": inv, "hp": ch["hp"], "statuses": ch.get("statuses", [])
-    }})
+    update_fields["inventory"] = inv
+    await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": update_fields})
     return {"character": ch, "message": message}
 
 
@@ -6514,6 +6607,41 @@ GUILD_BUFFS = {
     "trade_cut":   {"label": "Trade Profit +8%",    "cost": 400,  "duration_h": 24, "desc": "+8% gold when selling to NPC shops"},
     "expedition":  {"label": "Expedition Speed +15%","cost": 700, "duration_h": 24, "desc": "Expeditions complete 15% faster"},
 }
+
+
+async def _get_active_guild_buffs(ch: dict) -> list[dict]:
+    """Fetch active guild buffs for a character. Returns list of {buff_id, label, desc, remaining_seconds}."""
+    guild_id = ch.get("guild_id")
+    if not guild_id:
+        return []
+    doc = await db.guilds.find_one({"_id": ObjectId(guild_id)})
+    if not doc:
+        return []
+    now = datetime.now(timezone.utc)
+    active = []
+    for b in doc.get("active_buffs", []):
+        expires = b.get("expires_at")
+        if not expires:
+            continue
+        if isinstance(expires, str):
+            expires = datetime.fromisoformat(expires)
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        if expires > now:
+            remaining = int((expires - now).total_seconds())
+            meta = GUILD_BUFFS.get(b["buff_id"], {})
+            active.append({
+                "buff_id": b["buff_id"],
+                "label": meta.get("label", b["buff_id"]),
+                "desc": meta.get("desc", ""),
+                "remaining_seconds": remaining,
+            })
+    return active
+
+
+def _guild_buff_ids(active_buffs: list[dict]) -> set[str]:
+    """Return set of active buff IDs for quick lookup."""
+    return {b["buff_id"] for b in active_buffs}
 
 
 @api.get("/game/guilds/{guild_id}/buffs")
