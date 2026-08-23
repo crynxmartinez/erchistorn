@@ -7535,6 +7535,30 @@ async def _ensure_indexes() -> None:
     await db.chat_presence.create_index([("channel", 1), ("guild_id", 1)])
 
 
+async def _migrate_chat_channels() -> None:
+    """Migrate old chat schema to multi-channel: drop old character_id unique
+    index, backfill channel + presence_key on existing documents."""
+    # Drop the old unique index on character_id (conflicts with multi-channel presence)
+    try:
+        await db.chat_presence.drop_index("character_id_1")
+    except Exception:
+        pass  # already dropped or never existed
+    # Backfill channel + presence_key on existing presence docs
+    async for doc in db.chat_presence.find({"channel": {"$exists": False}}):
+        cid = doc.get("character_id", "")
+        cont = doc.get("continent", "")
+        pkey = f"{cid}:country"
+        await db.chat_presence.update_one(
+            {"_id": doc["_id"]},
+            {"$set": {"channel": "country", "presence_key": pkey}},
+        )
+    # Backfill channel on existing message docs
+    await db.chat_messages.update_many(
+        {"channel": {"$exists": False}},
+        {"$set": {"channel": "country"}},
+    )
+
+
 async def _migrate_statuses() -> None:
     """Rename the legacy "exhausted" debuff → "weary".
 
@@ -7694,6 +7718,10 @@ async def lifespan(_app: FastAPI):
         await _ensure_indexes()
     except Exception as e:
         logger.warning("Index creation skipped: %s", e)
+    try:
+        await _migrate_chat_channels()
+    except Exception as e:
+        logger.warning("Chat channel migration skipped: %s", e)
     try:
         await _migrate_statuses()
     except Exception as e:
