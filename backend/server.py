@@ -96,7 +96,7 @@ from game_data import (  # noqa: E402
     get_race,
     get_role,
 )
-from game_engine import combat_turn, resolve_action, start_combat, start_craft, finish_craft, start_enchant, skin_monster, generate_telegraph, _alch_spend_cf, attempt_tame, _is_druid, _is_paladin, _druid_summon_creature, _druid_unsummon_creature, _druid_fuse, _druid_end_fusion, _druid_get_max_summons, _get_weapon_range_for_combat  # noqa: E402
+from game_engine import combat_turn, resolve_action, start_combat, start_craft, finish_craft, start_enchant, skin_monster, generate_telegraph, _alch_spend_cf, attempt_tame, _is_druid, _is_paladin, _is_priest, _druid_summon_creature, _druid_unsummon_creature, _druid_fuse, _druid_end_fusion, _druid_get_max_summons, _get_weapon_range_for_combat  # noqa: E402
 from progression import apply_level_ups, max_hp_for, xp_for_next  # noqa: E402
 from game_data_p2 import (  # noqa: E402
     BEAST_ASPECTS,
@@ -2717,6 +2717,64 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
                 ch["stats"][stat] = ch["stats"].get(stat, 0) + val
     else:
         ch.pop("paladin_combat_faith", None)
+
+    # --- Permanent combat passives (applied at turn 0, lost on stats reset) ---
+    if state.get("active"):
+        # Knight Battle Hardened (level 30): +10 armor
+        bh = state.get("knight_battle_hardened", 0)
+        if bh:
+            ch["stats"]["armor_bonus"] = ch["stats"].get("armor_bonus", 0) + bh
+        # Paladin Blessed Armor (level 30): +2 armor, +2 essence
+        if state.get("paladin_blessed_armor_applied"):
+            ch["stats"]["armor_bonus"] = ch["stats"].get("armor_bonus", 0) + 2
+            ch["stats"]["essence"] = ch["stats"].get("essence", 0) + 2
+        # Bard Charismatic (level 30): +10 grace
+        if state.get("bard_charismatic"):
+            ch["stats"]["grace"] = ch["stats"].get("grace", 0) + 10
+        # Priest Divine Fortitude (level 30): +10 essence
+        if _is_priest(ch) and ch.get("level", 1) >= 30:
+            ch["stats"]["essence"] = ch["stats"].get("essence", 0) + 10
+
+    # --- Lancer imbue stat mods ---
+    if state.get("active"):
+        imbue_mods = {}
+        for elem_id, imbue in (state.get("lancer_active_imbues") or {}).items():
+            for stat, val in (imbue.get("stat_mods") or {}).items():
+                ch["stats"][stat] = ch["stats"].get(stat, 0) + val
+                imbue_mods[stat] = imbue_mods.get(stat, 0) + val
+        if imbue_mods:
+            ch["lancer_imbue_mods"] = imbue_mods
+        else:
+            ch.pop("lancer_imbue_mods", None)
+
+    # --- Bard ally stat mods ---
+    if state.get("active"):
+        for entry in state.get("bard_ally_stat_mods", []):
+            for stat, val in entry.get("mods", {}).items():
+                ch["stats"][stat] = ch["stats"].get(stat, 0) + val
+
+    # --- Druid fusion stat stacking ---
+    if state.get("active") and state.get("druid_fusion_active"):
+        fusion_summon_id = state.get("druid_fusion_summon_id")
+        for summon in (state.get("druid_active_summons") or []):
+            if summon.get("id") == fusion_summon_id and summon.get("fused"):
+                for stat, val in (summon.get("stats") or {}).items():
+                    ch["stats"][stat] = ch["stats"].get(stat, 0) + val
+                ch["druid_fusion_name"] = summon.get("name", "")
+                break
+    else:
+        ch.pop("druid_fusion_name", None)
+
+    # --- Legendary Power rage bonuses ---
+    if state.get("active"):
+        for key, val in state.items():
+            if key.startswith("lp_") and key.endswith("_bonus") and val:
+                stat = key.split("_")[1]  # lp_{lp_id}_{stat}_bonus
+                # Extract stat name: lp_<id>_<stat>_bonus → <stat>
+                parts = key.split("_")
+                if len(parts) >= 4:
+                    stat = "_".join(parts[1:-1])
+                    ch["stats"][stat] = ch["stats"].get(stat, 0) + val
 
     # Recompute derived defenses now that combat-only bonuses are in ch["stats"],
     # so the frontend CharacterSheet shows accurate armor/MR during combat.
