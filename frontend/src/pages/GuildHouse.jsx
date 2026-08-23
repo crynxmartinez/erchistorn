@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, extractError } from "@/lib/api";
 import { toast } from "sonner";
-import { ArrowLeft, Coins, Shield, Users, Crown, Search, Zap, Swords, Hammer, Sprout, TrendingUp, Tent, LogOut } from "lucide-react";
+import { ArrowLeft, Coins, Shield, Users, Crown, Search, Zap, Swords, Hammer, Sprout, TrendingUp, Tent, LogOut, UserMinus, ChevronUp, ChevronDown, Megaphone, Trash2, Trophy, TrendingUp as TrendUp } from "lucide-react";
 
 const EMBLEMS = ["⚜","⚔","🗡","🛡","♛","🏰","🐺","🦅","🌙","☀","🐉","💎"];
 
@@ -40,6 +40,13 @@ export default function GuildHouse({ character: characterProp, onCharacterUpdate
     const [newGuildEmblem, setNewGuildEmblem] = useState("⚜");
     const [donateAmt, setDonateAmt] = useState(100);
     const [confirmLeave, setConfirmLeave] = useState(false);
+    const [stats, setStats] = useState(null);
+    const [announcements, setAnnouncements] = useState([]);
+    const [annText, setAnnText] = useState("");
+    const [memberSearch, setMemberSearch] = useState("");
+    const [memberSortBy, setMemberSortBy] = useState("rank");
+    const [confirmKick, setConfirmKick] = useState(null);
+    const [confirmTransfer, setConfirmTransfer] = useState(null);
 
     const loadAll = useCallback(async () => {
         try {
@@ -58,14 +65,18 @@ export default function GuildHouse({ character: characterProp, onCharacterUpdate
     const loadGuild = useCallback(async () => {
         if (!character?.guild_id) return;
         try {
-            const [g, b] = await Promise.all([
+            const [g, b, s, a] = await Promise.all([
                 api.get(`/game/guilds/${character.guild_id}`),
                 api.get(`/game/guilds/${character.guild_id}/buffs`),
+                api.get(`/game/guilds/${character.guild_id}/stats`),
+                api.get(`/game/guilds/${character.guild_id}/announcements`),
             ]);
             setGuild(g.data.guild);
             setBuffs(b.data.buffs);
             setHallUnlocked(b.data.hall_unlocked);
             setTreasury(b.data.treasury);
+            setStats(s.data);
+            setAnnouncements(a.data.announcements || []);
         } catch (e) {
             toast.error(extractError(e));
         }
@@ -129,7 +140,54 @@ export default function GuildHouse({ character: characterProp, onCharacterUpdate
         } catch (e) { toast.error(extractError(e)); }
     };
 
+    const kickMember = async (memberId) => {
+        try {
+            await api.post(`/game/guilds/${character.guild_id}/kick`, { character_id: memberId });
+            toast.success("Member kicked");
+            setConfirmKick(null);
+            loadGuild();
+        } catch (e) { toast.error(extractError(e)); }
+    };
+
+    const promoteMember = async (memberId, newRank) => {
+        try {
+            await api.post(`/game/guilds/${character.guild_id}/promote`, { character_id: memberId, rank: newRank });
+            toast.success(newRank === "officer" ? "Promoted to Officer" : "Demoted to Member");
+            loadGuild();
+        } catch (e) { toast.error(extractError(e)); }
+    };
+
+    const transferLeadership = async (memberId) => {
+        try {
+            const { data } = await api.post(`/game/guilds/${character.guild_id}/transfer`, { character_id: memberId });
+            toast.success("Leadership transferred");
+            setConfirmTransfer(null);
+            if (onCharacterUpdate) onCharacterUpdate(data.character);
+            else setLocalCharacter(data.character);
+            loadAll();
+        } catch (e) { toast.error(extractError(e)); }
+    };
+
+    const postAnnouncement = async () => {
+        if (!annText.trim()) return;
+        try {
+            const { data } = await api.post(`/game/guilds/${character.guild_id}/announcements`, { text: annText });
+            setAnnouncements(data.announcements);
+            setAnnText("");
+            toast.success("Announcement posted");
+        } catch (e) { toast.error(extractError(e)); }
+    };
+
+    const deleteAnnouncement = async (annId) => {
+        try {
+            const { data } = await api.delete(`/game/guilds/${character.guild_id}/announcements/${annId}`);
+            setAnnouncements(data.announcements);
+            toast.success("Announcement deleted");
+        } catch (e) { toast.error(extractError(e)); }
+    };
+
     const isGrandmaster = character.guild_rank === "grandmaster";
+    const isOfficer = character.guild_rank === "officer" || isGrandmaster;
 
     const filteredGuilds = guilds
         .filter(g => g.name.toLowerCase().includes(search.toLowerCase()))
@@ -137,6 +195,17 @@ export default function GuildHouse({ character: characterProp, onCharacterUpdate
             if (sortBy === "members") return b.member_count - a.member_count;
             if (sortBy === "treasury") return (b.treasury || 0) - (a.treasury || 0);
             if (sortBy === "name") return a.name.localeCompare(b.name);
+            return 0;
+        });
+
+    const rankOrder = { grandmaster: 0, officer: 1, member: 2 };
+    const filteredMembers = (guild?.members_populated || [])
+        .filter(m => m.name.toLowerCase().includes(memberSearch.toLowerCase()))
+        .sort((a, b) => {
+            if (memberSortBy === "rank") return (rankOrder[a.rank] ?? 9) - (rankOrder[b.rank] ?? 9);
+            if (memberSortBy === "level") return (b.level || 1) - (a.level || 1);
+            if (memberSortBy === "name") return a.name.localeCompare(b.name);
+            if (memberSortBy === "kills") return (b.kills || 0) - (a.kills || 0);
             return 0;
         });
 
@@ -328,6 +397,10 @@ export default function GuildHouse({ character: characterProp, onCharacterUpdate
     // ---------- DASHBOARD (in a guild) ----------
     if (view === "dashboard" && character.guild_id) {
         if (!guild) return <div className="min-h-[400px] flex items-center justify-center text-primary font-pixel text-2xl">LOADING GUILD…</div>;
+        const guildLevel = stats?.guild_level || 1;
+        const guildXp = stats?.guild_xp || 0;
+        const guildXpNext = stats?.guild_xp_next || 100;
+        const xpPct = Math.min(100, Math.floor((guildXp / guildXpNext) * 100));
         return (
             <div className={embedded ? "" : "min-h-screen p-4 md:p-6"} data-testid="guild-house-page">
                 <div className={embedded ? "" : "max-w-5xl mx-auto"}>
@@ -342,9 +415,16 @@ export default function GuildHouse({ character: characterProp, onCharacterUpdate
                         <div className="flex items-center gap-4">
                             <div className="text-6xl">{guild.emblem}</div>
                             <div className="flex-1">
-                                <div className="stat-label text-primary/70">{guild.member_count} MEMBERS{guild.hall_unlocked ? " · HALL UNLOCKED" : " · HALL LOCKED"}</div>
+                                <div className="stat-label text-primary/70">LV {guildLevel} · {guild.member_count} MEMBERS{guild.hall_unlocked ? " · HALL UNLOCKED" : " · HALL LOCKED"}</div>
                                 <h1 className="font-pixel text-3xl uppercase text-primary tracking-wider">{guild.name}</h1>
                                 {guild.tagline && <div className="narr text-sm text-muted-foreground mt-1">&ldquo;{guild.tagline}&rdquo;</div>}
+                                {/* XP Bar */}
+                                <div className="mt-2 w-full max-w-xs">
+                                    <div className="h-2 bg-border rounded-full overflow-hidden">
+                                        <div className="h-full bg-primary transition-all" style={{ width: `${xpPct}%` }} />
+                                    </div>
+                                    <div className="stat-label text-muted-foreground mt-0.5">{guildXp} / {guildXpNext} XP</div>
+                                </div>
                             </div>
                             <div className="text-right">
                                 <div className="stat-label">YOUR RANK</div>
@@ -356,11 +436,12 @@ export default function GuildHouse({ character: characterProp, onCharacterUpdate
                     </div>
 
                     {/* Sub-tabs */}
-                    <div className="flex gap-2 mb-4">
+                    <div className="flex gap-2 mb-4 flex-wrap">
                         {[
                             { id: "overview", label: "Overview", icon: Shield },
                             { id: "members", label: "Members", icon: Users },
                             { id: "hall", label: "Hall", icon: Zap },
+                            { id: "announcements", label: "Announcements", icon: Megaphone },
                         ].map(t => (
                             <button
                                 key={t.id}
@@ -380,7 +461,8 @@ export default function GuildHouse({ character: characterProp, onCharacterUpdate
                     {/* Overview Tab */}
                     {subTab === "overview" && (
                         <div className="space-y-4">
-                            <div className="grid grid-cols-3 gap-3">
+                            {/* Stats Grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                 <div className="panel p-4 text-center">
                                     <div className="stat-label">TREASURY</div>
                                     <div className="text-primary font-mono text-2xl" data-testid="guild-treasury">{treasury}g</div>
@@ -390,10 +472,38 @@ export default function GuildHouse({ character: characterProp, onCharacterUpdate
                                     <div className="text-primary font-mono text-2xl">{guild.member_count}/30</div>
                                 </div>
                                 <div className="panel p-4 text-center">
-                                    <div className="stat-label">HALL</div>
-                                    <div className={`font-mono text-2xl ${hallUnlocked ? "text-primary" : "text-muted-foreground"}`}>{hallUnlocked ? "ACTIVE" : "LOCKED"}</div>
+                                    <div className="stat-label">TOTAL KILLS</div>
+                                    <div className="text-primary font-mono text-2xl flex items-center justify-center gap-1">
+                                        <Trophy size={14} className="text-primary" />{stats?.total_kills || 0}
+                                    </div>
+                                </div>
+                                <div className="panel p-4 text-center">
+                                    <div className="stat-label">DONATED</div>
+                                    <div className="text-primary font-mono text-2xl flex items-center justify-center gap-1">
+                                        <Coins size={14} className="text-primary" />{stats?.total_gold_donated || 0}
+                                    </div>
                                 </div>
                             </div>
+
+                            {/* Active Buffs Summary */}
+                            {buffs.length > 0 && (
+                                <div className="panel p-4">
+                                    <div className="stat-label mb-2">ACTIVE BUFFS</div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {buffs.map(b => {
+                                            const meta = BUFF_META[b.buff_id];
+                                            const Icon = meta?.icon || Zap;
+                                            return (
+                                                <div key={b.buff_id} className="flex items-center gap-2 border border-primary/30 bg-primary/5 px-3 py-1.5">
+                                                    <Icon size={14} className="text-primary" />
+                                                    <span className="font-pixel text-xs uppercase text-primary">{b.label}</span>
+                                                    <span className="stat-label text-primary" data-testid={`buff-timer-${b.buff_id}`}>{fmtTime(b.remaining_seconds)}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Donate Panel */}
                             <div className="panel p-6" data-testid="donate-panel">
@@ -432,7 +542,7 @@ export default function GuildHouse({ character: characterProp, onCharacterUpdate
                                         <LogOut size={14} /> LEAVE GUILD
                                     </button>
                                 ) : (
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 flex-wrap">
                                         <span className="narr text-sm">Are you sure? {isGrandmaster && "You are the Grandmaster — leadership will pass to the next member."}</span>
                                         <button
                                             data-testid="confirm-leave"
@@ -453,23 +563,193 @@ export default function GuildHouse({ character: characterProp, onCharacterUpdate
                     {/* Members Tab */}
                     {subTab === "members" && (
                         <div className="panel p-6" data-testid="member-list">
-                            <h2 className="font-pixel text-xl uppercase text-primary mb-3 flex items-center gap-2">
-                                <Users size={18} /> Members ({guild.member_count})
-                            </h2>
+                            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                                <h2 className="font-pixel text-xl uppercase text-primary flex items-center gap-2">
+                                    <Users size={18} /> Members ({guild.member_count})
+                                </h2>
+                                <div className="flex gap-2 items-center">
+                                    <div className="relative">
+                                        <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                        <input
+                                            data-testid="member-search"
+                                            value={memberSearch}
+                                            onChange={(e) => setMemberSearch(e.target.value)}
+                                            className="bg-background border border-border pl-7 pr-3 py-1 font-mono text-sm w-32"
+                                            placeholder="Search…"
+                                        />
+                                    </div>
+                                    <select
+                                        data-testid="member-sort"
+                                        value={memberSortBy}
+                                        onChange={(e) => setMemberSortBy(e.target.value)}
+                                        className="bg-background border border-border px-2 py-1 font-mono text-sm"
+                                    >
+                                        <option value="rank">Rank</option>
+                                        <option value="level">Level</option>
+                                        <option value="name">Name</option>
+                                        <option value="kills">Kills</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div className="space-y-2">
-                                {(guild.members_populated || []).map((m) => (
-                                    <div key={m.id} data-testid={`member-${m.id}`} className="flex items-center justify-between border-b border-border/40 pb-2">
-                                        <div className="flex items-center gap-2">
-                                            {m.rank === "grandmaster" && <Crown size={14} className="text-primary" />}
-                                            <div>
-                                                <div className="font-mono text-sm text-foreground">{m.name}</div>
-                                                <div className="stat-label">{m.race} · {m.mastery} · Lv {m.level}</div>
+                                {filteredMembers.map((m) => {
+                                    const canManage = isOfficer && m.id !== character.id && m.rank !== "grandmaster";
+                                    const canPromote = isGrandmaster && m.id !== character.id && m.rank !== "grandmaster";
+                                    return (
+                                        <div key={m.id} data-testid={`member-${m.id}`} className="flex items-center justify-between border-b border-border/40 pb-2">
+                                            <div className="flex items-center gap-2 flex-1">
+                                                {m.rank === "grandmaster" && <Crown size={14} className="text-primary" />}
+                                                <div>
+                                                    <div className="font-mono text-sm text-foreground">{m.name}</div>
+                                                    <div className="stat-label">{m.race || "?"} · {m.mastery || "?"} · Lv {m.level}</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="stat-label text-muted-foreground hidden sm:block">{m.kills || 0} kills</div>
+                                                <div className="stat-label uppercase text-primary/80">{m.rank}</div>
+                                                {canManage && (
+                                                    <div className="flex items-center gap-1">
+                                                        {confirmKick === m.id ? (
+                                                            <>
+                                                                <button
+                                                                    data-testid={`confirm-kick-${m.id}`}
+                                                                    onClick={() => kickMember(m.id)}
+                                                                    className="press-btn text-[10px] px-2 py-1 border border-destructive bg-destructive text-destructive-foreground"
+                                                                >
+                                                                    KICK
+                                                                </button>
+                                                                <button onClick={() => setConfirmKick(null)} className="press-btn text-[10px] px-2 py-1 border border-border text-muted-foreground">
+                                                                    NO
+                                                                </button>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                {canPromote && (
+                                                                    m.rank === "member" ? (
+                                                                        <button
+                                                                            data-testid={`promote-${m.id}`}
+                                                                            onClick={() => promoteMember(m.id, "officer")}
+                                                                            title="Promote to Officer"
+                                                                            className="press-btn p-1 border border-border text-muted-foreground hover:text-primary hover:border-primary"
+                                                                        >
+                                                                            <ChevronUp size={14} />
+                                                                        </button>
+                                                                    ) : (
+                                                                        <button
+                                                                            data-testid={`demote-${m.id}`}
+                                                                            onClick={() => promoteMember(m.id, "member")}
+                                                                            title="Demote to Member"
+                                                                            className="press-btn p-1 border border-border text-muted-foreground hover:text-primary hover:border-primary"
+                                                                        >
+                                                                            <ChevronDown size={14} />
+                                                                        </button>
+                                                                    )
+                                                                )}
+                                                                {isGrandmaster && (
+                                                                    <button
+                                                                        data-testid={`transfer-${m.id}`}
+                                                                        onClick={() => setConfirmTransfer(m.id)}
+                                                                        title="Transfer Leadership"
+                                                                        className="press-btn p-1 border border-border text-muted-foreground hover:text-primary hover:border-primary"
+                                                                    >
+                                                                        <Crown size={14} />
+                                                                    </button>
+                                                                )}
+                                                                <button
+                                                                    data-testid={`kick-${m.id}`}
+                                                                    onClick={() => setConfirmKick(m.id)}
+                                                                    title="Kick Member"
+                                                                    className="press-btn p-1 border border-border text-muted-foreground hover:text-destructive hover:border-destructive"
+                                                                >
+                                                                    <UserMinus size={14} />
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
-                                        <div className="stat-label uppercase text-primary/80">{m.rank}</div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
+                            {/* Transfer Leadership Confirmation */}
+                            {confirmTransfer && (
+                                <div className="mt-4 p-4 border-2 border-primary/40 bg-primary/5">
+                                    <div className="narr text-sm mb-3">
+                                        Transfer leadership to <span className="text-primary font-pixel uppercase">{filteredMembers.find(m => m.id === confirmTransfer)?.name}</span>?
+                                        You will become an Officer.
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            data-testid="confirm-transfer"
+                                            onClick={() => transferLeadership(confirmTransfer)}
+                                            className="press-btn stat-label px-4 py-2 border border-primary bg-primary text-primary-foreground"
+                                        >
+                                            YES, TRANSFER
+                                        </button>
+                                        <button onClick={() => setConfirmTransfer(null)} className="press-btn stat-label px-4 py-2 border border-border text-muted-foreground hover:text-primary">
+                                            CANCEL
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Announcements Tab */}
+                    {subTab === "announcements" && (
+                        <div className="panel p-6" data-testid="announcements-panel">
+                            <h2 className="font-pixel text-xl uppercase text-primary mb-4 flex items-center gap-2">
+                                <Megaphone size={18} /> Announcements
+                            </h2>
+                            {isOfficer && (
+                                <div className="mb-4 flex gap-2">
+                                    <input
+                                        data-testid="ann-input"
+                                        value={annText}
+                                        onChange={(e) => setAnnText(e.target.value)}
+                                        maxLength={500}
+                                        className="flex-1 bg-background border border-border px-3 py-2 font-mono text-sm"
+                                        placeholder="Write an announcement for your guild…"
+                                    />
+                                    <button
+                                        data-testid="ann-post"
+                                        onClick={postAnnouncement}
+                                        disabled={!annText.trim()}
+                                        className="press-btn stat-label px-4 py-2 border border-primary text-primary hover:bg-primary hover:text-primary-foreground disabled:opacity-40"
+                                    >
+                                        POST
+                                    </button>
+                                </div>
+                            )}
+                            {announcements.length === 0 ? (
+                                <div className="stat-label text-muted-foreground text-center py-8">No announcements yet.</div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {announcements.map(a => (
+                                        <div key={a.id} data-testid={`ann-${a.id}`} className="border border-border/60 bg-muted/10 p-4">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="font-pixel text-sm uppercase text-primary">{a.author}</span>
+                                                        <span className="stat-label text-muted-foreground">· {a.author_rank}</span>
+                                                    </div>
+                                                    <div className="narr text-sm text-foreground">{a.text}</div>
+                                                </div>
+                                                {isOfficer && (
+                                                    <button
+                                                        data-testid={`ann-delete-${a.id}`}
+                                                        onClick={() => deleteAnnouncement(a.id)}
+                                                        className="press-btn p-1 text-muted-foreground hover:text-destructive"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
 

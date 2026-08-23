@@ -2270,6 +2270,8 @@ async def do_action(payload: ActionPayload, user: dict = Depends(_get_current_us
         _award_resolve(ch, 1, "gather_critical")
     if result.get("monster_slain"):
         ch["kills"] = ch.get("kills", 0) + 1
+        if ch.get("guild_id"):
+            await db.guilds.update_one({"_id": ObjectId(ch["guild_id"])}, {"$inc": {"total_kills": 1, "guild_xp": 2}})
         _update_daily_mission_progress(ch, {"kind": "kill", "id": result["monster_slain"], "count": 1})
     if payload.action_id in ("gather", "fish"):
         for it in result["rewards"].get("items", []):
@@ -2663,6 +2665,8 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
         _apply_rewards_to_character(ch, result["rewards"], log=result.get("log"))
         _level_up_if_needed(ch, result["rewards"])
         ch["kills"] = ch.get("kills", 0) + 1
+        if ch.get("guild_id"):
+            await db.guilds.update_one({"_id": ObjectId(ch["guild_id"])}, {"$inc": {"total_kills": 1, "guild_xp": 2}})
         biome = combat["state"].get("biome_id") or ch.get("current_biome")
         consume_stock("monster", biome, combat["state"]["monster_id"])
         _update_daily_mission_progress(ch, {"kind": "kill", "id": combat["state"]["monster_id"], "count": 1})
@@ -6673,6 +6677,215 @@ async def leave_guild(user: dict = Depends(_get_current_user)):
     return {"character": ch}
 
 
+# ---------------- GUILD MEMBER MANAGEMENT ----------------
+
+@api.post("/game/guilds/{guild_id}/kick")
+async def kick_guild_member(guild_id: str, request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    target_id = body.get("character_id")
+    if not target_id:
+        raise HTTPException(status_code=400, detail="character_id required")
+    ch = await _get_character_or_404(user["_id"])
+    if ch.get("guild_id") != guild_id:
+        raise HTTPException(status_code=403, detail="You are not in this guild")
+    if ch.get("guild_rank") not in ("grandmaster", "officer"):
+        raise HTTPException(status_code=403, detail="Only officers and grandmaster can kick")
+    doc = await db.guilds.find_one({"_id": ObjectId(guild_id)})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Guild not found")
+    target_member = None
+    for m in doc.get("members", []):
+        if m.get("character_id") == target_id:
+            target_member = m
+            break
+    if not target_member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    if target_member.get("rank") == "grandmaster":
+        raise HTTPException(status_code=403, detail="Cannot kick the grandmaster")
+    if ch.get("guild_rank") == "officer" and target_member.get("rank") == "officer":
+        raise HTTPException(status_code=403, detail="Officers cannot kick other officers")
+    doc["members"] = [m for m in doc["members"] if m.get("character_id") != target_id]
+    doc["member_count"] = len(doc["members"])
+    doc["hall_unlocked"] = doc["member_count"] >= 3
+    await db.guilds.update_one({"_id": ObjectId(guild_id)}, {"$set": {
+        "members": doc["members"], "member_count": doc["member_count"], "hall_unlocked": doc["hall_unlocked"],
+    }})
+    await db.characters.update_one({"_id": ObjectId(target_id)}, {"$set": {"guild_id": None, "guild_rank": None}})
+    target_ch = await db.characters.find_one({"_id": ObjectId(target_id)}, {"name": 1})
+    target_name = target_ch.get("name", "A member") if target_ch else "A member"
+    sys_msg = {
+        "id": str(uuid.uuid4()),
+        "channel": "guild",
+        "kind": "system",
+        "character_id": None,
+        "display_name": "",
+        "text": f"{target_name} was kicked from the guild.",
+        "guild_id": guild_id,
+        "created_at": datetime.now(timezone.utc),
+    }
+    await db.chat_messages.insert_one(sys_msg)
+    return {"ok": True, "member_count": doc["member_count"]}
+
+
+@api.post("/game/guilds/{guild_id}/promote")
+async def promote_guild_member(guild_id: str, request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    target_id = body.get("character_id")
+    new_rank = body.get("rank")  # "officer" or "member"
+    if not target_id or new_rank not in ("officer", "member"):
+        raise HTTPException(status_code=400, detail="character_id and rank (officer|member) required")
+    ch = await _get_character_or_404(user["_id"])
+    if ch.get("guild_id") != guild_id:
+        raise HTTPException(status_code=403, detail="You are not in this guild")
+    if ch.get("guild_rank") != "grandmaster":
+        raise HTTPException(status_code=403, detail="Only the grandmaster can change ranks")
+    doc = await db.guilds.find_one({"_id": ObjectId(guild_id)})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Guild not found")
+    for m in doc.get("members", []):
+        if m.get("character_id") == target_id:
+            if m.get("rank") == "grandmaster":
+                raise HTTPException(status_code=403, detail="Cannot change grandmaster's rank")
+            m["rank"] = new_rank
+            break
+    else:
+        raise HTTPException(status_code=404, detail="Member not found")
+    await db.guilds.update_one({"_id": ObjectId(guild_id)}, {"$set": {"members": doc["members"]}})
+    await db.characters.update_one({"_id": ObjectId(target_id)}, {"$set": {"guild_rank": new_rank}})
+    return {"ok": True}
+
+
+@api.post("/game/guilds/{guild_id}/transfer")
+async def transfer_guild_leadership(guild_id: str, request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    target_id = body.get("character_id")
+    if not target_id:
+        raise HTTPException(status_code=400, detail="character_id required")
+    ch = await _get_character_or_404(user["_id"])
+    if ch.get("guild_id") != guild_id:
+        raise HTTPException(status_code=403, detail="You are not in this guild")
+    if ch.get("guild_rank") != "grandmaster":
+        raise HTTPException(status_code=403, detail="Only the grandmaster can transfer leadership")
+    doc = await db.guilds.find_one({"_id": ObjectId(guild_id)})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Guild not found")
+    old_leader = ch["id"]
+    new_leader_found = False
+    for m in doc.get("members", []):
+        if m.get("character_id") == target_id:
+            m["rank"] = "grandmaster"
+            new_leader_found = True
+        elif m.get("character_id") == old_leader:
+            m["rank"] = "officer"
+    if not new_leader_found:
+        raise HTTPException(status_code=404, detail="Target member not found")
+    doc["leader_id"] = target_id
+    await db.guilds.update_one({"_id": ObjectId(guild_id)}, {"$set": {
+        "members": doc["members"], "leader_id": doc["leader_id"],
+    }})
+    await db.characters.update_one({"_id": ObjectId(old_leader)}, {"$set": {"guild_rank": "officer"}})
+    await db.characters.update_one({"_id": ObjectId(target_id)}, {"$set": {"guild_rank": "grandmaster"}})
+    target_ch = await db.characters.find_one({"_id": ObjectId(target_id)}, {"name": 1})
+    target_name = target_ch.get("name", "A member") if target_ch else "A member"
+    sys_msg = {
+        "id": str(uuid.uuid4()),
+        "channel": "guild",
+        "kind": "system",
+        "character_id": None,
+        "display_name": "",
+        "text": f"Leadership transferred to {target_name}.",
+        "guild_id": guild_id,
+        "created_at": datetime.now(timezone.utc),
+    }
+    await db.chat_messages.insert_one(sys_msg)
+    return {"ok": True, "character": ch}
+
+
+# ---------------- GUILD STATS & ANNOUNCEMENTS ----------------
+
+@api.get("/game/guilds/{guild_id}/stats")
+async def get_guild_stats(guild_id: str, user: dict = Depends(_get_current_user)):
+    doc = await db.guilds.find_one({"_id": ObjectId(guild_id)})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Guild not found")
+    import math
+    guild_xp = doc.get("guild_xp", 0)
+    guild_level = 1 + int(math.sqrt(guild_xp / 100))
+    stats = {
+        "total_kills": doc.get("total_kills", 0),
+        "total_gold_donated": doc.get("total_gold_donated", 0),
+        "total_quests": doc.get("total_quests", 0),
+        "guild_xp": guild_xp,
+        "guild_level": guild_level,
+        "guild_xp_next": (guild_level) ** 2 * 100,
+        "created_at": doc.get("created_at"),
+    }
+    members = []
+    for m in doc.get("members", []):
+        mch = await db.characters.find_one({"_id": ObjectId(m["character_id"])}, {"name": 1, "level": 1, "kills": 1})
+        if mch:
+            members.append({
+                "id": str(mch["_id"]),
+                "name": mch.get("name"),
+                "level": mch.get("level", 1),
+                "kills": mch.get("kills", 0),
+                "rank": m.get("rank"),
+                "joined_at": m.get("joined_at"),
+            })
+    stats["member_stats"] = members
+    return stats
+
+
+@api.get("/game/guilds/{guild_id}/announcements")
+async def get_guild_announcements(guild_id: str, user: dict = Depends(_get_current_user)):
+    doc = await db.guilds.find_one({"_id": ObjectId(guild_id)})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Guild not found")
+    return {"announcements": doc.get("announcements", [])}
+
+
+@api.post("/game/guilds/{guild_id}/announcements")
+async def post_guild_announcement(guild_id: str, request: Request, user: dict = Depends(_get_current_user)):
+    body = await request.json()
+    text = (body.get("text") or "").strip()
+    if not text or len(text) > 500:
+        raise HTTPException(status_code=400, detail="Announcement text required (max 500 chars)")
+    ch = await _get_character_or_404(user["_id"])
+    if ch.get("guild_id") != guild_id:
+        raise HTTPException(status_code=403, detail="You are not in this guild")
+    if ch.get("guild_rank") not in ("grandmaster", "officer"):
+        raise HTTPException(status_code=403, detail="Only officers and grandmaster can post announcements")
+    doc = await db.guilds.find_one({"_id": ObjectId(guild_id)})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Guild not found")
+    ann = doc.get("announcements", [])
+    ann.insert(0, {
+        "id": str(uuid.uuid4()),
+        "text": text,
+        "author": ch.get("name", "Unknown"),
+        "author_rank": ch.get("guild_rank", "member"),
+        "posted_at": datetime.now(timezone.utc).isoformat(),
+    })
+    ann = ann[:20]  # keep last 20
+    await db.guilds.update_one({"_id": ObjectId(guild_id)}, {"$set": {"announcements": ann}})
+    return {"ok": True, "announcements": ann}
+
+
+@api.delete("/game/guilds/{guild_id}/announcements/{ann_id}")
+async def delete_guild_announcement(guild_id: str, ann_id: str, user: dict = Depends(_get_current_user)):
+    ch = await _get_character_or_404(user["_id"])
+    if ch.get("guild_id") != guild_id:
+        raise HTTPException(status_code=403, detail="You are not in this guild")
+    if ch.get("guild_rank") not in ("grandmaster", "officer"):
+        raise HTTPException(status_code=403, detail="Only officers and grandmaster can delete announcements")
+    doc = await db.guilds.find_one({"_id": ObjectId(guild_id)})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Guild not found")
+    ann = [a for a in doc.get("announcements", []) if a.get("id") != ann_id]
+    await db.guilds.update_one({"_id": ObjectId(guild_id)}, {"$set": {"announcements": ann}})
+    return {"ok": True, "announcements": ann}
+
+
 @api.post("/game/guilds/{guild_id}/donate")
 async def donate_guild(guild_id: str, request: Request, user: dict = Depends(_get_current_user)):
     body = await request.json()
@@ -6685,7 +6898,12 @@ async def donate_guild(guild_id: str, request: Request, user: dict = Depends(_ge
     if ch["gold"] < amt:
         raise HTTPException(status_code=400, detail="Not enough gold")
     ch["gold"] -= amt
-    await db.guilds.update_one({"_id": ObjectId(guild_id)}, {"$inc": {"treasury": amt}})
+    guild_xp_gain = amt // 10  # 1 guild XP per 10g donated
+    await db.guilds.update_one({"_id": ObjectId(guild_id)}, {"$inc": {
+        "treasury": amt,
+        "total_gold_donated": amt,
+        "guild_xp": guild_xp_gain,
+    }})
     await db.characters.update_one({"_id": ObjectId(ch["id"])}, {"$set": {"gold": ch["gold"]}})
     return {"character": ch, "donated": amt}
 
