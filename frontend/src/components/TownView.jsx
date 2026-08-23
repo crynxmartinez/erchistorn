@@ -1320,7 +1320,7 @@ export default function TownView({ townId, character, onCharacterUpdate, onLeave
                                                     <TooltipProvider>
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
-                                                                <div className="cursor-help flex-1">
+                                                                <div className="cursor-help w-fit">
                                                                     <div className={`font-mono text-sm ${rarityColor}`}>{skill.name}</div>
                                                                     <div className="stat-label text-muted-foreground">
                                                                         {skill.rarity} · {skill.cost_gold}g · Learn: {learnDisplay} · Lv {skill.level_req || 1}
