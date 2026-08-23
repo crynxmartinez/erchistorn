@@ -59,6 +59,7 @@ export default function Inventory({ character, itemsById, onCharacterUpdate, onS
     const [category, setCategory] = useState("all");
     const [sortBy, setSortBy] = useState("rarity_desc");
     const [favsOnly, setFavsOnly] = useState(false);
+    const [sellQty, setSellQty] = useState({});  // { item_id: selected qty }
 
     // Resolve item by ID: check item_instances first, then itemsById
     const resolveItem = (id) => {
@@ -536,14 +537,51 @@ export default function Inventory({ character, itemsById, onCharacterUpdate, onS
                                 )}
                             </div>
                             {onSell && (
-                                <button
-                                    data-testid={`sell-${slot.item_id}`}
-                                    disabled={isEquipped || isFav}
-                                    onClick={() => onSell(slot.item_id)}
-                                    className="press-btn w-full mt-1 stat-label border border-primary/50 text-primary/80 hover:bg-primary hover:text-primary-foreground disabled:opacity-40 flex items-center justify-center gap-1 py-1"
-                                >
-                                    <Coins size={12} /> SELL
-                                </button>
+                                <div className="mt-1">
+                                    {(slot.quantity || 1) > 1 ? (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-1">
+                                                <input
+                                                    type="number"
+                                                    min={1}
+                                                    max={slot.quantity}
+                                                    value={sellQty[slot.item_id] ?? 1}
+                                                    onChange={(e) => {
+                                                        const v = Math.max(1, Math.min(slot.quantity, parseInt(e.target.value) || 1));
+                                                        setSellQty((s) => ({ ...s, [slot.item_id]: v }));
+                                                    }}
+                                                    className="w-14 bg-background border border-border px-1 py-0.5 font-mono text-xs text-center"
+                                                    data-testid={`sell-qty-${slot.item_id}`}
+                                                />
+                                                <button
+                                                    data-testid={`sell-${slot.item_id}`}
+                                                    disabled={isEquipped || isFav}
+                                                    onClick={() => onSell(slot.item_id, sellQty[slot.item_id] ?? 1)}
+                                                    className="press-btn flex-1 stat-label border border-primary/50 text-primary/80 hover:bg-primary hover:text-primary-foreground disabled:opacity-40 flex items-center justify-center gap-1 py-1"
+                                                >
+                                                    <Coins size={12} /> SELL
+                                                </button>
+                                            </div>
+                                            <button
+                                                data-testid={`sell-all-${slot.item_id}`}
+                                                disabled={isEquipped || isFav}
+                                                onClick={() => onSell(slot.item_id, slot.quantity)}
+                                                className="press-btn w-full stat-label border border-primary/30 text-primary/60 hover:bg-primary hover:text-primary-foreground disabled:opacity-40 flex items-center justify-center gap-1 py-0.5 text-[10px]"
+                                            >
+                                                <Coins size={10} /> SELL ALL ({slot.quantity})
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            data-testid={`sell-${slot.item_id}`}
+                                            disabled={isEquipped || isFav}
+                                            onClick={() => onSell(slot.item_id, 1)}
+                                            className="press-btn w-full stat-label border border-primary/50 text-primary/80 hover:bg-primary hover:text-primary-foreground disabled:opacity-40 flex items-center justify-center gap-1 py-1"
+                                        >
+                                            <Coins size={12} /> SELL
+                                        </button>
+                                    )}
+                                </div>
                             )}
                             <button
                                 data-testid={`trash-${slot.item_id}`}

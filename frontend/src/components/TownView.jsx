@@ -279,11 +279,11 @@ export default function TownView({ townId, character, onCharacterUpdate, onLeave
         }
     };
 
-    const sell = async (item_id) => {
+    const sell = async (item_id, quantity = 1) => {
         try {
-            const { data } = await api.post("/game/town/market/sell", { item_id, quantity: 1 });
+            const { data } = await api.post("/game/town/market/sell", { item_id, quantity });
             onCharacterUpdate?.(data.character);
-            toast.success(`Sold — received ${data.received}g`);
+            toast.success(`Sold ${quantity > 1 ? `${quantity}x ` : ""}— received ${data.received}g`);
         } catch (e) {
             toast.error(extractError(e));
         }
