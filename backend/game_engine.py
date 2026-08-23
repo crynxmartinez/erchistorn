@@ -9552,6 +9552,109 @@ def start_expedition(character: dict, biome_id: str, hours: int) -> dict:
     return {"success": True, "queue": queue, "gold_spent": cost}
 
 
+# ---------- expedition narrative ----------
+
+_EXP_NARRATIVE_OPENERS = {
+    "hunting": [
+        "The trail went cold twice, but I found it again.",
+        "Took me the better part of the day, but the beasts cooperated — eventually.",
+        "You should've seen the size of the one that got away. But what I brought back? Better.",
+        "Followed tracks through mud, stone, and running water. Worth every step.",
+    ],
+    "gathering": [
+        "The land provides, if you know where to look. And I know.",
+        "Spent hours on my knees in the dirt. Clean work, honest pay.",
+        "Found a spot the others missed. Always pays to go further.",
+        "The veins and roots don't give themselves up easy. But I'm persuasive.",
+    ],
+    "fishing": [
+        "The water was cold and the current was lying to me all day. But I read it right in the end.",
+        "Patience. That's the whole secret. Well, that and good bait.",
+        "Nearly lost the net twice. The big one always fights hardest.",
+        "You ever see a fish jump right into your hands? Almost happened. Almost.",
+    ],
+}
+
+_EXP_NARRATIVE_RARE = [
+    "And then — you won't believe this — I found something else. Something special.",
+    "But the real prize? Tucked away where nobody's looked in years.",
+    "Then my hands closed on something that shouldn't have been there. Lucky day.",
+    "Wait, I'm not done. There was one more thing. The kind of find you don't talk about in taverns.",
+]
+
+_EXP_NARRATIVE_QUIRK = {
+    "lucky": "Call it luck, call it instinct — either way, the good stuff kept finding me.",
+    "greedy": "I charged you plenty, and I delivered plenty. We both walk away happy.",
+    "night_owl": "The dark hours are when the best things surface. Most folk are asleep for it. I'm not.",
+    "scout": "Mapped every step. Found paths the locals don't even know about.",
+}
+
+_EXP_NARRATIVE_EMPTY = [
+    "I'll be honest — slim pickings out there today. But I brought back what I could.",
+    "Rough terrain, rougher luck. At least I didn't come back empty-handed.",
+    "Not my proudest haul, but the land wasn't giving. I took what was there.",
+]
+
+_EXP_NARRATIVE_XP = "Tracked and killed more than I gathered. The experience was worth the bruises."
+
+_EXP_NARRATIVE_SCOUT = "Mapped a few new paths while I was out. You'll have an easier time of it next visit."
+
+
+def _expedition_narrative(merc: dict, loot: dict, rare_found: str | None,
+                          xp_gain: int, exploration_gain: int, hours: int) -> str:
+    """Generate a first-person narrative from the mercenary about their haul."""
+    specialty = merc.get("specialty", "gathering")
+    quirk = merc.get("quirk")
+    merc_name = merc.get("name", "The merc")
+    merc_desc = merc.get("desc", "")
+
+    parts: list[str] = []
+
+    # Opener — based on specialty
+    openers = _EXP_NARRATIVE_OPENERS.get(specialty, _EXP_NARRATIVE_OPENERS["gathering"])
+    parts.append(random.choice(openers))
+
+    # Duration mention for longer trips
+    if hours >= 4:
+        parts.append(f"Spent {hours} hours out there. Long enough to see things most folk miss.")
+
+    # Loot description
+    if loot:
+        item_count = sum(loot.values())
+        top_items = sorted(loot.items(), key=lambda x: -x[1])[:3]
+        item_str = ", ".join(f"{qty}x {item_id.replace('_', ' ')}" for item_id, qty in top_items)
+        if item_count <= 2:
+            parts.append(f"Here's what I found: {item_str}. Modest, but it's quality.")
+        elif item_count <= 5:
+            parts.append(f"Got a decent haul — {item_str}. Should serve you well.")
+        else:
+            parts.append(f"Good haul this time. {item_str}, and more besides. You'll want to clear space in your pack.")
+    else:
+        parts.append(random.choice(_EXP_NARRATIVE_EMPTY))
+
+    # Rare find
+    if rare_found:
+        parts.append(random.choice(_EXP_NARRATIVE_RARE))
+        parts.append(f"A {rare_found.replace('_', ' ')}. Handle it careful — that's not something you see twice.")
+
+    # Quirk flavor
+    if quirk and quirk in _EXP_NARRATIVE_QUIRK:
+        parts.append(_EXP_NARRATIVE_QUIRK[quirk])
+
+    # XP (hunting expeditions)
+    if xp_gain:
+        parts.append(_EXP_NARRATIVE_XP)
+
+    # Exploration gain (scout quirk)
+    if exploration_gain:
+        parts.append(_EXP_NARRATIVE_SCOUT)
+
+    # Closing
+    parts.append(f"— {merc_name}")
+
+    return " ".join(parts)
+
+
 def collect_expedition(character: dict) -> dict:
     """Collect a finished expedition. Rolls loot, updates loyalty, sets cooldown."""
     queue = character.get("expedition_queue")
@@ -9644,7 +9747,12 @@ def collect_expedition(character: dict) -> dict:
         "xp_gain": xp_gain,
         "exploration_gain": exploration_gain,
         "merc_name": queue.get("merc_name", "The merc"),
+        "merc_desc": merc.get("desc", ""),
+        "merc_specialty": specialty,
+        "merc_rank": merc.get("rank", ""),
+        "merc_quirk": quirk,
         "loyalty_hires": loyalty[merc_id],
+        "narrative": _expedition_narrative(merc, loot, rare_found, xp_gain, exploration_gain, hours),
     }
 
 

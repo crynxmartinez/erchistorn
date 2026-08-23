@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { api, extractError } from "@/lib/api";
 import { toast } from "sonner";
 import { Tent, Coins, Clock, Star, Compass, Sparkles, CheckCircle2, Timer } from "lucide-react";
+import ExpeditionCollectModal from "./ExpeditionCollectModal";
 
 const SPECIALTY_META = {
     hunting: { label: "Hunter", color: "text-red-400", desc: "Monster drops + XP" },
@@ -38,6 +39,7 @@ export default function ExpeditionPanel({ character, biomeId, onCharacterUpdate 
     const [hours, setHours] = useState(1);
     const [busy, setBusy] = useState(false);
     const [now, setNow] = useState(Date.now());
+    const [collectResult, setCollectResult] = useState(null);
 
     const fetchMerc = useCallback(async () => {
         if (!biomeId) return;
@@ -107,18 +109,7 @@ export default function ExpeditionPanel({ character, biomeId, onCharacterUpdate 
         try {
             const { data: d } = await api.post("/game/expedition/collect");
             onCharacterUpdate?.(d.character);
-            const r = d.expedition_result;
-            const lootStr = (r.loot || [])
-                .map((l) => `${l.quantity}x ${l.item_id.replace(/_/g, " ")}`)
-                .join(", ");
-            toast.success(
-                `${r.merc_name} returned! Loot: ${lootStr || "nothing"}` +
-                (r.xp_gain ? ` · +${r.xp_gain} XP` : "") +
-                (r.exploration_gain ? ` · +${r.exploration_gain}% exploration` : "")
-            );
-            if (r.rare_found) {
-                toast.success(`RARE FIND: ${r.rare_found.replace(/_/g, " ")}!`, { duration: 6000 });
-            }
+            setCollectResult(d.expedition_result);
             fetchMerc();
         } catch (e) {
             toast.error(extractError(e));
@@ -255,6 +246,14 @@ export default function ExpeditionPanel({ character, biomeId, onCharacterUpdate 
                         </div>
                     )}
                 </>
+            )}
+
+            {/* Collect result modal */}
+            {collectResult && (
+                <ExpeditionCollectModal
+                    result={collectResult}
+                    onClose={() => setCollectResult(null)}
+                />
             )}
 
             {/* Loot preview */}
