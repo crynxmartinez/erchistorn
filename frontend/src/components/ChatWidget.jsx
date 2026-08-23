@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { MessageSquare, X, Globe, MapPin, Shield, Minimize2 } from "lucide-react";
 import { useChatChannel } from "@/hooks/useChatChannel";
 import ChatChannel from "@/components/ChatChannel";
@@ -60,21 +61,53 @@ export default function ChatWidget({ character }) {
 
     if (!character) return null;
 
-    return (
+    return createPortal(
         <>
             {/* Collapsed FAB */}
             {!open && (
                 <button
                     onClick={() => setOpen(true)}
                     data-testid="chat-widget-fab"
-                    className="fixed bottom-4 right-4 z-50 w-12 h-12 rounded-full border-2 border-primary bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+                    style={{
+                        position: "fixed",
+                        bottom: "1rem",
+                        right: "1rem",
+                        zIndex: 9999,
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "9999px",
+                        border: "2px solid hsl(var(--primary))",
+                        background: "hsl(var(--primary))",
+                        color: "hsl(var(--primary-foreground))",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                        cursor: "pointer",
+                    }}
                     aria-label="Open chat"
                 >
                     <MessageSquare size={22} />
                     {totalUnread > 0 && (
                         <span
                             data-testid="chat-widget-unread"
-                            className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-mono flex items-center justify-center border-2 border-background"
+                            style={{
+                                position: "absolute",
+                                top: "-4px",
+                                right: "-4px",
+                                minWidth: "20px",
+                                height: "20px",
+                                padding: "0 4px",
+                                borderRadius: "9999px",
+                                background: "hsl(var(--destructive))",
+                                color: "hsl(var(--destructive-foreground))",
+                                fontSize: "10px",
+                                fontFamily: "monospace",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                border: "2px solid hsl(var(--background))",
+                            }}
                         >
                             {totalUnread > 9 ? "9+" : totalUnread}
                         </span>
@@ -85,7 +118,21 @@ export default function ChatWidget({ character }) {
             {/* Expanded panel */}
             {open && (
                 <div
-                    className="fixed bottom-4 right-4 z-50 w-[360px] max-w-[calc(100vw-2rem)] h-[480px] max-h-[calc(100vh-2rem)] panel flex flex-col shadow-2xl"
+                    style={{
+                        position: "fixed",
+                        bottom: "1rem",
+                        right: "1rem",
+                        zIndex: 9999,
+                        width: "360px",
+                        maxWidth: "calc(100vw - 2rem)",
+                        height: "480px",
+                        maxHeight: "calc(100vh - 2rem)",
+                        background: "linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--popover)) 100%)",
+                        border: "1px solid hsl(var(--border))",
+                        display: "flex",
+                        flexDirection: "column",
+                        boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+                    }}
                     data-testid="chat-widget-panel"
                 >
                     {/* Title bar */}
@@ -148,5 +195,5 @@ export default function ChatWidget({ character }) {
                 </div>
             )}
         </>
-    );
+    , document.body);
 }
