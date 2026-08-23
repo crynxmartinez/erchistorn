@@ -345,9 +345,9 @@ export default function CharacterSheet({ character, portraits, race, role, maste
                     </div>
                 ) : null}
 
-                {/* Combat-active buffs — oath stacks, faith, skill stat mods, etc.
+                {/* Combat-active buffs — oath stacks, faith, skill stat mods, potions, etc.
                     These are temporary and only present during combat. */}
-                {(character.knight_oath || character.knight_current_oath_bonuses || character.combat_stat_mods || character.paladin_combat_faith || character.lancer_imbue_mods || character.druid_fusion_name) && (
+                {(character.knight_oath || character.knight_current_oath_bonuses || character.combat_stat_mods || character.paladin_combat_faith || character.lancer_imbue_mods || character.druid_fusion_name || character.potion_stat_mods || character.combat_statuses) && (
                     <div className="mt-3 border border-primary/30 bg-primary/5 p-2">
                         <div className="stat-label mb-1 text-primary">COMBAT BUFFS</div>
                         {character.knight_oath && (
@@ -389,6 +389,38 @@ export default function CharacterSheet({ character, portraits, race, role, maste
                             <div key={`cm_${stat}`} className="flex justify-between font-mono text-xs">
                                 <span className="text-muted-foreground">{stat.replace(/_/g, " ").toUpperCase()} (skill)</span>
                                 <span className="text-primary">{val >= 0 ? "+" : ""}{val}</span>
+                            </div>
+                        ))}
+                        {character.potion_stat_mods && Object.entries(character.potion_stat_mods).map(([stat, val]) => (
+                            <div key={`pm_${stat}`} className="flex justify-between font-mono text-xs">
+                                <span className="text-muted-foreground">{stat.replace(/_/g, " ").toUpperCase()} (elixir)</span>
+                                <span className="text-primary">+{val}</span>
+                            </div>
+                        ))}
+                        {character.combat_statuses && character.combat_statuses.map((s) => (
+                            <div key={`cs_${s.id}`} className="flex justify-between font-mono text-xs border-t border-border/30 pt-0.5 mt-0.5">
+                                <span className="text-muted-foreground">{s.name.toUpperCase()}</span>
+                                <span className="text-primary">
+                                    {s.modifiers && Object.entries(s.modifiers).map(([k, v]) => `${k.replace(/_/g, " ")} +${v}`).join(", ")}
+                                    {!s.modifiers && s.magnitude > 0 && `+${s.magnitude}`}
+                                    {s.duration > 0 && ` (${s.duration}t)`}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Out-of-combat active buffs (sanctuary blessing, recovering, etc.) */}
+                {character.statuses && character.statuses.filter(s => s.kind === "buff").length > 0 && (
+                    <div className="mt-2 border border-green-500/20 bg-green-500/5 p-2">
+                        <div className="stat-label mb-1 text-green-500">ACTIVE BUFFS</div>
+                        {character.statuses.filter(s => s.kind === "buff").map((s) => (
+                            <div key={`ab_${s.id}`} className="flex justify-between font-mono text-xs">
+                                <span className="text-muted-foreground">{(s.name || s.id || "").toUpperCase()}</span>
+                                <span className="text-green-500">
+                                    {s.magnitude > 0 && `+${s.magnitude}`}
+                                    {s.duration > 0 && ` (${s.duration}t)`}
+                                </span>
                             </div>
                         ))}
                     </div>

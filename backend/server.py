@@ -2776,6 +2776,44 @@ async def combat_take_turn(payload: CombatTurnPayload, user: dict = Depends(_get
                     stat = "_".join(parts[1:-1])
                     ch["stats"][stat] = ch["stats"].get(stat, 0) + val
 
+    # --- Potion/elixir buff_stat modifiers from player_statuses ---
+    # Consumables with buff_stat effect (Might Elixir, Grace Elixir, etc.)
+    # add stats directly to character["stats"] and create an "inspired" status
+    # with modifiers in state["player_statuses"]. After stats reset at end of
+    # combat_turn, those modifiers are lost — re-apply them here.
+    if state.get("active"):
+        potion_mods = {}
+        for s in state.get("player_statuses", []):
+            mods = s.get("modifiers")
+            if mods:
+                for stat, val in mods.items():
+                    ch["stats"][stat] = ch["stats"].get(stat, 0) + val
+                    potion_mods[stat] = potion_mods.get(stat, 0) + val
+        if potion_mods:
+            ch["potion_stat_mods"] = potion_mods
+        else:
+            ch.pop("potion_stat_mods", None)
+
+        # Expose combat-active buff statuses (potions, elixirs, skill buffs)
+        # so the frontend can display them in the COMBAT BUFFS section.
+        combat_buffs = []
+        for s in state.get("player_statuses", []):
+            if s.get("kind") == "buff":
+                combat_buffs.append({
+                    "id": s.get("id", ""),
+                    "name": s.get("name", s.get("id", "").title()),
+                    "duration": s.get("duration", 0),
+                    "magnitude": s.get("magnitude", 0),
+                    "modifiers": s.get("modifiers"),
+                })
+        if combat_buffs:
+            ch["combat_statuses"] = combat_buffs
+        else:
+            ch.pop("combat_statuses", None)
+    else:
+        ch.pop("potion_stat_mods", None)
+        ch.pop("combat_statuses", None)
+
     # Recompute derived defenses now that combat-only bonuses are in ch["stats"],
     # so the frontend CharacterSheet shows accurate armor/MR during combat.
     ch["derived"] = {
