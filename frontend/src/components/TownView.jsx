@@ -1309,13 +1309,71 @@ export default function TownView({ townId, character, onCharacterUpdate, onLeave
                                             const busy = !!character.training_skill_id;
                                             const disabled = learned || !levelOk || !goldOk || busy;
                                             const status = learned ? "KNOWN" : !levelOk ? "LOW LEVEL" : !goldOk ? "NO GOLD" : busy ? "BUSY" : "LEARN";
-                                            const tip = `${skill.name} (${skill.rarity})\n${skill.execution_text || skill.desc || ""}\nCost: ${skill.cost_gold}g · Time: ${skill.learn_seconds}s · Lv ${skill.level_req || 1}${skill.weapon_req && skill.weapon_req !== "none" ? " · Weapon: " + skill.weapon_req : ""}${skill.mastery_req?.length ? " · Mastery: " + skill.mastery_req.join(", ") : ""}`;
+                                            const rarityColor = RARITY_TEXT[skill.rarity] || "text-muted-foreground";
+                                            const powerLabel = { strike: "Strike", heal: "Heal", defend: "Defend", buff: "Buff", debuff: "Debuff", imbue: "Imbue", performance: "Performance" }[skill.power_type] || skill.power_type;
+                                            const triggerLabel = { always: "Always", low_hp: "Low HP", opponent_wounded: "Enemy Wounded", opponent_status: "Enemy Status", opening_move: "Opening Move", self_debuff: "When Debuffed" }[skill.trigger] || skill.trigger;
+                                            const learnMin = Math.floor((skill.learn_seconds || 0) / 60);
+                                            const learnSec = (skill.learn_seconds || 0) % 60;
+                                            const learnDisplay = learnMin > 0 ? `${learnMin}m ${learnSec}s` : `${learnSec}s`;
                                             return (
                                                 <div key={sid} className="flex justify-between items-center border-t border-border pt-2">
-                                                    <div title={tip}>
-                                                        <div className="font-mono text-sm text-foreground">{skill.name}</div>
-                                                        <div className="stat-label">{skill.rarity} · {skill.cost_gold}g · {skill.learn_seconds}s · Lv {skill.level_req || 1}</div>
-                                                    </div>
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <div className="cursor-help flex-1">
+                                                                    <div className={`font-mono text-sm ${rarityColor}`}>{skill.name}</div>
+                                                                    <div className="stat-label text-muted-foreground">
+                                                                        {skill.rarity} · {skill.cost_gold}g · Learn: {learnDisplay} · Lv {skill.level_req || 1}
+                                                                    </div>
+                                                                </div>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent side="right" className="max-w-sm p-0">
+                                                                <div className="p-3 space-y-2">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className={`font-pixel text-sm uppercase ${rarityColor}`}>{skill.name}</span>
+                                                                        <span className="text-[10px] opacity-70 uppercase">{skill.rarity}</span>
+                                                                    </div>
+                                                                    {skill.execution_text ? (
+                                                                        <div className="narr text-xs italic leading-relaxed border-l-2 border-primary/40 pl-2">
+                                                                            {skill.execution_text}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="text-xs">{skill.desc}</div>
+                                                                    )}
+                                                                    <div className="border-t border-primary/20 pt-2 space-y-0.5 text-[10px]">
+                                                                        {skill.power_type && (
+                                                                            <div><span className="opacity-60">Type:</span> {powerLabel}{skill.damage_type ? ` (${skill.damage_type})` : ""}</div>
+                                                                        )}
+                                                                        {skill.damage > 0 && (
+                                                                            <div><span className="opacity-60">Power:</span> {skill.damage}</div>
+                                                                        )}
+                                                                        {skill.cooldown != null && (
+                                                                            <div><span className="opacity-60">Cooldown:</span> {skill.cooldown} turn{skill.cooldown !== 1 ? "s" : ""}</div>
+                                                                        )}
+                                                                        {skill.heal_percent && (
+                                                                            <div><span className="opacity-60">Heal:</span> {Math.round(skill.heal_percent * 100)}% HP</div>
+                                                                        )}
+                                                                        {skill.status_apply && (
+                                                                            <div><span className="opacity-60">Inflicts:</span> {skill.status_apply}</div>
+                                                                        )}
+                                                                        {skill.self_status && (
+                                                                            <div><span className="opacity-60">Grants:</span> {skill.self_status}</div>
+                                                                        )}
+                                                                        <div><span className="opacity-60">Trigger:</span> {triggerLabel}</div>
+                                                                        {skill.weapon_req && skill.weapon_req !== "none" && (
+                                                                            <div><span className="opacity-60">Weapon:</span> {skill.weapon_req}</div>
+                                                                        )}
+                                                                        {skill.mastery_req?.length > 0 && (
+                                                                            <div><span className="opacity-60">Mastery:</span> {skill.mastery_req.join(", ")}</div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="border-t border-primary/20 pt-2 text-[10px]">
+                                                                        <span className="opacity-60">Learn time:</span> {learnDisplay} · <span className="opacity-60">Cost:</span> {skill.cost_gold}g · <span className="opacity-60">Req:</span> Lv {skill.level_req || 1}
+                                                                    </div>
+                                                                </div>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
                                                     <button
                                                         data-testid={`teach-${teacher.id}-${sid}`}
                                                         disabled={disabled}
