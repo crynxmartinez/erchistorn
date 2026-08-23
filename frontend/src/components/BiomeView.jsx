@@ -424,9 +424,9 @@ export default function BiomeView({ character, continent, onBiomeChange, onActio
                                                             </div>
                                                             <div className="flex justify-between items-center text-[10px] text-muted-foreground mt-0.5">
                                                                 <span className="text-[10px] text-muted-foreground" title="Threat scales with your level">THREAT {t.threat}</span>
-                                                                <span className={t.stock <= 0 ? "text-destructive" : ""}>{t.stock}/{t.max_stock} stock</span>
+                                                                <span className={t.stock <= 0 ? "text-destructive" : ""}>{t.stock}/{t.max_stock} in the wild</span>
                                                             </div>
-                                                            {t.stock <= 0 && <div className="text-[10px] text-destructive">No more in this area</div>}
+                                                            {t.stock <= 0 && <div className="text-[10px] text-destructive">None left in this area</div>}
                                                         </button>
                                                     </TooltipTrigger>
                                                     {huntHint && (
