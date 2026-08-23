@@ -1327,7 +1327,7 @@ export default function TownView({ townId, character, onCharacterUpdate, onLeave
                                                                     </div>
                                                                 </div>
                                                             </TooltipTrigger>
-                                                            <TooltipContent side="right" className="max-w-sm p-0">
+                                                            <TooltipContent side="top" sideOffset={2} className="max-w-sm p-0 bg-popover border border-border text-popover-foreground">
                                                                 <div className="p-3 space-y-2">
                                                                     <div className="flex items-center gap-2">
                                                                         <span className={`font-pixel text-sm uppercase ${rarityColor}`}>{skill.name}</span>
