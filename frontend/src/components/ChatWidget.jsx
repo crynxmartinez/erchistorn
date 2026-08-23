@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { MessageSquare, X, Globe, MapPin, Shield, Minimize2 } from "lucide-react";
 import { useChatChannel } from "@/hooks/useChatChannel";
@@ -12,9 +12,6 @@ import ChatChannel from "@/components/ChatChannel";
 export default function ChatWidget({ character }) {
     const [open, setOpen] = useState(false);
     const [activeChannel, setActiveChannel] = useState("world");
-    const [ready, setReady] = useState(false);
-
-    useEffect(() => { setReady(true); }, []);
 
     const hasGuild = !!character?.guild_id;
     const myId = character?.id;
@@ -62,7 +59,7 @@ export default function ChatWidget({ character }) {
     const active = channels[activeChannel];
     const activeTab = tabs.find((t) => t.id === activeChannel) || tabs[0];
 
-    if (!character || !ready) return null;
+    if (!character || typeof document === "undefined" || !document.body) return null;
 
     return createPortal(
         <>
