@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { api, extractError } from "@/lib/api";
 import { toast } from "sonner";
-import { Zap, ChevronUp, Flame } from "lucide-react";
+import { Zap, ChevronUp, Flame, Lock, Clock, Sparkles } from "lucide-react";
 import { HERITAGE_LABEL, HERITAGE_SURGES, HERITAGE_RANK_LEVEL_REQS, HERITAGE_RANK_MULT, MAX_HERITAGE_RANK } from "@/data/racialConstants";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { RESOURCE_META as SHARED_RESOURCE_META, RACE_TO_RESOURCE } from "@/data/hints";
@@ -224,28 +224,46 @@ export default function RacialAbilityPanel({ character, onCharacterUpdate, timeO
                     const remaining = Math.max(0, (a.seconds_remaining || 0) - elapsed);
                     const mins = Math.floor(remaining / 60);
                     const secs = remaining % 60;
+                    const isLocked = a.heritage_rank < 2;
+                    const onCooldown = !isLocked && !a.available && remaining > 0;
+                    const needsResource = !isLocked && !a.available && !onCooldown && a.reason?.includes("full");
+                    const unlockLevel = HERITAGE_RANK_LEVEL_REQS[0];
                     return (
-                        <div key={a.id} className="border border-border p-3 overflow-hidden" data-testid={`racial-ability-${a.id}`}>
+                        <div
+                            key={a.id}
+                            className={`border p-3 overflow-hidden transition-colors ${
+                                isLocked
+                                    ? "border-border/50 bg-muted/30"
+                                    : a.active_surge
+                                    ? "border-amber-500/40 bg-amber-500/5"
+                                    : "border-border"
+                            }`}
+                            data-testid={`racial-ability-${a.id}`}
+                        >
                             <div className="flex justify-between items-baseline gap-2">
-                                <div className="font-pixel text-lg uppercase text-primary break-words">{a.name}</div>
-                                <div className="stat-label text-primary/70 whitespace-nowrap flex-shrink-0">CD: {a.cooldown_hours}h</div>
+                                <div className={`font-pixel text-lg uppercase break-words flex items-center gap-1.5 ${
+                                    isLocked ? "text-muted-foreground" : "text-primary"
+                                }`}>
+                                    {isLocked && <Lock size={14} className="flex-shrink-0" />}
+                                    {a.name}
+                                </div>
+                                <div className="stat-label text-primary/70 whitespace-nowrap flex-shrink-0 flex items-center gap-1">
+                                    <Clock size={10} />{a.cooldown_hours}h
+                                </div>
                             </div>
                             {a.cost ? (
                                 <div className="stat-label text-primary/50 text-[10px] mt-0.5 break-words">
                                     Costs {a.cost} {a.cost_resource?.replace(/_/g, " ")}
                                 </div>
                             ) : null}
-                            {!a.available && a.reason && (
-                                <div className="stat-label text-destructive mt-1 break-words">
-                                    {a.reason}{remaining > 0 ? ` · ${mins}m ${secs}s` : ""}
-                                </div>
-                            )}
 
                             {/* Heritage Surge — the one and only racial active ability */}
                             {a.id === "heritage_surge" && (
                                 <>
                                     {a.description && (
-                                        <div className="text-xs text-amber-500/80 mt-2 italic leading-relaxed break-words">
+                                        <div className={`text-xs mt-2 italic leading-relaxed break-words ${
+                                            isLocked ? "text-muted-foreground/60" : "text-amber-500/80"
+                                        }`}>
                                             {a.description}
                                         </div>
                                     )}
@@ -254,14 +272,43 @@ export default function RacialAbilityPanel({ character, onCharacterUpdate, timeO
                                             Duration: {a.duration} actions · Cooldown: {a.cooldown_hours}h · Cost: Full {a.cost_resource?.replace(/_/g, " ")}
                                         </div>
                                     )}
-                                    {surgeNarrative && a.active_surge && (
+
+                                    {/* Locked state — clearly non-interactive with tooltip */}
+                                    {isLocked ? (
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div
+                                                    className="mt-2 px-3 py-2 border-2 border-border/50 bg-muted/20 cursor-not-allowed flex items-center justify-center gap-2 select-none"
+                                                    data-testid="btn-heritage-surge-locked"
+                                                >
+                                                    <Lock size={12} className="text-muted-foreground/60" />
+                                                    <span className="font-pixel text-sm uppercase text-muted-foreground/60">
+                                                        Unlocks at Rank 2
+                                                    </span>
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" sideOffset={4}>
+                                                <div className="font-pixel text-xs leading-snug max-w-[240px] text-center">
+                                                    <div className="text-amber-500 mb-1">Unlocks at Heritage Rank 2</div>
+                                                    <div className="text-muted-foreground">
+                                                        Reach Lv {unlockLevel} and fill your resource bar to rank up.
+                                                        <br />
+                                                        You are Lv {charLevel} · Rank {a.heritage_rank}
+                                                    </div>
+                                                </div>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    ) : surgeNarrative && a.active_surge ? (
                                         <div className="text-xs text-amber-500/60 mt-2 italic border-l-2 border-amber-500/30 pl-2" data-testid="surge-narrative">
                                             {surgeNarrative}
                                         </div>
-                                    )}
+                                    ) : null}
+
+                                    {/* Active surge — progress bar */}
                                     {a.active_surge ? (
                                         <div className="mt-2">
-                                            <div className="stat-label text-amber-500 text-[10px] mb-1" data-testid="surge-active">
+                                            <div className="stat-label text-amber-500 text-[10px] mb-1 flex items-center gap-1" data-testid="surge-active">
+                                                <Sparkles size={10} />
                                                 ACTIVE — {a.active_surge.actions_remaining} action{a.active_surge.actions_remaining !== 1 ? "s" : ""} remaining
                                             </div>
                                             <div className="h-1.5 bg-background border border-amber-500/30">
@@ -271,15 +318,27 @@ export default function RacialAbilityPanel({ character, onCharacterUpdate, timeO
                                                 />
                                             </div>
                                         </div>
-                                    ) : (
+                                    ) : !isLocked && (
                                         <button
                                             onClick={() => use("heritage_surge")}
                                             disabled={busy || !a.available}
                                             data-testid="btn-heritage-surge"
-                                            className="press-btn font-pixel text-sm uppercase mt-2 px-3 py-1 border-2 border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-amber-950 flex items-center justify-center gap-1.5 disabled:opacity-40"
+                                            className={`press-btn font-pixel text-sm uppercase mt-2 px-3 py-1.5 border-2 flex items-center justify-center gap-1.5 transition-colors ${
+                                                a.available
+                                                    ? "border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-amber-950"
+                                                    : "border-border/50 text-muted-foreground/50 cursor-not-allowed"
+                                            }`}
                                         >
-                                            <Flame size={12} /> {a.name}
+                                            <Flame size={12} />
+                                            {onCooldown ? `${mins}m ${secs}s` : a.name}
                                         </button>
+                                    )}
+
+                                    {/* Status reason for non-locked unavailable states */}
+                                    {!isLocked && !a.available && a.reason && !a.active_surge && (
+                                        <div className="stat-label text-muted-foreground/70 mt-1.5 text-[10px] break-words text-center">
+                                            {a.reason}{onCooldown ? ` · ${mins}m ${secs}s` : ""}
+                                        </div>
                                     )}
                                 </>
                             )}

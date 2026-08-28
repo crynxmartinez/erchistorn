@@ -52,7 +52,7 @@ export default function CharacterSheet({ character, portraits, race, role, maste
     if (!character) return null;
     const portrait = portraits?.find((p) => p.id === character.portrait_id);
     const hpPct = Math.round((character.hp / Math.max(1, character.max_hp)) * 100);
-    const xpNext = 100 + (character.level - 1) * 40;
+    const xpNext = character.derived?.xp_for_next || (100 + (character.level - 1) * 40);
     const xpPct = Math.min(100, Math.round((character.xp / xpNext) * 100));
     const equipped = character.equipped || {};
     const EQUIP_SLOTS = [

@@ -29,21 +29,23 @@ export default function SlidePanel({ tabs, side = "right", defaultOpen = false, 
 
     const panelClass = isLeft
         ? `fixed top-20 left-0 z-40 h-[calc(100vh-5rem)] w-80 border-r border-y border-border bg-background shadow-xl transform transition-transform duration-300 ease-in-out ${
-              open ? "translate-x-0" : "-translate-x-[calc(100%-2.5rem)]"
+              open ? "translate-x-0" : "-translate-x-full"
           }`
         : `fixed top-20 right-0 z-40 h-[calc(100vh-5rem)] w-80 border-l border-y border-border bg-background shadow-xl transform transition-transform duration-300 ease-in-out ${
-              open ? "translate-x-0" : "translate-x-[calc(100%-2.5rem)]"
+              open ? "translate-x-0" : "translate-x-full"
           }`;
 
     const handleClass = isLeft
-        ? "absolute right-0 top-4 z-50 flex items-center justify-center w-10 h-12 border border-l-0 border-primary bg-background text-primary hover:text-foreground shadow-md"
-        : "absolute left-0 top-4 z-50 flex items-center justify-center w-10 h-12 border border-r-0 border-primary bg-background text-primary hover:text-foreground shadow-md";
-
-    const contentMargin = isLeft ? "mr-10" : "ml-10";
+        ? `fixed top-20 left-0 z-50 flex items-center justify-center w-10 h-12 border border-primary bg-background text-primary hover:text-foreground shadow-md transition-all duration-300 ease-in-out ${
+              open ? "translate-x-80" : "translate-x-0"
+          }`
+        : `fixed top-20 right-0 z-50 flex items-center justify-center w-10 h-12 border border-primary bg-background text-primary hover:text-foreground shadow-md transition-all duration-300 ease-in-out ${
+              open ? "-translate-x-80" : "translate-x-0"
+          }`;
 
     return (
-        <div className={panelClass}>
-            {/* Toggle handle */}
+        <>
+            {/* Floating toggle handle — always visible, no wall */}
             <button
                 onClick={() => setOpen((o) => !o)}
                 className={handleClass}
@@ -54,33 +56,36 @@ export default function SlidePanel({ tabs, side = "right", defaultOpen = false, 
                     : open ? <ChevronRight size={22} /> : <ChevronLeft size={22} />}
             </button>
 
-            {/* Tab bar */}
-            <div className={`${contentMargin} flex border-b border-border`}>
-                {tabs.map((t) => {
-                    const Icon = t.icon;
-                    const isActive = active === t.id;
-                    return (
-                        <button
-                            key={t.id}
-                            onClick={() => handleTab(t.id)}
-                            className={`flex-1 flex items-center justify-center gap-1 p-2 font-pixel text-xs uppercase border-r border-border last:border-r-0 transition-colors ${
-                                isActive
-                                    ? "text-primary bg-primary/10"
-                                    : "text-muted-foreground hover:text-foreground"
-                            }`}
-                        >
-                            <Icon size={14} /> {t.label}
-                        </button>
-                    );
-                })}
-            </div>
+            {/* Panel body — fully off-screen when closed */}
+            <div className={panelClass}>
+                {/* Tab bar */}
+                <div className="flex border-b border-border">
+                    {tabs.map((t) => {
+                        const Icon = t.icon;
+                        const isActive = active === t.id;
+                        return (
+                            <button
+                                key={t.id}
+                                onClick={() => handleTab(t.id)}
+                                className={`flex-1 flex items-center justify-center gap-1 p-2 font-pixel text-xs uppercase border-r border-border last:border-r-0 transition-colors ${
+                                    isActive
+                                        ? "text-primary bg-primary/10"
+                                        : "text-muted-foreground hover:text-foreground"
+                                }`}
+                            >
+                                <Icon size={14} /> {t.label}
+                            </button>
+                        );
+                    })}
+                </div>
 
-            {/* Panel content */}
-            <div
-                className={`${contentMargin} h-[calc(100%-2.75rem)] overflow-y-auto p-4 ${isLeft ? "scrollbar-left" : ""}`}
-            >
-                {activeTab?.content}
+                {/* Panel content */}
+                <div
+                    className={`h-[calc(100%-2.75rem)] overflow-y-auto p-4 ${isLeft ? "scrollbar-left" : ""}`}
+                >
+                    {activeTab?.content}
+                </div>
             </div>
-        </div>
+        </>
     );
 }

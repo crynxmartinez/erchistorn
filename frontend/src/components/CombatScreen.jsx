@@ -623,20 +623,70 @@ export default function CombatScreen({ combatStart, character, itemsById, skills
                             AUTO
                         </button>
                         {learnedSkills.map((s) => (
-                            <button
-                                key={s.id}
-                                data-testid={`skill-manual-${s.id}`}
-                                disabled={s.cooldown > 0 || !s.def}
-                                onClick={() => setPendingSkillId(s.id)}
-                                className={`stat-label px-2 py-1 border ${
-                                    pendingSkillId === s.id
-                                        ? "border-primary text-primary"
-                                        : "border-border text-muted-foreground hover:border-primary"
-                                } disabled:opacity-40`}
-                            >
-                                {s.def?.name || s.id}
-                                {s.cooldown > 0 && <span className="ml-1 text-destructive">({s.cooldown})</span>}
-                            </button>
+                            <Tooltip key={s.id}>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        data-testid={`skill-manual-${s.id}`}
+                                        disabled={s.cooldown > 0 || !s.def}
+                                        onClick={() => setPendingSkillId(s.id)}
+                                        className={`stat-label px-2 py-1 border ${
+                                            pendingSkillId === s.id
+                                                ? "border-primary text-primary"
+                                                : "border-border text-muted-foreground hover:border-primary"
+                                        } disabled:opacity-40`}
+                                    >
+                                        {s.def?.name || s.id}
+                                        {s.cooldown > 0 && <span className="ml-1 text-destructive">({s.cooldown})</span>}
+                                    </button>
+                                </TooltipTrigger>
+                                {s.def && (
+                                    <TooltipContent side="top" sideOffset={4} className="max-w-[280px] bg-popover border border-border text-popover-foreground px-3 py-2">
+                                        <div className="font-pixel text-xs uppercase text-primary mb-1">{s.def.name}</div>
+                                        <div className="flex flex-wrap gap-1.5 mb-1.5 text-[10px]">
+                                            <span className="px-1 border border-border text-muted-foreground uppercase">{s.def.rarity || "common"}</span>
+                                            {s.def.power_type && (
+                                                <span className="px-1 border border-border text-muted-foreground uppercase">{s.def.power_type}</span>
+                                            )}
+                                            {s.def.damage_type && (
+                                                <span className="px-1 border border-border text-muted-foreground uppercase">{s.def.damage_type}</span>
+                                            )}
+                                            {s.def.damage > 0 && (
+                                                <span className="px-1 border border-destructive/40 text-destructive">{s.def.power_type === "heal" ? "Heal" : "DMG"} {s.def.damage}</span>
+                                            )}
+                                            {s.def.hits > 1 && (
+                                                <span className="px-1 border border-amber-500/40 text-amber-500">{s.def.hits}x hits</span>
+                                            )}
+                                            {s.def.cooldown > 0 && (
+                                                <span className="px-1 border border-border text-muted-foreground">CD {s.def.cooldown}t</span>
+                                            )}
+                                            {s.def.skill_capacity_cost > 0 && (
+                                                <span className="px-1 border border-border text-muted-foreground">SC {s.def.skill_capacity_cost}</span>
+                                            )}
+                                        </div>
+                                        {s.def.status_apply && (
+                                            <div className="text-[10px] text-destructive mb-1">
+                                                Inflicts: {Array.isArray(s.def.status_apply) ? s.def.status_apply.join(", ") : s.def.status_apply}
+                                            </div>
+                                        )}
+                                        {s.def.self_status && (
+                                            <div className="text-[10px] text-primary mb-1">
+                                                Self: {s.def.self_status}
+                                            </div>
+                                        )}
+                                        {s.def.heal_percent > 0 && (
+                                            <div className="text-[10px] text-primary mb-1">
+                                                Heal: {Math.round(s.def.heal_percent * 100)}%
+                                            </div>
+                                        )}
+                                        {s.def.desc && (
+                                            <div className="narr text-[11px] text-popover-foreground/80 italic leading-snug">{s.def.desc}</div>
+                                        )}
+                                        {s.cooldown > 0 && (
+                                            <div className="text-[10px] text-destructive mt-1">On cooldown: {s.cooldown} turn{s.cooldown > 1 ? "s" : ""} left</div>
+                                        )}
+                                    </TooltipContent>
+                                )}
+                            </Tooltip>
                         ))}
                     </div>
                 </div>
