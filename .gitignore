@@ -84,6 +84,11 @@ android-sdk/
 .env
 .env.*
 *.env
+# ...but the example files carry no secrets and are the only record of which
+# variables each app needs. Without this negation `.env.*` swallows them and
+# the required config is documented nowhere in git.
+!.env.example
+!**/.env.example
 credentials.json
 *.key
 .credentials
